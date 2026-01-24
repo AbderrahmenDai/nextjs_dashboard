@@ -1,3 +1,5 @@
+"use client";
+
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import {
@@ -10,12 +12,15 @@ import {
   RecruitmentRateChart,
   DepartmentUserCountChart
 } from "@/components/Charts";
-import { Coins, CreditCard, Clock, Briefcase, Search, Bell } from "lucide-react";
+import { Coins, CreditCard, Clock, Briefcase } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 export default function Home() {
   const [totalBudget, setTotalBudget] = useState(0);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const loadStats = async () => {
@@ -39,23 +44,8 @@ export default function Home() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Recruitment Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Overview of hiring performance and statistics.</p>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm w-64 text-white placeholder:text-muted-foreground"
-            />
-          </div>
-          <button className="p-2 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors relative text-muted-foreground hover:text-white">
-            <Bell size={20} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-          </button>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">{t('dashboard.title')}</h1>
+          <p className="text-muted-foreground mt-1">{t('dashboard.subtitle')}</p>
         </div>
       </div>
 

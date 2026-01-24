@@ -1,7 +1,6 @@
 "use client";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { DepartmentUserCountChart } from "@/components/Charts";
 import { MoreHorizontal, Search, Plus, Pencil, Trash2, Building2, Users, X } from "lucide-react";
 import { clsx } from "clsx";
 import { useState, useEffect } from "react";
@@ -10,8 +9,8 @@ import { api } from "@/lib/api";
 // --- Types ---
 interface Site {
     id: string;
-    name: "TT" | "TTG";
-    budget: number; // Storing as number for easier calculations
+    name: string;
+    budget: number;
     description: string;
 }
 
@@ -21,51 +20,52 @@ interface Department {
     head: string;
     location: string;
     employeeCount: number;
-    budget: number; // Storing as number
-    siteId: "TT" | "TTG";
+    budget: number;
+    siteId: string;
     status: "Active" | "Restructuring" | "Inactive";
     colorCallback: string;
 }
 
-// --- Helper for Modal ---
+// --- Modal Component ---
 function DepartmentFormModal({
     isOpen,
     onClose,
     onSave,
-    department
+    department,
+    sites
 }: {
     isOpen: boolean;
     onClose: () => void;
     onSave: (dept: Partial<Department>) => void;
     department: Department | null;
+    sites: Site[];
 }) {
-    const [formData, setFormData] = useState<Partial<Department>>(
-        department || {
-            name: "",
-            head: "",
-            location: "",
-            employeeCount: 0,
-            budget: 0,
-            siteId: "TT",
-            status: "Active",
-            colorCallback: "bg-gray-500" // Default
-        }
-    );
+    const [formData, setFormData] = useState<Partial<Department>>({
+        name: "",
+        head: "",
+        location: "",
+        employeeCount: 0,
+        budget: 0,
+        siteId: sites.length > 0 ? sites[0].id : "",
+        status: "Active",
+        colorCallback: "bg-gray-500"
+    });
 
     useEffect(() => {
         if (isOpen) {
+            // eslint-disable-next-line react-hooks/exhaustive-deps
             setFormData(department || {
                 name: "",
                 head: "",
                 location: "",
                 employeeCount: 0,
                 budget: 0,
-                siteId: "TT",
+                siteId: sites.length > 0 ? sites[0].id : "",
                 status: "Active",
                 colorCallback: "bg-gray-500"
             });
         }
-    }, [isOpen, department]);
+    }, [isOpen, department, sites]);
 
     if (!isOpen) return null;
 
@@ -139,11 +139,12 @@ function DepartmentFormModal({
                             <label className="block text-sm font-medium text-slate-300 mb-1">Site</label>
                             <select
                                 value={formData.siteId}
-                                onChange={(e) => setFormData({ ...formData, siteId: e.target.value as "TT" | "TTG" })}
+                                onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
                                 className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
                             >
-                                <option value="TT">TT</option>
-                                <option value="TTG">TTG</option>
+                                {sites.map(site => (
+                                    <option key={site.id} value={site.id}>{site.name}</option>
+                                ))}
                             </select>
                         </div>
                         <div>
@@ -176,8 +177,6 @@ function DepartmentFormModal({
                                         color.replace('bg-', 'bg-'), // Just using the class directly
                                         formData.colorCallback === color ? "border-white scale-110" : "border-transparent opacity-70 hover:opacity-100"
                                     )}
-                                    // Hack to make tailwind compile these dynamic classes if not scanning this file correctly? 
-                                    // But they are in dummy data so should be fine.
                                     style={{ backgroundColor: `var(--tw-${color.replace('bg-', '')})` }}
                                 >
                                     {formData.colorCallback === color && <div className="w-2 h-2 bg-white rounded-full mx-auto" />}
@@ -215,6 +214,9 @@ export default function DepartmentsPage() {
     const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
     const [tempBudget, setTempBudget] = useState<string>("");
 
+    // Site Filter State
+    const [selectedSiteId, setSelectedSiteId] = useState<string>("All");
+
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingDept, setEditingDept] = useState<Department | null>(null);
@@ -235,13 +237,19 @@ export default function DepartmentsPage() {
 
     useEffect(() => {
         loadData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const filteredDepts = departments.filter(dept =>
-        dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        dept.head.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        dept.siteId.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredDepts = departments.filter(dept => {
+        const matchesSearch =
+            dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            dept.head.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            dept.siteId.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesSite = selectedSiteId === "All" || dept.siteId === selectedSiteId;
+
+        return matchesSearch && matchesSite;
+    });
 
     const handleDelete = async (id: string) => {
         if (confirm("Are you sure you want to delete this department?")) {
@@ -310,6 +318,9 @@ export default function DepartmentsPage() {
 
     const getChildrenCount = (siteId: string) => departments.filter(d => d.siteId === siteId).length;
 
+    // Filter displayed sites based on selection
+    const displayedSites = selectedSiteId === "All" ? sites : sites.filter(s => s.id === selectedSiteId);
+
     return (
         <DashboardLayout>
             <div className="flex flex-col h-full relative">
@@ -318,6 +329,7 @@ export default function DepartmentsPage() {
                     onClose={() => setIsModalOpen(false)}
                     onSave={handleSaveDepartment}
                     department={editingDept}
+                    sites={sites}
                 />
 
                 {/* Header */}
@@ -326,11 +338,36 @@ export default function DepartmentsPage() {
                         <h1 className="text-3xl font-bold text-white tracking-tight">Organization & Sites</h1>
                         <p className="text-muted-foreground mt-1">Manage sites, departments, and allocate budgets.</p>
                     </div>
+
+                    {/* Site Switcher */}
+                    <div className="flex bg-slate-900 border border-white/10 rounded-xl p-1">
+                        <button
+                            onClick={() => setSelectedSiteId("All")}
+                            className={clsx(
+                                "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                                selectedSiteId === "All" ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:text-white"
+                            )}
+                        >
+                            Tesca Tunisia (All)
+                        </button>
+                        {sites.map(site => (
+                            <button
+                                key={site.id}
+                                onClick={() => setSelectedSiteId(site.id)}
+                                className={clsx(
+                                    "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                                    selectedSiteId === site.id ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:text-white"
+                                )}
+                            >
+                                {site.name}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Sites Overview Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    {sites.map(site => (
+                    {displayedSites.map(site => (
                         <div key={site.id} className="glass-card p-6 rounded-2xl relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-3 opacity-10">
                                 <Building2 size={120} />
@@ -394,12 +431,12 @@ export default function DepartmentsPage() {
                     ))}
                 </div>
 
-                {/* Charts Area */}
-                <div className="mb-8">
+                {/* Charts Area - Only show if All is selected or specific logic required, keeping it for now */}
+                {/* <div className="mb-8">
                     <DepartmentUserCountChart />
-                </div>
+                </div> */}
 
-                {/* Filters & Search */}
+                {/* Filters & Search - Below header/cards */}
                 <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
                     <div className="relative flex-1 max-w-md">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />

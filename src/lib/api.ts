@@ -87,5 +87,97 @@ export const api = {
         });
         if (!response.ok) throw new Error('Failed to update site');
         return response.json();
+    },
+    // --- CANDIDATURES ---
+    getCandidatures: async () => {
+        const response = await fetch(`${API_BASE_URL}/candidatures`);
+        if (!response.ok) throw new Error('Failed to fetch candidatures');
+        return response.json();
+    },
+
+    createCandidature: async (candidature: any) => {
+        const response = await fetch(`${API_BASE_URL}/candidatures`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(candidature),
+        });
+        if (!response.ok) throw new Error('Failed to create candidature');
+        return response.json();
+    },
+
+    // --- INTERVIEWS ---
+    getAllInterviews: async () => {
+        const response = await fetch(`${API_BASE_URL}/interviews`);
+        if (!response.ok) throw new Error('Failed to fetch interviews');
+        return response.json();
+    },
+
+    getInterviews: async (candidatureId: string) => {
+        const response = await fetch(`${API_BASE_URL}/interviews/candidature/${candidatureId}`);
+        if (!response.ok) throw new Error('Failed to fetch interviews');
+        return response.json();
+    },
+
+    createInterview: async (interview: any) => {
+        const response = await fetch(`${API_BASE_URL}/interviews`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(interview),
+        });
+        if (!response.ok) throw new Error('Failed to create interview');
+        return response.json();
+    },
+
+    updateInterview: async (id: string, interview: any) => {
+        const response = await fetch(`${API_BASE_URL}/interviews/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(interview),
+        });
+        if (!response.ok) throw new Error('Failed to update interview');
+        return response.json();
+    },
+
+    deleteInterview: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/interviews/${id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Failed to delete interview');
+        return response.json();
+    },
+
+    // --- HIRING REQUESTS ---
+    getHiringRequests: async () => {
+        const response = await fetch(`${API_BASE_URL}/hiring-requests`);
+        if (!response.ok) throw new Error('Failed to fetch hiring requests');
+        return response.json();
+    },
+
+    createHiringRequest: async (request: any) => {
+        const response = await fetch(`${API_BASE_URL}/hiring-requests`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(request),
+        });
+        if (!response.ok) throw new Error('Failed to create hiring request');
+        return response.json();
+    },
+
+    updateHiringRequest: async (id: string, request: any) => {
+        const response = await fetch(`${API_BASE_URL}/hiring-requests/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(request),
+        });
+        if (!response.ok) throw new Error('Failed to update hiring request');
+        return response.json();
+    },
+
+    deleteHiringRequest: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/hiring-requests/${id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Failed to delete hiring request');
+        return response.json();
     }
 };

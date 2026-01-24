@@ -14,6 +14,9 @@ app.use(express.json());
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/departments', require('./routes/departmentRoutes'));
 app.use('/api/sites', require('./routes/siteRoutes'));
+app.use('/api/candidatures', require('./routes/candidatureRoutes'));
+app.use('/api/interviews', require('./routes/interviewRoutes'));
+app.use('/api/hiring-requests', require('./routes/hiringRequestRoutes'));
 
 // Error Handler
 app.use(errorHandler);

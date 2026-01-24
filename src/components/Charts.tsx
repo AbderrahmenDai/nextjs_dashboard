@@ -10,12 +10,14 @@ import { api } from "@/lib/api";
 
 // --- Shared Components & Config ---
 
+// --- Shared Components & Config ---
+
 const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="glass-tooltip">
-                <p className="font-semibold mb-1 text-slate-200">{label ? label : payload[0].name}</p>
-                <p className="text-white font-bold flex items-center gap-2">
+            <div className="bg-card/90 backdrop-blur-xl border border-border shadow-2xl rounded-xl px-4 py-3 text-sm">
+                <p className="font-semibold mb-1 text-foreground">{label ? label : payload[0].name}</p>
+                <p className="text-foreground font-bold flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: payload[0].color || payload[0].fill }}></span>
                     {payload[0].value}
                 </p>
@@ -40,10 +42,10 @@ const pipelineData = [
 
 export function PipelineRecruitmentChart() {
     return (
-        <div className="glass-card p-6 rounded-2xl h-[450px] flex flex-col">
+        <div className="bg-card dark:glass-card border border-border/50 p-6 rounded-2xl h-[450px] flex flex-col shadow-lg shadow-gray-200/50 dark:shadow-none transition-all">
             <div className="flex justify-between items-end mb-6 px-2">
-                <h3 className="text-lg font-bold text-white uppercase tracking-wider opacity-90">Pipeline de Recrutement</h3>
-                <span className="text-xs text-indigo-300 bg-indigo-500/10 px-2 py-1 rounded-lg border border-indigo-500/20">Live View</span>
+                <h3 className="text-lg font-bold text-foreground uppercase tracking-wider opacity-90">Pipeline de Recrutement</h3>
+                <span className="text-xs text-indigo-500 bg-indigo-500/10 px-2 py-1 rounded-lg border border-indigo-500/20">Live View</span>
             </div>
 
             <div className="flex-1 w-full min-h-0">
@@ -61,30 +63,29 @@ export function PipelineRecruitmentChart() {
                                 <stop offset="100%" stopColor="#a855f7" stopOpacity={1} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="2 4" horizontal={false} stroke="rgba(255,255,255,0.05)" />
+                        <CartesianGrid strokeDasharray="2 4" horizontal={false} stroke="var(--border)" opacity={0.3} />
                         <XAxis type="number" hide />
                         <YAxis
                             dataKey="name"
                             type="category"
                             width={160}
-                            tick={{ fill: '#94a3b8', fontSize: 13, fontWeight: 500 }}
+                            tick={{ fill: 'currentColor', fontSize: 13, fontWeight: 500 }}
+                            className="text-muted-foreground"
                             axisLine={false}
                             tickLine={false}
                             dx={-10}
                         />
-                        <Tooltip cursor={{ fill: 'rgba(255,255,255,0.03)', radius: 8 }} content={<CustomTooltip />} />
+                        <Tooltip cursor={{ fill: 'rgba(100,100,100,0.05)', radius: 8 }} content={<CustomTooltip />} />
                         <Bar
                             dataKey="value"
                             radius={[0, 6, 6, 0]}
                             fill="url(#barGradient)"
-                            background={{ fill: 'rgba(255,255,255,0.02)' }}
+                            background={{ fill: 'rgba(100,100,100,0.05)' }}
                         >
                             <LabelList
                                 dataKey="value"
                                 position="right"
-                                fill="#fff"
-                                fontSize={12}
-                                fontWeight="bold"
+                                className="fill-foreground font-bold text-xs"
                                 offset={10}
                             />
                         </Bar>
@@ -103,8 +104,8 @@ const sourcesData = [
 
 export function ApplicationSourcesChart() {
     return (
-        <div className="glass-card p-6 rounded-2xl h-[400px] flex flex-col">
-            <h3 className="text-lg font-bold text-white mb-6 text-center uppercase tracking-wider opacity-90">Sources de Demande</h3>
+        <div className="bg-card dark:glass-card border border-border/50 p-6 rounded-2xl h-[400px] flex flex-col shadow-lg shadow-gray-200/50 dark:shadow-none transition-all">
+            <h3 className="text-lg font-bold text-foreground mb-6 text-center uppercase tracking-wider opacity-90">Sources de Demande</h3>
             <div className="flex-1 w-full min-h-0 relative">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -121,13 +122,13 @@ export function ApplicationSourcesChart() {
                             ))}
                         </Pie>
                         <Tooltip content={<CustomTooltip />} />
-                        <Legend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '12px' }} />
+                        <Legend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '12px', color: 'var(--muted-foreground)' }} />
                     </PieChart>
                 </ResponsiveContainer>
                 {/* Center Text */}
                 <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                    <span className="text-3xl font-bold text-white block">100%</span>
-                    <span className="text-xs text-slate-400 uppercase tracking-widest">Total</span>
+                    <span className="text-3xl font-bold text-foreground block">100%</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-widest">Total</span>
                 </div>
             </div>
         </div>
@@ -142,8 +143,8 @@ const modeData = [
 
 export function RecruitmentModeChart() {
     return (
-        <div className="glass-card p-6 rounded-2xl h-[300px] flex flex-col">
-            <h3 className="text-lg font-bold text-white mb-6 text-center uppercase tracking-wider opacity-90">Mode de Recrutement</h3>
+        <div className="bg-card dark:glass-card border border-border/50 p-6 rounded-2xl h-[300px] flex flex-col shadow-lg shadow-gray-200/50 dark:shadow-none transition-all">
+            <h3 className="text-lg font-bold text-foreground mb-6 text-center uppercase tracking-wider opacity-90">Mode de Recrutement</h3>
             <div className="flex-1 w-full min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={modeData} barSize={50}>
@@ -153,13 +154,13 @@ export function RecruitmentModeChart() {
                                 <stop offset="100%" stopColor="#2563eb" stopOpacity={1} />
                             </linearGradient>
                         </defs>
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#cbd5e1', fontSize: 13 }} dy={10} />
-                        <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} content={<CustomTooltip />} />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--muted-foreground)', fontSize: 13 }} dy={10} />
+                        <Tooltip cursor={{ fill: 'rgba(100,100,100,0.05)' }} content={<CustomTooltip />} />
                         <Bar dataKey="value" radius={[12, 12, 0, 0]}>
                             {modeData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.fill} />
                             ))}
-                            <LabelList dataKey="value" position="top" fill="#fff" fontSize={14} fontWeight="bold" dy={-5} />
+                            <LabelList dataKey="value" position="top" className="fill-foreground font-bold text-sm" dy={-5} />
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>
@@ -178,8 +179,8 @@ const decisionData = [
 
 export function FinalDecisionChart() {
     return (
-        <div className="glass-card p-6 rounded-2xl h-[300px] flex flex-col">
-            <h3 className="text-lg font-bold text-white mb-6 text-center uppercase tracking-wider opacity-90">Decision Finale</h3>
+        <div className="bg-card dark:glass-card border border-border/50 p-6 rounded-2xl h-[300px] flex flex-col shadow-lg shadow-gray-200/50 dark:shadow-none transition-all">
+            <h3 className="text-lg font-bold text-foreground mb-6 text-center uppercase tracking-wider opacity-90">Decision Finale</h3>
             <div className="flex-1 w-full min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -203,7 +204,7 @@ export function FinalDecisionChart() {
                             align="right"
                             layout="vertical"
                             iconType="circle"
-                            wrapperStyle={{ color: '#cbd5e1', fontSize: '11px' }}
+                            wrapperStyle={{ color: 'var(--muted-foreground)', fontSize: '11px' }}
                         />
                     </PieChart>
                 </ResponsiveContainer>
@@ -230,9 +231,9 @@ const monthlyData = [
 
 export function MonthlyApplicationsChart() {
     return (
-        <div className="glass-card p-6 rounded-2xl h-[300px] flex flex-col">
+        <div className="bg-card dark:glass-card border border-border/50 p-6 rounded-2xl h-[300px] flex flex-col shadow-lg shadow-gray-200/50 dark:shadow-none transition-all">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-white uppercase tracking-wider opacity-90 w-full text-center">Demandes / Mois</h3>
+                <h3 className="text-lg font-bold text-foreground uppercase tracking-wider opacity-90 w-full text-center">Demandes / Mois</h3>
             </div>
             <div className="flex-1 w-full min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
@@ -243,9 +244,9 @@ export function MonthlyApplicationsChart() {
                                 <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} interval={1} />
-                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.3} />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} dy={10} interval={1} />
+                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--muted-foreground)', strokeWidth: 1, strokeDasharray: '4 4' }} />
                         <Area
                             type="monotone"
                             dataKey="value"
@@ -269,11 +270,11 @@ const deadlineData = [
 
 export function DeadlineRespectChart() {
     return (
-        <div className="glass-card p-6 rounded-2xl h-[300px] flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="bg-card dark:glass-card border border-border/50 p-6 rounded-2xl h-[300px] flex flex-col items-center justify-center relative overflow-hidden shadow-lg shadow-gray-200/50 dark:shadow-none transition-all">
             {/* Background glow for effect */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl"></div>
 
-            <h3 className="text-lg font-bold text-white mb-6 text-center uppercase tracking-wider opacity-90 z-10">Delais Respectés</h3>
+            <h3 className="text-lg font-bold text-foreground mb-6 text-center uppercase tracking-wider opacity-90 z-10">Delais Respectés</h3>
 
             <div className="flex-1 w-full min-h-0 flex items-center justify-center relative z-10">
                 <ResponsiveContainer width="100%" height="100%">
@@ -299,7 +300,7 @@ export function DeadlineRespectChart() {
                     </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute top-[65%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-                    <span className="text-4xl font-black text-white drop-shadow-lg">94%</span>
+                    <span className="text-4xl font-black text-foreground drop-shadow-sm">94%</span>
                     <span className="block text-xs text-yellow-500 font-medium uppercase mt-1">On Time</span>
                 </div>
             </div>
@@ -315,11 +316,11 @@ const rateData = [
 
 export function RecruitmentRateChart() {
     return (
-        <div className="glass-card p-6 rounded-2xl h-[300px] flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="bg-card dark:glass-card border border-border/50 p-6 rounded-2xl h-[300px] flex flex-col items-center justify-center relative overflow-hidden shadow-lg shadow-gray-200/50 dark:shadow-none transition-all">
             {/* Background glow for effect */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
 
-            <h3 className="text-lg font-bold text-white mb-6 text-center uppercase tracking-wider opacity-90 z-10">Taux Recrutement</h3>
+            <h3 className="text-lg font-bold text-foreground mb-6 text-center uppercase tracking-wider opacity-90 z-10">Taux Recrutement</h3>
 
             <div className="flex-1 w-full min-h-0 flex items-center justify-center relative z-10">
                 <ResponsiveContainer width="100%" height="100%">
@@ -333,7 +334,7 @@ export function RecruitmentRateChart() {
                     >
                         <RadialBar
                             // label={{ position: 'insideStart', fill: '#fff' }}
-                            background={{ fill: '#334155' }}
+                            background={{ fill: 'var(--muted)' }}
                             dataKey="value"
                             cornerRadius={20}
                             fill="#10b981"
@@ -342,7 +343,7 @@ export function RecruitmentRateChart() {
                     </RadialBarChart>
                 </ResponsiveContainer>
                 <div className="absolute top-[60%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-                    <span className="text-4xl font-black text-white drop-shadow-lg">14%</span>
+                    <span className="text-4xl font-black text-foreground drop-shadow-sm">14%</span>
                     <span className="block text-xs text-emerald-500 font-medium uppercase mt-1">Conversion</span>
                 </div>
             </div>
@@ -380,6 +381,11 @@ export function DepartmentUserCountChart() {
         const loadData = async () => {
             try {
                 const depts = await api.getDepartments();
+                if (!Array.isArray(depts)) {
+                    console.error("Expected array for departments but got:", depts);
+                    setData([]);
+                    return;
+                }
                 const chartData = depts.map((dept: any) => ({
                     name: dept.name,
                     value: dept.employeeCount || 0,
@@ -396,8 +402,8 @@ export function DepartmentUserCountChart() {
     }, []);
 
     return (
-        <div className="glass-card p-6 rounded-2xl h-[400px] flex flex-col">
-            <h3 className="text-lg font-bold text-white mb-6 text-center uppercase tracking-wider opacity-90">Users per Department</h3>
+        <div className="bg-card dark:glass-card border border-border/50 p-6 rounded-2xl h-[400px] flex flex-col shadow-lg shadow-gray-200/50 dark:shadow-none transition-all">
+            <h3 className="text-lg font-bold text-foreground mb-6 text-center uppercase tracking-wider opacity-90">Users per Department</h3>
             <div className="flex-1 w-full min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -407,25 +413,25 @@ export function DepartmentUserCountChart() {
                                 <stop offset="100%" stopColor="#2563eb" stopOpacity={1} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.3} />
                         <XAxis
                             dataKey="name"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: '#cbd5e1', fontSize: 12 }}
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
                             dy={10}
                         />
                         <YAxis
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: '#94a3b8', fontSize: 12 }}
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
                         />
-                        <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} content={<CustomTooltip />} />
+                        <Tooltip cursor={{ fill: 'rgba(100,100,100,0.05)' }} content={<CustomTooltip />} />
                         <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                             {data.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.fill} />
                             ))}
-                            <LabelList dataKey="value" position="top" fill="#fff" fontSize={14} fontWeight="bold" dy={-5} />
+                            <LabelList dataKey="value" position="top" className="fill-foreground font-bold" fontSize={14} dy={-5} />
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>
