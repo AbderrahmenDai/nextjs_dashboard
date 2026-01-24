@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Site {
+  id          String       @id
+  name        String
+  budget      Float
+  description String
+  departments Department[]
+}
+
+model Department {
+  id            String   @id @default(uuid())
+  name          String
+  head          String
+  location      String
+  employeeCount Int      @default(0)
+  budget        Float
+  status        String   @default("Active")
+  colorCallback String
+  siteId        String
+  site          Site     @relation(fields: [siteId], references: [id])
+  users         User[]
+
+  @@index([siteId])
+}
+
+model User {
+  id             String      @id @default(uuid())
+  name           String
+  email          String      @unique
+  password       String?
+  role           String
+  status         String      @default("Active")
+  avatarGradient String
+  departmentId   String?
+  department     Department? @relation(fields: [departmentId], references: [id])
+
+  // Legacy field support if needed during migration, or mapped from UI
+  // departmentName String? 
+
+  @@index([departmentId])
+}
