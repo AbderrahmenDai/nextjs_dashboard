@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
+const emailService = require('./emailService');
 
 const getAllInterviews = async () => {
     // Join with User (Interviewer) and Candidature (Candidate)
@@ -51,6 +52,50 @@ const createInterview = async (data) => {
     
     // Auto-update candidature status if it's 'New'
     await db.query(`UPDATE Candidature SET status = 'In Progress' WHERE id = ? AND status = 'New'`, [data.candidatureId]);
+
+    // Fetch Candidate Email and Name
+    const [candidates] = await db.query('SELECT firstName, lastName, email FROM Candidature WHERE id = ?', [data.candidatureId]);
+    let candidateName = "Candidate";
+
+    if (candidates.length > 0) {
+        const candidate = candidates[0];
+        candidateName = `${candidate.firstName} ${candidate.lastName}`;
+        if (candidate.email) {
+            await emailService.sendInterviewEmail(
+                candidate.email, 
+                candidateName, 
+                data.date, 
+                data.mode || 'Face-to-Face', 
+                data.type || 'RH', 
+                data.notes
+            );
+        } else {
+            console.warn(`Candidate ${candidateName} (ID: ${data.candidatureId}) has no email. Interview email not sent.`);
+        }
+    } else {
+        console.warn(`Candidature ID ${data.candidatureId} not found when sending email.`);
+    }
+
+    // Fetch Interviewer Email and Name
+    if (data.interviewerId) {
+        const [interviewers] = await db.query('SELECT name, email FROM User WHERE id = ?', [data.interviewerId]);
+        if (interviewers.length > 0) {
+            const interviewer = interviewers[0];
+            if (interviewer.email) {
+                await emailService.sendInterviewerEmail(
+                    interviewer.email,
+                    interviewer.name,
+                    candidateName,
+                    data.date,
+                    data.mode || 'Face-to-Face',
+                    data.type || 'RH',
+                    data.notes
+                );
+            } else {
+                console.warn(`Interviewer ${interviewer.name} (ID: ${data.interviewerId}) has no email. Email not sent.`);
+            }
+        }
+    }
 
     return getInterviewById(id);
 };

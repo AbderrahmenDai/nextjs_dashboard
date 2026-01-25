@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
+const emailService = require('./emailService');
 
 // Get all users
 const getAllUsers = async () => {
@@ -58,6 +59,10 @@ const createUser = async (userData) => {
         userData.avatarGradient || "from-gray-500 to-slate-500", 
         departmentId
     ]);
+
+    // Send Welcome Email
+    // We send the RAW password so the user knows it
+    await emailService.sendWelcomeEmail(userData.email, userData.name, userData.email, userData.password);
 
     // Return created user (without password)
     const [user] = await db.query('SELECT * FROM User WHERE id = ?', [id]);
