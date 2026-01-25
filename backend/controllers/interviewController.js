@@ -1,5 +1,8 @@
 const asyncHandler = require('express-async-handler');
 const interviewService = require('../services/interviewService');
+const socketService = require('../services/socketService');
+const notificationService = require('../services/notificationService');
+
 console.log('Interview Controller Loaded. Service:', interviewService);
 
 const getAllInterviews = asyncHandler(async (req, res) => {
@@ -18,6 +21,22 @@ const getInterviewsByCandidature = asyncHandler(async (req, res) => {
 
 const createInterview = asyncHandler(async (req, res) => {
     const newItem = await interviewService.createInterview(req.body);
+
+    // Notify Interviewer
+    if (newItem.interviewerId) {
+        try {
+            const notification = await notificationService.createNotification({
+                senderId: 'system', // Or current user ID if available in req.user
+                receiverId: newItem.interviewerId,
+                message: `You have been assigned a new interview for ${newItem.candidateName || 'a candidate'} on ${new Date(newItem.date).toLocaleDateString()}`
+            });
+            
+            socketService.sendNotificationToUser(newItem.interviewerId, notification);
+        } catch (error) {
+            console.error('Failed to send notification for new interview:', error);
+        }
+    }
+
     res.status(201).json(newItem);
 });
 

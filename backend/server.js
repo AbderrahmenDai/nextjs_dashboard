@@ -22,9 +22,18 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 // Error Handler
 app.use(errorHandler);
 
+const http = require('http');
+const socketService = require('./services/socketService');
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.io
+socketService.init(server);
+
 // Start Server
 if (require.main === module) {
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
         console.log(`Server running on http://localhost:${PORT}`);
     });
 }
