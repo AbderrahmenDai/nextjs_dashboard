@@ -22,7 +22,7 @@ export function Sidebar() {
     // Load unread notifications count
     useEffect(() => {
         if (!user?.id) return;
-        
+
         const loadUnreadCount = async () => {
             try {
                 const data = await api.getUnreadCount(user.id);
@@ -156,15 +156,22 @@ export function Sidebar() {
                         </div>
 
                         {/* User Profile */}
-                        <div className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/50 border border-border/50 hover:border-primary/20 transition-colors cursor-pointer group">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white font-bold text-xs ring-2 ring-background group-hover:ring-primary/50 transition-all">
-                                JS
+                        {user && (
+                            <div className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/50 border border-border/50 hover:border-primary/20 transition-colors group">
+                                <Link href="/settings" className="flex items-center gap-3 flex-1 overflow-hidden cursor-pointer">
+                                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white font-bold text-xs ring-2 ring-background group-hover:ring-primary/50 transition-all ${user.avatarGradient ? `bg-gradient-to-br ${user.avatarGradient}` : ''}`}>
+                                        {user.name ? user.name.slice(0, 2).toUpperCase() : 'U'}
+                                    </div>
+                                    <div className="flex-1 overflow-hidden">
+                                        <p className="text-sm font-semibold text-foreground truncate">{user.name}</p>
+                                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                                    </div>
+                                </Link>
+                                <Link href="/settings" className="p-1.5 text-muted-foreground hover:text-primary transition-colors" title="Settings">
+                                    <Settings size={18} />
+                                </Link>
                             </div>
-                            <div className="flex-1 overflow-hidden">
-                                <p className="text-sm font-semibold text-foreground truncate">John Smith</p>
-                                <p className="text-xs text-muted-foreground truncate">john@example.com</p>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </aside>

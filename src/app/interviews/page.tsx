@@ -1,11 +1,12 @@
 "use client";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Search, Calendar, CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
+import { Search, Calendar as CalendarIcon, CheckCircle, XCircle, Clock, AlertCircle, List, LayoutGrid } from "lucide-react";
 import { useState, useEffect } from "react";
 import { clsx } from "clsx";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { InterviewCalendar } from "@/components/interviews/InterviewCalendar";
 
 // --- Types ---
 interface Interview {
@@ -31,6 +32,7 @@ export default function InterviewsPage() {
     const { t } = useLanguage();
     const [interviews, setInterviews] = useState<Interview[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
     const loadData = async () => {
         try {
@@ -107,100 +109,132 @@ export default function InterviewsPage() {
                         className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm text-white placeholder:text-muted-foreground"
                     />
                 </div>
-            </div>
-
-            {/* List */}
-            <div className="glass-card rounded-2xl overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead>
-                            <tr className="border-b border-white/10 bg-white/5">
-                                <th className="px-6 py-4 font-semibold text-white">Candidate</th>
-                                <th className="px-6 py-4 font-semibold text-white">Position</th>
-                                <th className="px-6 py-4 font-semibold text-white">Interviewer</th>
-                                <th className="px-6 py-4 font-semibold text-white">Type</th>
-                                <th className="px-6 py-4 font-semibold text-white">Date</th>
-                                <th className="px-6 py-4 font-semibold text-white">Status</th>
-                                <th className="px-6 py-4 font-semibold text-white">Result</th>
-                                <th className="px-6 py-4 font-semibold text-white text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {filteredInterviews.map((interview) => (
-                                <tr key={interview.id} className="hover:bg-white/5 transition-colors group">
-                                    <td className="px-6 py-4 font-medium text-white">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                                {interview.candidateFirstName?.[0]}{interview.candidateLastName?.[0]}
-                                            </div>
-                                            <div>
-                                                <div className="font-bold">{interview.candidateFirstName} {interview.candidateLastName}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-muted-foreground">{interview.appliedPosition || "N/A"}</td>
-                                    <td className="px-6 py-4 text-muted-foreground">{interview.interviewerName || "Unassigned"}</td>
-                                    <td className="px-6 py-4">
-                                        <span className="px-2 py-1 bg-white/5 rounded text-xs border border-white/10">
-                                            {interview.type}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-muted-foreground">
-                                        <div className="flex items-center gap-2">
-                                            <Calendar size={14} />
-                                            {new Date(interview.date).toLocaleDateString()}
-                                            <Clock size={14} className="ml-2" />
-                                            {new Date(interview.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={clsx("px-3 py-1 rounded-full text-xs font-medium border", getStatusColor(interview.status))}>
-                                            {interview.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 font-medium">
-                                        <div className={clsx("flex items-center gap-1", getResultColor(interview.result))}>
-                                            {interview.result === 'Passed' && <CheckCircle size={14} />}
-                                            {interview.result === 'Failed' && <XCircle size={14} />}
-                                            {interview.result === 'Pending' && <AlertCircle size={14} />}
-                                            {interview.result}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {interview.result === 'Pending' && (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleUpdateResult(interview.id, 'Passed')}
-                                                        className="p-2 hover:bg-green-500/20 rounded-lg text-green-400 transition-colors"
-                                                        title="Mark as Passed"
-                                                    >
-                                                        <CheckCircle size={18} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleUpdateResult(interview.id, 'Failed')}
-                                                        className="p-2 hover:bg-red-500/20 rounded-lg text-red-400 transition-colors"
-                                                        title="Mark as Failed"
-                                                    >
-                                                        <XCircle size={18} />
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {filteredInterviews.length === 0 && (
-                                <tr>
-                                    <td colSpan={8} className="px-6 py-12 text-center text-muted-foreground">
-                                        No interviews found.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+                    <button
+                        onClick={() => setViewMode('list')}
+                        className={clsx(
+                            "p-2 rounded-md transition-all flex items-center gap-2 text-sm font-medium",
+                            viewMode === 'list'
+                                ? "bg-primary/20 text-primary shadow-sm"
+                                : "text-muted-foreground hover:text-white hover:bg-white/5"
+                        )}
+                        title="List View"
+                    >
+                        <List size={18} />
+                        <span className="hidden md:inline">List</span>
+                    </button>
+                    <button
+                        onClick={() => setViewMode('calendar')}
+                        className={clsx(
+                            "p-2 rounded-md transition-all flex items-center gap-2 text-sm font-medium",
+                            viewMode === 'calendar'
+                                ? "bg-primary/20 text-primary shadow-sm"
+                                : "text-muted-foreground hover:text-white hover:bg-white/5"
+                        )}
+                        title="Calendar View"
+                    >
+                        <LayoutGrid size={18} />
+                        <span className="hidden md:inline">Calendar</span>
+                    </button>
                 </div>
             </div>
+
+            {/* Content Switcher */}
+            {viewMode === 'calendar' ? (
+                <InterviewCalendar interviews={filteredInterviews} />
+            ) : (
+                <div className="glass-card rounded-2xl overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                            <thead>
+                                <tr className="border-b border-white/10 bg-white/5">
+                                    <th className="px-6 py-4 font-semibold text-white">Candidate</th>
+                                    <th className="px-6 py-4 font-semibold text-white">Position</th>
+                                    <th className="px-6 py-4 font-semibold text-white">Interviewer</th>
+                                    <th className="px-6 py-4 font-semibold text-white">Type</th>
+                                    <th className="px-6 py-4 font-semibold text-white">Date</th>
+                                    <th className="px-6 py-4 font-semibold text-white">Status</th>
+                                    <th className="px-6 py-4 font-semibold text-white">Result</th>
+                                    <th className="px-6 py-4 font-semibold text-white text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {filteredInterviews.map((interview) => (
+                                    <tr key={interview.id} className="hover:bg-white/5 transition-colors group">
+                                        <td className="px-6 py-4 font-medium text-white">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                                    {interview.candidateFirstName?.[0]}{interview.candidateLastName?.[0]}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold">{interview.candidateFirstName} {interview.candidateLastName}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-muted-foreground">{interview.appliedPosition || "N/A"}</td>
+                                        <td className="px-6 py-4 text-muted-foreground">{interview.interviewerName || "Unassigned"}</td>
+                                        <td className="px-6 py-4">
+                                            <span className="px-2 py-1 bg-white/5 rounded text-xs border border-white/10">
+                                                {interview.type}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-muted-foreground">
+                                            <div className="flex items-center gap-2">
+                                                <CalendarIcon size={14} />
+                                                {new Date(interview.date).toLocaleDateString()}
+                                                <Clock size={14} className="ml-2" />
+                                                {new Date(interview.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={clsx("px-3 py-1 rounded-full text-xs font-medium border", getStatusColor(interview.status))}>
+                                                {interview.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 font-medium">
+                                            <div className={clsx("flex items-center gap-1", getResultColor(interview.result))}>
+                                                {interview.result === 'Passed' && <CheckCircle size={14} />}
+                                                {interview.result === 'Failed' && <XCircle size={14} />}
+                                                {interview.result === 'Pending' && <AlertCircle size={14} />}
+                                                {interview.result}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {interview.result === 'Pending' && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleUpdateResult(interview.id, 'Passed')}
+                                                            className="p-2 hover:bg-green-500/20 rounded-lg text-green-400 transition-colors"
+                                                            title="Mark as Passed"
+                                                        >
+                                                            <CheckCircle size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleUpdateResult(interview.id, 'Failed')}
+                                                            className="p-2 hover:bg-red-500/20 rounded-lg text-red-400 transition-colors"
+                                                            title="Mark as Failed"
+                                                        >
+                                                            <XCircle size={18} />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filteredInterviews.length === 0 && (
+                                    <tr>
+                                        <td colSpan={8} className="px-6 py-12 text-center text-muted-foreground">
+                                            No interviews found.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </DashboardLayout>
     );
 }
