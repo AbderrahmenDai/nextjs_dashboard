@@ -1,8 +1,41 @@
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'http://localhost:3001/api';
 
 export const api = {
     // --- USERS ---
+    login: async (email: string, password: string) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/users/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+            
+            if (!response.ok) {
+                // Try to get error message from response
+                let errorMessage = 'Invalid email or password';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorData.error || errorMessage;
+                } catch {
+                    // If response is not JSON, use status text
+                    errorMessage = response.statusText || errorMessage;
+                }
+                throw new Error(errorMessage);
+            }
+            
+            const userData = await response.json();
+            return userData;
+        } catch (error: any) {
+            // Handle network errors
+            if (error instanceof TypeError && error.message.includes('fetch')) {
+                throw new Error('Unable to connect to server. Please check if the backend is running on http://localhost:3001');
+            }
+            // Re-throw other errors (including our custom Error from above)
+            throw error;
+        }
+    },
+
     getUsers: async () => {
         const response = await fetch(`${API_BASE_URL}/users`);
         if (!response.ok) throw new Error('Failed to fetch users');
@@ -26,6 +59,19 @@ export const api = {
             body: JSON.stringify(user),
         });
         if (!response.ok) throw new Error('Failed to update user');
+        return response.json();
+    },
+
+    updateUserPassword: async (id: string, password: string) => {
+        const response = await fetch(`${API_BASE_URL}/users/${id}/password`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password }),
+        });
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: 'Failed to update password' }));
+            throw new Error(error.message || 'Failed to update password');
+        }
         return response.json();
     },
 
@@ -178,6 +224,53 @@ export const api = {
             method: 'DELETE',
         });
         if (!response.ok) throw new Error('Failed to delete hiring request');
+        return response.json();
+    },
+
+    // --- NOTIFICATIONS ---
+    getNotifications: async (receiverId: string) => {
+        const response = await fetch(`${API_BASE_URL}/notifications/${receiverId}`);
+        if (!response.ok) throw new Error('Failed to fetch notifications');
+        return response.json();
+    },
+
+    getUnreadCount: async (receiverId: string) => {
+        const response = await fetch(`${API_BASE_URL}/notifications/${receiverId}/unread-count`);
+        if (!response.ok) throw new Error('Failed to fetch unread count');
+        return response.json();
+    },
+
+    createNotification: async (notification: { senderId: string; receiverId: string; message: string }) => {
+        const response = await fetch(`${API_BASE_URL}/notifications`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(notification),
+        });
+        if (!response.ok) throw new Error('Failed to create notification');
+        return response.json();
+    },
+
+    markAsRead: async (notificationId: string) => {
+        const response = await fetch(`${API_BASE_URL}/notifications/${notificationId}/read`, {
+            method: 'PUT',
+        });
+        if (!response.ok) throw new Error('Failed to mark notification as read');
+        return response.json();
+    },
+
+    markAllAsRead: async (receiverId: string) => {
+        const response = await fetch(`${API_BASE_URL}/notifications/${receiverId}/read-all`, {
+            method: 'PUT',
+        });
+        if (!response.ok) throw new Error('Failed to mark all as read');
+        return response.json();
+    },
+
+    deleteNotification: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/notifications/${id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Failed to delete notification');
         return response.json();
     }
 };

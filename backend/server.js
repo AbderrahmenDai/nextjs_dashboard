@@ -17,6 +17,7 @@ app.use('/api/sites', require('./routes/siteRoutes'));
 app.use('/api/candidatures', require('./routes/candidatureRoutes'));
 app.use('/api/interviews', require('./routes/interviewRoutes'));
 app.use('/api/hiring-requests', require('./routes/hiringRequestRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 // Error Handler
 app.use(errorHandler);

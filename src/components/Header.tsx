@@ -3,19 +3,51 @@
 
 import React from "react";
 import { useTheme } from "next-themes";
-import { Bell, Moon, Search, Sun } from "lucide-react";
+import { Bell, Moon, Search, Sun, LogOut, User } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Header() {
     const { theme, setTheme } = useTheme();
+    const { user, logout } = useAuth();
     const [mounted, setMounted] = React.useState(false);
+    const [showDropdown, setShowDropdown] = React.useState(false);
 
     React.useEffect(() => {
         setMounted(true);
     }, []);
 
+    // Close dropdown when clicking outside
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (showDropdown && !target.closest('.profile-dropdown')) {
+                setShowDropdown(false);
+            }
+        };
+
+        if (showDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showDropdown]);
+
     const toggleTheme = () => {
         setTheme(theme === "dark" ? "light" : "dark");
+    };
+
+    const handleLogout = () => {
+        logout();
+        setShowDropdown(false);
+    };
+
+    const getInitials = (name: string) => {
+        return name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2);
     };
 
     return (
@@ -60,14 +92,45 @@ export function Header() {
                 {/* Vertical Divider */}
                 <div className="h-6 w-px bg-border mx-2"></div>
 
-                {/* Profile dropdown trigger */}
-                <button className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-xl hover:bg-secondary transition-all duration-200 group">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 p-[1px]">
-                        <div className="w-full h-full rounded-full bg-background flex items-center justify-center">
-                            <span className="font-bold text-xs">AB</span>
+                {/* Profile dropdown */}
+                <div className="relative profile-dropdown">
+                    <button
+                        onClick={() => setShowDropdown(!showDropdown)}
+                        className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-xl hover:bg-secondary transition-all duration-200 group"
+                    >
+                        <div className={`w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 p-[1px] ${user?.avatarGradient ? `bg-gradient-to-tr ${user.avatarGradient}` : ''}`}>
+                            <div className="w-full h-full rounded-full bg-background flex items-center justify-center">
+                                <span className="font-bold text-xs">
+                                    {user ? getInitials(user.name) : "U"}
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                </button>
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {showDropdown && (
+                        <div className="absolute right-0 top-full mt-2 w-64 glass-card border border-border/50 rounded-xl shadow-2xl overflow-hidden z-50">
+                            <div className="p-4 border-b border-border/50">
+                                <p className="font-semibold text-foreground">{user?.name}</p>
+                                <p className="text-sm text-muted-foreground">{user?.email}</p>
+                                {user?.role && (
+                                    <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-primary/10 text-primary rounded-md">
+                                        {user.role}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="p-2">
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                                >
+                                    <LogOut size={18} />
+                                    <span>Sign Out</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </header>
     );

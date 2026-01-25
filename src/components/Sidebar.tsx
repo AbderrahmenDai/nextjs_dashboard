@@ -2,11 +2,13 @@
 
 import { Home, BarChart2, Settings, Menu, X, FileText, Briefcase, User, Bell, Users } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 
 
 
@@ -14,6 +16,27 @@ export function Sidebar() {
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { language, setLanguage, t } = useLanguage();
+    const { user } = useAuth();
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // Load unread notifications count
+    useEffect(() => {
+        if (!user?.id) return;
+        
+        const loadUnreadCount = async () => {
+            try {
+                const data = await api.getUnreadCount(user.id);
+                setUnreadCount(data.count || 0);
+            } catch (error) {
+                console.error("Failed to load unread count:", error);
+            }
+        };
+
+        loadUnreadCount();
+        // Refresh every 30 seconds
+        const interval = setInterval(loadUnreadCount, 30000);
+        return () => clearInterval(interval);
+    }, [user?.id]);
 
     const navItems = [
         { icon: Home, label: t('common.dashboard'), href: "/" },
@@ -22,7 +45,7 @@ export function Sidebar() {
         { icon: Users, label: "Interviews", href: "/interviews" }, // Using Users icon temporarily or Calendar if imported
         { icon: User, label: t('common.users'), href: "/users" },
         { icon: BarChart2, label: t('common.department'), href: "/departments" },
-        { icon: Bell, label: t('common.notifications'), href: "/notifications" },
+        { icon: Bell, label: t('common.notifications'), href: "/notifications", badge: unreadCount },
         { icon: Settings, label: t('common.settings'), href: "/settings" },
     ];
 
@@ -90,7 +113,12 @@ export function Sidebar() {
                                             )}
                                         />
                                         <span className="text-sm">{item.label}</span>
-                                        {isActive && (
+                                        {item.badge && item.badge > 0 && (
+                                            <span className="ml-auto px-2 py-0.5 text-xs font-bold text-white bg-primary rounded-full min-w-[20px] text-center">
+                                                {item.badge > 99 ? '99+' : item.badge}
+                                            </span>
+                                        )}
+                                        {isActive && !item.badge && (
                                             <motion.div
                                                 initial={{ scale: 0 }}
                                                 animate={{ scale: 1 }}

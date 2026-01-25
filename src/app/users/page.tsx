@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { MoreHorizontal, Search, Filter, Plus, Pencil, Trash2, X } from "lucide-react";
+import { Lock, Search, Filter, Plus, Pencil, Trash2, X, AlertTriangle, Loader2 } from "lucide-react";
 import { clsx } from "clsx";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
@@ -26,6 +26,216 @@ interface Department {
 
 
 
+
+// --- Password Change Modal ---
+function PasswordChangeModal({
+    isOpen,
+    onClose,
+    onSave,
+    userName
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (password: string) => Promise<void>;
+    userName: string;
+}) {
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [error, setError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setPassword("");
+            setConfirmPassword("");
+            setError("");
+        }
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+
+        if (!password) {
+            setError("Password is required");
+            return;
+        }
+
+        if (password.length < 6) {
+            setError("Password must be at least 6 characters long");
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError("Passwords do not match");
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await onSave(password);
+            onClose();
+        } catch (err: any) {
+            setError(err.message || "Failed to update password");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-md shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
+                <div className="flex justify-between items-center mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                            <Lock className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-white">Change Password</h2>
+                            <p className="text-sm text-slate-400">{userName}</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={onClose} 
+                        className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
+                        disabled={isLoading}
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+
+                {error && (
+                    <div className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0" />
+                        <p className="text-sm text-destructive">{error}</p>
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1">New Password</label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            placeholder="Enter new password"
+                            disabled={isLoading}
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1">Confirm Password</label>
+                        <input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            placeholder="Confirm new password"
+                            disabled={isLoading}
+                            required
+                        />
+                    </div>
+
+                    <div className="pt-4 flex justify-end gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={isLoading}
+                            className="px-4 py-2 text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors font-medium disabled:opacity-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl font-medium shadow-lg shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                            <span>Change Password</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+// --- Delete Confirmation Modal ---
+function DeleteConfirmationModal({
+    isOpen,
+    onClose,
+    onConfirm,
+    userName
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => Promise<void>;
+    userName: string;
+}) {
+    const [isLoading, setIsLoading] = useState(false);
+
+    if (!isOpen) return null;
+
+    const handleConfirm = async () => {
+        setIsLoading(true);
+        try {
+            await onConfirm();
+            onClose();
+        } catch (error) {
+            console.error("Failed to delete user:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-md shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
+                <div className="flex items-start gap-4 mb-6">
+                    <div className="p-3 bg-destructive/10 rounded-xl">
+                        <AlertTriangle className="w-6 h-6 text-destructive" />
+                    </div>
+                    <div className="flex-1">
+                        <h2 className="text-xl font-bold text-white mb-2">Delete User</h2>
+                        <p className="text-slate-400">
+                            Are you sure you want to delete <span className="font-semibold text-white">{userName}</span>? This action cannot be undone.
+                        </p>
+                    </div>
+                    <button 
+                        onClick={onClose} 
+                        className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
+                        disabled={isLoading}
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={isLoading}
+                        className="px-4 py-2 text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors font-medium disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleConfirm}
+                        disabled={isLoading}
+                        className="px-6 py-2 bg-destructive hover:bg-destructive/90 text-white rounded-xl font-medium shadow-lg shadow-destructive/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                        <span>Delete User</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 // --- Helper for Modal ---
 function UserFormModal({
@@ -201,6 +411,8 @@ export default function UsersPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [passwordChangeUser, setPasswordChangeUser] = useState<User | null>(null);
+    const [deleteUser, setDeleteUser] = useState<User | null>(null);
 
     // --- Fetch Users on Mount ---
     const loadData = async () => {
@@ -226,15 +438,26 @@ export default function UsersPage() {
         user.department.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleDelete = async (id: string) => {
-        if (confirm("Are you sure you want to delete this user?")) {
-            try {
-                await api.deleteUser(id);
-                setUsers(users.filter(u => u.id !== id));
-            } catch (error) {
-                console.error("Failed to delete user:", error);
-                alert("Failed to delete user.");
-            }
+    const handleDelete = async () => {
+        if (!deleteUser) return;
+        try {
+            await api.deleteUser(deleteUser.id);
+            setUsers(users.filter(u => u.id !== deleteUser.id));
+            setDeleteUser(null);
+        } catch (error) {
+            console.error("Failed to delete user:", error);
+            alert("Failed to delete user.");
+        }
+    };
+
+    const handlePasswordChange = async (password: string) => {
+        if (!passwordChangeUser) return;
+        try {
+            await api.updateUserPassword(passwordChangeUser.id, password);
+            setPasswordChangeUser(null);
+            // Optionally show success message
+        } catch (error: any) {
+            throw error; // Let the modal handle the error display
         }
     };
 
@@ -277,6 +500,18 @@ export default function UsersPage() {
                     user={editingUser}
                     departments={departments}
                 />
+                <PasswordChangeModal
+                    isOpen={!!passwordChangeUser}
+                    onClose={() => setPasswordChangeUser(null)}
+                    onSave={handlePasswordChange}
+                    userName={passwordChangeUser?.name || ""}
+                />
+                <DeleteConfirmationModal
+                    isOpen={!!deleteUser}
+                    onClose={() => setDeleteUser(null)}
+                    onConfirm={handleDelete}
+                    userName={deleteUser?.name || ""}
+                />
 
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -318,7 +553,7 @@ export default function UsersPage() {
                             <div className="flex items-center gap-4 w-full md:w-auto">
                                 {/* Avatar */}
                                 <div className={clsx("w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg bg-gradient-to-br shadow-inner", user.avatarGradient)}>
-                                    {user.name.charAt(0) + user.name.split(' ')[1].charAt(0)}
+                                    {user.name.charAt(0) + (user.name.split(' ')[1] ? user.name.split(' ')[1].charAt(0) : '')}
                                 </div>
 
                                 {/* Info */}
@@ -362,11 +597,19 @@ export default function UsersPage() {
                                     >
                                         <Pencil size={18} />
                                     </button>
-                                    <button onClick={() => handleDelete(user.id)} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Delete User">
+                                    <button 
+                                        onClick={() => setDeleteUser(user)} 
+                                        className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" 
+                                        title="Delete User"
+                                    >
                                         <Trash2 size={18} />
                                     </button>
-                                    <button className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-                                        <MoreHorizontal size={18} />
+                                    <button 
+                                        onClick={() => setPasswordChangeUser(user)}
+                                        className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                                        title="Change Password"
+                                    >
+                                        <Lock size={18} />
                                     </button>
                                 </div>
                             </div>

@@ -9,7 +9,7 @@ const getAllInterviews = async () => {
                u.role as interviewerRole,
                c.firstName as candidateFirstName,
                c.lastName as candidateLastName,
-               c.position as appliedPosition
+               c.positionAppliedFor as appliedPosition
         FROM Interview i
         LEFT JOIN User u ON i.interviewerId = u.id
         LEFT JOIN Candidature c ON i.candidatureId = c.id
@@ -87,7 +87,7 @@ const getInterviewById = async (id) => {
                u.role as interviewerRole,
                c.firstName as candidateFirstName,
                c.lastName as candidateLastName,
-               c.position as appliedPosition
+               c.positionAppliedFor as appliedPosition
         FROM Interview i
         LEFT JOIN User u ON i.interviewerId = u.id
         LEFT JOIN Candidature c ON i.candidatureId = c.id

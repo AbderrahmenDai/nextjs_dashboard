@@ -15,7 +15,6 @@ import {
 import { Coins, CreditCard, Clock, Briefcase } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Home() {

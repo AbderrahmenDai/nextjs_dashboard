@@ -149,7 +149,9 @@ export default function CandidaturesPage() {
             // We need a way to get users by dept. For now, let's just get ALL users and filter client-side 
             // since we don't have a specific endpoint for it yet, or we can assume getAllUsers returns everyone.
             const users = await api.getUsers();
-            const deptUsers = users.filter((u: any) => u.dept === cand.department || u.role === 'Direction' || u.role === 'Responsable RH');
+            console.log(users);
+            const deptUsers = users.filter((u: any) => u.dept === cand.department || u.role === 'Direction' || u.role === 'Responsable RH' || u.role === "HR_MANAGER" || u.role === "RECRUITER" || u.role === "DIRECTOR" );
+            console.log(deptUsers);
             setPotentialInterviewers(deptUsers);
         } catch (error) {
             console.error("Failed to load interviewers", error);
