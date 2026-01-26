@@ -243,543 +243,557 @@ export default function CandidaturesPage() {
                 </div>
                 <div className="relative">
                     <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                    <select
-                        value={departmentFilter}
-                        onChange={(e) => setDepartmentFilter(e.target.value)}
-                        className="w-full bg-card/50 border border-border rounded-xl pl-10 pr-4 py-2 text-foreground appearance-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-sm"
-                    >
-                        <option value="">{t('candidature.filters.allDepartments')}</option>
-                        {departments.map((dept: any) => (
-                            <option key={dept.id} value={dept.name}>{dept.name}</option>
-                        ))}
-                    </select>
-                </div>
-                <div className="relative">
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-full bg-card/50 border border-border rounded-xl px-4 py-2 text-foreground appearance-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-sm"
-                    >
-                        <option value="">{t('candidature.filters.allStatuses')}</option>
-                        <option value="">{t('candidature.filters.allStatuses')}</option>
-                        <option value="En cours">En cours</option>
-                        <option value="Embauché">Embauché</option>
-                        <option value="Refus du candidat">Refus du candidat</option>
-                        <option value="Non embauché">Non embauché</option>
-                        <option value="Prioritaire">Prioritaire</option>
-                        <option value="En attente">En attente</option>
-                    </select>
-                </div>
-            </div>
-
-            {/* --- List View --- */}
-            {/* --- List View --- */}
-            <div className="glass-card overflow-hidden flex flex-col relative z-10">
-                <div className="overflow-x-auto">
-                    <table className="data-table">
-                        <thead>
-                            <tr>
-                                <th>{t('common.candidatures')}</th>
-                                <th>{t('candidature.position')}</th>
-                                <th>{t('common.department')}</th>
-                                <th>{t('common.status')}</th>
-                                <th>{t('candidature.experience')}</th>
-                                <th className="text-right">{t('common.actions')}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <AnimatePresence mode="popLayout">
-                                {paginatedCandidatures.length === 0 ? (
-                                    <motion.tr
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                    >
-                                        <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                                            <div className="flex flex-col items-center gap-3">
-                                                <div className="w-16 h-16 rounded-full bg-secondary/50 flex items-center justify-center mb-2">
-                                                    <Search className="w-8 h-8 opacity-40" />
-                                                </div>
-                                                <p className="text-lg font-medium">{t('candidature.noCandidatures')}</p>
-                                                <p className="text-sm opacity-60">Try adjusting your filters or search terms</p>
-                                            </div>
-                                        </td>
-                                    </motion.tr>
-                                ) : (
-                                    paginatedCandidatures.map((cand, index) => (
-                                        <motion.tr
-                                            key={cand.id}
-                                            layout
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: 20 }}
-                                            transition={{
-                                                duration: 0.3,
-                                                delay: index * 0.05,
-                                                type: "spring",
-                                                stiffness: 500,
-                                                damping: 30
-                                            }}
-                                            onClick={() => openDetails(cand)}
-                                            className="group cursor-pointer hover:bg-muted/30 relative overflow-hidden"
-                                            whileHover={{ scale: 1.002, backgroundColor: "rgba(var(--primary), 0.03)" }}
-                                            whileTap={{ scale: 0.995 }}
-                                        >
-                                            <td>
-                                                <div className="flex items-center gap-4 py-1">
-                                                    <motion.div
-                                                        whileHover={{ scale: 1.1, rotate: 5 }}
-                                                        className="w-11 h-11 rounded-full bg-gradient-to-br from-primary/20 to-blue-600/20 text-primary flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-background group-hover:ring-primary/30 transition-all duration-300"
-                                                    >
-                                                        {cand.firstName[0]}{cand.lastName[0]}
-                                                    </motion.div>
-                                                    <div>
-                                                        <div className="text-foreground font-semibold text-sm group-hover:text-primary transition-colors flex items-center gap-2">
-                                                            {cand.firstName} {cand.lastName}
-                                                            {cand.status === 'Prioritaire' && <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />}
-                                                        </div>
-                                                        <div className="text-xs text-muted-foreground/90 font-medium group-hover:text-primary transition-colors">
-                                                            {cand.email}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span className="text-foreground/90 font-medium text-sm block">
-                                                    {cand.positionAppliedFor}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span className="px-2.5 py-1 rounded-lg bg-secondary/50 text-secondary-foreground text-xs font-medium border border-border/50 group-hover:border-primary/20 transition-colors">
-                                                    {cand.department}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span className={`px-3 py-1 rounded-full text-[11px] font-bold border shadow-sm transition-all flex w-fit items-center gap-1.5 ${cand.status === 'Embauché' ? 'bg-green-500/10 text-green-600 border-green-500/20' :
-                                                    ['Refus du candidat', 'Non embauché'].includes(cand.status) ? 'bg-red-500/10 text-red-600 border-red-500/20' :
-                                                        cand.status === 'Prioritaire' ? 'bg-purple-500/10 text-purple-600 border-purple-500/20' :
-                                                            'bg-blue-500/10 text-blue-600 border-blue-500/20'
-                                                    }`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${cand.status === 'Embauché' ? 'bg-green-500' :
-                                                        ['Refus du candidat', 'Non embauché'].includes(cand.status) ? 'bg-red-500' :
-                                                            cand.status === 'Prioritaire' ? 'bg-purple-500' : 'bg-blue-500'
-                                                        }`} />
-                                                    {cand.status || 'En attente'}
-                                                </span>
-                                            </td>
-                                            <td className="text-sm font-medium text-muted-foreground">
-                                                {cand.yearsOfExperience} <span className="text-xs font-normal opacity-70">years</span>
-                                            </td>
-                                            <td className="text-right pr-4">
-                                                <motion.button
-                                                    whileHover={{ scale: 1.1, backgroundColor: "var(--secondary)" }}
-                                                    whileTap={{ scale: 0.9 }}
-                                                    className="p-2 rounded-lg text-muted-foreground hover:text-primary transition-colors hover:bg-primary/5"
-                                                >
-                                                    <MoreVertical size={18} />
-                                                </motion.button>
-                                            </td>
-                                        </motion.tr>
-                                    ))
-                                )}
-                            </AnimatePresence>
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* --- Pagination --- */}
-                <div className="px-6 py-4 border-t border-border/50 flex justify-between items-center bg-muted/20">
-                    <div className="text-sm text-muted-foreground">
-                        {t('candidature.showing')} <span className="text-foreground font-medium">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredCandidatures.length)}</span> {t('candidature.to')} <span className="text-foreground font-medium">{Math.min(currentPage * itemsPerPage, filteredCandidatures.length)}</span> {t('candidature.of')} <span className="text-foreground font-medium">{filteredCandidatures.length}</span> {t('candidature.results')}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                    <div className="relative col-span-1 md:col-span-1">
+                        <select
+                            value={departmentFilter}
+                            onChange={(e) => setDepartmentFilter(e.target.value)}
+                            className="w-full bg-card/50 border border-border rounded-xl px-4 py-2 text-foreground appearance-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-sm"
                         >
-                            Previous
-                        </button>
-                        <div className="flex gap-1">
-                            {Array.from({ length: totalPages }).map((_, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => setCurrentPage(i + 1)}
-                                    className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${currentPage === i + 1
-                                        ? 'bg-primary text-primary-foreground shadow-md'
-                                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                                        }`}
-                                >
-                                    {i + 1}
-                                </button>
+                            <option value="">{t('candidature.filters.allDepartments')}</option>
+                            {['RH', 'Production', 'Méthode & Indus', 'Finance', 'Splay chaine', 'Maintenance', 'HSE', 'Qualité', 'Achat'].map((dept) => (
+                                <option key={dept} value={dept}>{dept}</option>
                             ))}
-                        </div>
-                        <button
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                            {departments.map((dept: any) => (
+                                !['RH', 'Production', 'Méthode & Indus', 'Finance', 'Splay chaine', 'Maintenance', 'HSE', 'Qualité', 'Achat'].includes(dept.name) && (
+                                    <option key={dept.id} value={dept.name}>{dept.name}</option>
+                                )
+                            ))}
+                        </select>
+                    </div>
+                    <div className="relative">
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="w-full bg-card/50 border border-border rounded-xl px-4 py-2 text-foreground appearance-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-sm"
                         >
-                            Next
-                        </button>
+                            <option value="">{t('candidature.filters.allStatuses')}</option>
+                            <option value="">{t('candidature.filters.allStatuses')}</option>
+                            <option value="En cours">En cours</option>
+                            <option value="Embauché">Embauché</option>
+                            <option value="Refus du candidat">Refus du candidat</option>
+                            <option value="Non embauché">Non embauché</option>
+                            <option value="Prioritaire">Prioritaire</option>
+                            <option value="En attente">En attente</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            {/* --- Details & Interview Modal --- */}
-            {selectedCandidature && (
-                <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-card border border-border rounded-2xl w-full max-w-5xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-                        <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-muted/30">
-                            <div>
-                                <h2 className="text-2xl font-bold text-foreground mb-1">
-                                    {selectedCandidature.firstName} {selectedCandidature.lastName}
-                                </h2>
-                                <p className="text-muted-foreground text-sm flex items-center gap-2">
-                                    <span className="px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-xs font-bold uppercase">{selectedCandidature.status}</span>
-                                    • {selectedCandidature.positionAppliedFor} • {selectedCandidature.department}
-                                </p>
-                            </div>
-                            <button onClick={() => setSelectedCandidature(null)} className="text-muted-foreground hover:text-foreground transition-colors">
-                                <XCircle size={28} />
-                            </button>
+
+            {/* --- List View (Cards) --- */}
+            <div className="flex flex-col gap-3 relative z-10">
+                {paginatedCandidatures.length === 0 ? (
+                    <div className="p-12 bg-card rounded-xl border border-border text-center">
+                        <div className="text-muted-foreground text-lg">
+                            {t('candidature.noResults')}
                         </div>
-
-                        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 custom-scrollbar">
-                            {/* Left Column: Details */}
-                            <div className="lg:col-span-2 space-y-6">
-                                <section className="space-y-3">
-                                    <h3 className="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-2">{t('candidature.profileOverview')}</h3>
-                                    <div className="grid grid-cols-2 gap-4 text-sm text-foreground">
-                                        <div><span className="text-muted-foreground block text-xs uppercase font-semibold mb-0.5">{t('candidature.email')}</span> {selectedCandidature.email}</div>
-                                        <div><span className="text-muted-foreground block text-xs uppercase font-semibold mb-0.5">{t('candidature.phone')}</span> {selectedCandidature.phone || "N/A"}</div>
-                                        <div><span className="text-muted-foreground block text-xs uppercase font-semibold mb-0.5">{t('candidature.address')}</span> {selectedCandidature.address || "N/A"}</div>
-                                        <div><span className="text-muted-foreground block text-xs uppercase font-semibold mb-0.5">{t('candidature.experience')}</span> {selectedCandidature.yearsOfExperience} Years</div>
-                                        <div><span className="text-muted-foreground block text-xs uppercase font-semibold mb-0.5">{t('candidature.education')}</span> {selectedCandidature.educationLevel || "N/A"}</div>
-                                        <div><span className="text-muted-foreground block text-xs uppercase font-semibold mb-0.5">{t('candidature.specialty')}</span> {selectedCandidature.specialty || "N/A"}</div>
+                        <p className="text-sm text-muted-foreground/70 mt-2">
+                            Try adjusting your search or filters
+                        </p>
+                    </div>
+                ) : (
+                    paginatedCandidatures.map((cand, idx) => (
+                        <motion.div
+                            key={cand.id || idx}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.05 }}
+                            className="bg-card rounded-xl border border-border hover:border-primary/50 transition-all shadow-sm hover:shadow-lg hover:shadow-primary/10 p-5 cursor-pointer group"
+                            onClick={() => openDetails(cand)}
+                        >
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                {/* Left: Candidate Info */}
+                                <div className="flex-1 space-y-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/20">
+                                            <span className="text-lg font-bold text-primary">
+                                                {cand.firstName[0]}{cand.lastName[0]}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                                                {cand.firstName} {cand.lastName}
+                                            </h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                {cand.email}
+                                            </p>
+                                        </div>
                                     </div>
-                                </section>
+                                </div>
 
-                                <section className="space-y-3">
-                                    <h3 className="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-2">{t('candidature.salaryExpectations')}</h3>
-                                    <div className="grid grid-cols-3 gap-4 text-sm">
-                                        <div className="bg-secondary/30 p-3 rounded-lg border border-border/50">
-                                            <span className="text-muted-foreground block mb-1 text-xs uppercase font-bold">{t('candidature.currentSalary')}</span>
-                                            <span className="text-xl font-bold text-foreground">{selectedCandidature.currentSalary?.toLocaleString()} €</span>
-                                        </div>
-                                        <div className="bg-secondary/30 p-3 rounded-lg border border-border/50">
-                                            <span className="text-muted-foreground block mb-1 text-xs uppercase font-bold">{t('candidature.expectedSalary')}</span>
-                                            <span className="text-xl font-bold text-blue-500">{selectedCandidature.salaryExpectation?.toLocaleString()} €</span>
-                                        </div>
-                                        <div className="bg-secondary/30 p-3 rounded-lg border border-border/50">
-                                            <span className="text-muted-foreground block mb-1 text-xs uppercase font-bold">{t('candidature.proposedSalary')}</span>
-                                            <span className="text-xl font-bold text-green-500">{selectedCandidature.proposedSalary?.toLocaleString()} €</span>
-                                        </div>
+                                {/* Middle: Position & Department */}
+                                <div className="flex-1 space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <User size={16} className="text-muted-foreground" />
+                                        <span className="text-sm font-medium text-foreground">
+                                            {cand.positionAppliedFor}
+                                        </span>
                                     </div>
-                                </section>
+                                    <div className="text-sm text-muted-foreground">
+                                        📍 {cand.department}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {cand.yearsOfExperience} years exp. • {cand.source}
+                                    </div>
+                                </div>
 
-                                <section className="space-y-3">
-                                    <h3 className="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-2">{t('candidature.evaluations')}</h3>
-                                    <div className="space-y-3">
-                                        <div className="bg-secondary/20 p-4 rounded-lg border-l-4 border-purple-500">
-                                            <span className="text-purple-500 font-bold block mb-1 text-xs uppercase">{t('candidature.hrOpinion')}</span>
-                                            <p className="text-foreground text-sm leading-relaxed">{selectedCandidature.hrOpinion || "No remarks."}</p>
+                                {/* Right: Status & Actions */}
+                                <div className="flex items-center gap-4">
+                                    <div className="text-right space-y-1">
+                                        <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${cand.status === 'Embauché'
+                                                ? 'bg-green-500/10 text-green-600 border border-green-500/20'
+                                                : cand.status === 'En cours'
+                                                    ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20'
+                                                    : cand.status === 'Prioritaire'
+                                                        ? 'bg-orange-500/10 text-orange-600 border border-orange-500/20'
+                                                        : cand.status === 'Non embauché' || cand.status === 'Refus du candidat'
+                                                            ? 'bg-red-500/10 text-red-600 border border-red-500/20'
+                                                            : 'bg-gray-500/10 text-gray-600 border border-gray-500/20'
+                                            }`}>
+                                            {cand.status}
                                         </div>
-                                        <div className="bg-secondary/20 p-4 rounded-lg border-l-4 border-cyan-500">
-                                            <span className="text-cyan-500 font-bold block mb-1 text-xs uppercase">{t('candidature.managerOpinion')}</span>
-                                            <p className="text-foreground text-sm leading-relaxed">{selectedCandidature.managerOpinion || "No remarks."}</p>
-                                        </div>
-                                        {selectedCandidature.recruiterComments && (
-                                            <div className="bg-secondary/20 p-4 rounded-lg border-l-4 border-primary/40">
-                                                <span className="text-muted-foreground font-bold block mb-1 text-xs uppercase">{t('candidature.recruiterComments')}</span>
-                                                <p className="text-foreground text-sm leading-relaxed">{selectedCandidature.recruiterComments}</p>
+                                        {cand.createdAt && (
+                                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                                <Calendar size={12} />
+                                                {new Date(cand.createdAt).toLocaleDateString()}
                                             </div>
                                         )}
                                     </div>
-                                </section>
+                                    <button
+                                        className="p-2 rounded-lg hover:bg-secondary/50 transition-colors opacity-0 group-hover:opacity-100"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            openDetails(cand);
+                                        }}
+                                    >
+                                        <MoreVertical size={20} className="text-muted-foreground" />
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))
+                )}
+            </div>
+
+            {/* --- Pagination --- */}
+            <div className="px-6 py-4 border-t border-border/50 flex justify-between items-center bg-muted/20">
+                <div className="text-sm text-muted-foreground">
+                    {t('candidature.showing')} <span className="text-foreground font-medium">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredCandidatures.length)}</span> {t('candidature.to')} <span className="text-foreground font-medium">{Math.min(currentPage * itemsPerPage, filteredCandidatures.length)}</span> {t('candidature.of')} <span className="text-foreground font-medium">{filteredCandidatures.length}</span> {t('candidature.results')}
+                </div>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                    >
+                        Previous
+                    </button>
+                    <div className="flex gap-1">
+                        {Array.from({ length: totalPages }).map((_, i) => (
+                            <button
+                                key={i}
+                                onClick={() => setCurrentPage(i + 1)}
+                                className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${currentPage === i + 1
+                                    ? 'bg-primary text-primary-foreground shadow-md'
+                                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                                    }`}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+                    </div>
+                    <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                    >
+                        Next
+                    </button>
+                </div>
+            </div>
+
+
+            {/* --- Details & Interview Modal --- */}
+            {
+                selectedCandidature && (
+                    <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <div className="bg-card border border-border rounded-2xl w-full max-w-5xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-muted/30">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-foreground mb-1">
+                                        {selectedCandidature.firstName} {selectedCandidature.lastName}
+                                    </h2>
+                                    <p className="text-muted-foreground text-sm flex items-center gap-2">
+                                        <span className="px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-xs font-bold uppercase">{selectedCandidature.status}</span>
+                                        • {selectedCandidature.positionAppliedFor} • {selectedCandidature.department}
+                                    </p>
+                                </div>
+                                <button onClick={() => setSelectedCandidature(null)} className="text-muted-foreground hover:text-foreground transition-colors">
+                                    <XCircle size={28} />
+                                </button>
                             </div>
 
-                            {/* Right Column: Actions & Interview */}
-                            <div className="space-y-6">
-                                <div className="bg-card p-5 rounded-xl border border-border shadow-lg">
-                                    <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                                        <Calendar className="text-primary" size={20} />
-                                        {t('candidature.planInterview')}
-                                    </h3>
-                                    <form onSubmit={handleScheduleInterview} className="space-y-4">
-                                        <div>
-                                            <label className="text-xs font-bold text-muted-foreground uppercase mb-1 block">{t('candidature.interviewer')} (Manager)</label>
-                                            <div className="relative">
-                                                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                                                <select
-                                                    required
-                                                    value={interviewForm.interviewerId}
-                                                    onChange={e => setInterviewForm({ ...interviewForm, interviewerId: e.target.value })}
-                                                    className="w-full bg-secondary/50 border border-border rounded-lg pl-10 pr-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/50 appearance-none"
-                                                >
-                                                    <option value="">{t('candidature.interviewer')}</option>
-                                                    {potentialInterviewers.map(u => (
-                                                        <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
-                                                    ))}
-                                                </select>
+                            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 custom-scrollbar">
+                                {/* Left Column: Details */}
+                                <div className="lg:col-span-2 space-y-6">
+                                    <section className="space-y-3">
+                                        <h3 className="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-2">{t('candidature.profileOverview')}</h3>
+                                        <div className="grid grid-cols-2 gap-4 text-sm text-foreground">
+                                            <div><span className="text-muted-foreground block text-xs uppercase font-semibold mb-0.5">{t('candidature.email')}</span> {selectedCandidature.email}</div>
+                                            <div><span className="text-muted-foreground block text-xs uppercase font-semibold mb-0.5">{t('candidature.phone')}</span> {selectedCandidature.phone || "N/A"}</div>
+                                            <div><span className="text-muted-foreground block text-xs uppercase font-semibold mb-0.5">{t('candidature.address')}</span> {selectedCandidature.address || "N/A"}</div>
+                                            <div><span className="text-muted-foreground block text-xs uppercase font-semibold mb-0.5">{t('candidature.experience')}</span> {selectedCandidature.yearsOfExperience} Years</div>
+                                            <div><span className="text-muted-foreground block text-xs uppercase font-semibold mb-0.5">{t('candidature.education')}</span> {selectedCandidature.educationLevel || "N/A"}</div>
+                                            <div><span className="text-muted-foreground block text-xs uppercase font-semibold mb-0.5">{t('candidature.specialty')}</span> {selectedCandidature.specialty || "N/A"}</div>
+                                        </div>
+                                    </section>
+
+                                    <section className="space-y-3">
+                                        <h3 className="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-2">{t('candidature.salaryExpectations')}</h3>
+                                        <div className="grid grid-cols-3 gap-4 text-sm">
+                                            <div className="bg-secondary/30 p-3 rounded-lg border border-border/50">
+                                                <span className="text-muted-foreground block mb-1 text-xs uppercase font-bold">{t('candidature.currentSalary')}</span>
+                                                <span className="text-xl font-bold text-foreground">{selectedCandidature.currentSalary?.toLocaleString()} €</span>
+                                            </div>
+                                            <div className="bg-secondary/30 p-3 rounded-lg border border-border/50">
+                                                <span className="text-muted-foreground block mb-1 text-xs uppercase font-bold">{t('candidature.expectedSalary')}</span>
+                                                <span className="text-xl font-bold text-blue-500">{selectedCandidature.salaryExpectation?.toLocaleString()} €</span>
+                                            </div>
+                                            <div className="bg-secondary/30 p-3 rounded-lg border border-border/50">
+                                                <span className="text-muted-foreground block mb-1 text-xs uppercase font-bold">{t('candidature.proposedSalary')}</span>
+                                                <span className="text-xl font-bold text-green-500">{selectedCandidature.proposedSalary?.toLocaleString()} €</span>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="text-xs font-bold text-muted-foreground uppercase mb-1 block">{t('candidature.date')}</label>
-                                                <input
-                                                    type="date"
-                                                    required
-                                                    value={interviewForm.date}
-                                                    onChange={e => setInterviewForm({ ...interviewForm, date: e.target.value })}
-                                                    className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/50"
-                                                />
+                                    </section>
+
+                                    <section className="space-y-3">
+                                        <h3 className="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-2">{t('candidature.evaluations')}</h3>
+                                        <div className="space-y-3">
+                                            <div className="bg-secondary/20 p-4 rounded-lg border-l-4 border-purple-500">
+                                                <span className="text-purple-500 font-bold block mb-1 text-xs uppercase">{t('candidature.hrOpinion')}</span>
+                                                <p className="text-foreground text-sm leading-relaxed">{selectedCandidature.hrOpinion || "No remarks."}</p>
                                             </div>
-                                            <div>
-                                                <label className="text-xs font-bold text-muted-foreground uppercase mb-1 block">{t('candidature.time')}</label>
-                                                <input
-                                                    type="time"
-                                                    required
-                                                    value={interviewForm.time}
-                                                    onChange={e => setInterviewForm({ ...interviewForm, time: e.target.value })}
-                                                    className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/50"
-                                                />
+                                            <div className="bg-secondary/20 p-4 rounded-lg border-l-4 border-cyan-500">
+                                                <span className="text-cyan-500 font-bold block mb-1 text-xs uppercase">{t('candidature.managerOpinion')}</span>
+                                                <p className="text-foreground text-sm leading-relaxed">{selectedCandidature.managerOpinion || "No remarks."}</p>
                                             </div>
+                                            {selectedCandidature.recruiterComments && (
+                                                <div className="bg-secondary/20 p-4 rounded-lg border-l-4 border-primary/40">
+                                                    <span className="text-muted-foreground font-bold block mb-1 text-xs uppercase">{t('candidature.recruiterComments')}</span>
+                                                    <p className="text-foreground text-sm leading-relaxed">{selectedCandidature.recruiterComments}</p>
+                                                </div>
+                                            )}
                                         </div>
-                                        <div>
-                                            <label className="text-xs font-bold text-muted-foreground uppercase mb-1 block">{t('candidature.notes')}</label>
-                                            <textarea
-                                                rows={2}
-                                                value={interviewForm.notes}
-                                                onChange={e => setInterviewForm({ ...interviewForm, notes: e.target.value })}
-                                                className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/50"
-                                                placeholder="e.g. Technical assessment..."
-                                            />
-                                        </div>
-                                        <button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-2.5 rounded-lg transition-all shadow-lg shadow-primary/20 flex justify-center items-center gap-2">
-                                            <Clock size={18} />
-                                            {t('candidature.scheduleNow')}
-                                        </button>
-                                    </form>
+                                    </section>
                                 </div>
 
-                                <div className="bg-secondary/20 p-5 rounded-xl border border-border">
-                                    <h3 className="text-sm font-bold text-muted-foreground uppercase mb-3">{t('candidature.quickActions')}</h3>
-                                    <div className="space-y-2">
-                                        <button className="w-full py-2 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/20 text-sm font-medium transition-colors">{t('candidature.markHired')}</button>
-                                        <button className="w-full py-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 text-sm font-medium transition-colors">{t('candidature.reject')}</button>
-                                        <button className="w-full py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground border border-border text-sm font-medium transition-colors">{t('candidature.downloadCV')}</button>
+                                {/* Right Column: Actions & Interview */}
+                                <div className="space-y-6">
+                                    <div className="bg-card p-5 rounded-xl border border-border shadow-lg">
+                                        <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                                            <Calendar className="text-primary" size={20} />
+                                            {t('candidature.planInterview')}
+                                        </h3>
+                                        <form onSubmit={handleScheduleInterview} className="space-y-4">
+                                            <div>
+                                                <label className="text-xs font-bold text-muted-foreground uppercase mb-1 block">{t('candidature.interviewer')} (Manager)</label>
+                                                <div className="relative">
+                                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                                                    <select
+                                                        required
+                                                        value={interviewForm.interviewerId}
+                                                        onChange={e => setInterviewForm({ ...interviewForm, interviewerId: e.target.value })}
+                                                        className="w-full bg-secondary/50 border border-border rounded-lg pl-10 pr-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/50 appearance-none"
+                                                    >
+                                                        <option value="">{t('candidature.interviewer')}</option>
+                                                        {potentialInterviewers.map(u => (
+                                                            <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="text-xs font-bold text-muted-foreground uppercase mb-1 block">{t('candidature.date')}</label>
+                                                    <input
+                                                        type="date"
+                                                        required
+                                                        value={interviewForm.date}
+                                                        onChange={e => setInterviewForm({ ...interviewForm, date: e.target.value })}
+                                                        className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/50"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-bold text-muted-foreground uppercase mb-1 block">{t('candidature.time')}</label>
+                                                    <input
+                                                        type="time"
+                                                        required
+                                                        value={interviewForm.time}
+                                                        onChange={e => setInterviewForm({ ...interviewForm, time: e.target.value })}
+                                                        className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/50"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-muted-foreground uppercase mb-1 block">{t('candidature.notes')}</label>
+                                                <textarea
+                                                    rows={2}
+                                                    value={interviewForm.notes}
+                                                    onChange={e => setInterviewForm({ ...interviewForm, notes: e.target.value })}
+                                                    className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/50"
+                                                    placeholder="e.g. Technical assessment..."
+                                                />
+                                            </div>
+                                            <button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-2.5 rounded-lg transition-all shadow-lg shadow-primary/20 flex justify-center items-center gap-2">
+                                                <Clock size={18} />
+                                                {t('candidature.scheduleNow')}
+                                            </button>
+                                        </form>
+                                    </div>
+
+                                    <div className="bg-secondary/20 p-5 rounded-xl border border-border">
+                                        <h3 className="text-sm font-bold text-muted-foreground uppercase mb-3">{t('candidature.quickActions')}</h3>
+                                        <div className="space-y-2">
+                                            <button className="w-full py-2 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/20 text-sm font-medium transition-colors">{t('candidature.markHired')}</button>
+                                            <button className="w-full py-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 text-sm font-medium transition-colors">{t('candidature.reject')}</button>
+                                            <button className="w-full py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground border border-border text-sm font-medium transition-colors">{t('candidature.downloadCV')}</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* --- Create Modal --- */}
-            {isFormOpen && (
+            {
+                isFormOpen && (
 
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-card border border-border rounded-2xl w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-                        {/* Modal Header */}
-                        <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-muted/30">
-                            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                                <FileText className="text-primary" size={24} />
-                                {t('common.newApplication')}
-                            </h2>
-                            <button onClick={() => setIsFormOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
-                                <XCircle size={24} />
-                            </button>
-                        </div>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <div className="bg-card border border-border rounded-2xl w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                            {/* Modal Header */}
+                            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-muted/30">
+                                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                                    <FileText className="text-primary" size={24} />
+                                    {t('common.newApplication')}
+                                </h2>
+                                <button onClick={() => setIsFormOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                                    <XCircle size={24} />
+                                </button>
+                            </div>
 
-                        {/* Modal Body - Scrollable */}
-                        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                            <form id="create-form" onSubmit={handleCreate} className="space-y-8">
+                            {/* Modal Body - Scrollable */}
+                            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                                <form id="create-form" onSubmit={handleCreate} className="space-y-8">
 
-                                {/* Section 1: Personal Info */}
-                                <div>
-                                    <h3 className="text-lg font-semibold text-primary mb-4 border-b border-primary/20 pb-2">{t('candidature.personalInfo')}</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('candidature.firstName')}</label>
-                                            <input required name="firstName" value={formData.firstName} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('candidature.lastName')}</label>
-                                            <input required name="lastName" value={formData.lastName} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('candidature.birthDate')}</label>
-                                            <input type="date" name="birthDate" value={formData.birthDate} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('common.email')}</label>
-                                            <input type="email" required name="email" value={formData.email} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('common.phone')}</label>
-                                            <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('common.gender')}</label>
-                                            <select name="gender" value={formData.gender} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
-                                                <option value="MALE">Male</option>
-                                                <option value="FEMALE">Female</option>
-                                            </select>
-                                        </div>
-                                        <div className="col-span-1 md:col-span-3 space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('common.address')}</label>
-                                            <input name="address" value={formData.address} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Section 2: Professional Info */}
-                                <div>
-                                    <h3 className="text-lg font-semibold text-primary mb-4 border-b border-primary/20 pb-2">{t('candidature.professionalInfo')}</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('candidature.position')}</label>
-                                            <input required name="positionAppliedFor" value={formData.positionAppliedFor} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('common.department')}</label>
-                                            <select name="department" value={formData.department} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
-                                                <option value="">{t('common.department')}</option>
-                                                {departments.map((dept: any) => (
-                                                    <option key={dept.id} value={dept.name}>{dept.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">Work Site</label>
-                                            <input name="workSite" value={formData.workSite} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">Specialty</label>
-                                            <input name="specialty" value={formData.specialty} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">Level</label>
-                                            <input name="level" value={formData.level} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('candidature.experience')}</label>
-                                            <input type="number" name="yearsOfExperience" value={formData.yearsOfExperience} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">Languages</label>
-                                            <input name="language" value={formData.language} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('candidature.source')}</label>
-                                            <select name="source" value={formData.source} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
-                                                <option value="WEBSITE">Website</option>
-                                                <option value="LINKEDIN">LinkedIn</option>
-                                                <option value="REFERRAL">Referral</option>
-                                                <option value="OTHER">Other</option>
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">Recruitment Mode</label>
-                                            <select name="recruitmentMode" value={formData.recruitmentMode} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
-                                                <option value="EXTERNAL">External</option>
-                                                <option value="INTERNAL">Internal</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Section 3: Extended Details */}
-                                <div>
-                                    <h3 className="text-lg font-semibold text-primary mb-4 border-b border-primary/20 pb-2">{t('candidature.extendedInfo')}</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('candidature.education')}</label>
-                                            <input name="educationLevel" value={formData.educationLevel} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">Study Specialty</label>
-                                            <input name="studySpecialty" value={formData.studySpecialty} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">Family Situation</label>
-                                            <input name="familySituation" value={formData.familySituation} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('candidature.currentSalary')}</label>
-                                            <input type="number" name="currentSalary" value={formData.currentSalary} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('candidature.expectedSalary')}</label>
-                                            <input type="number" name="salaryExpectation" value={formData.salaryExpectation} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('candidature.proposedSalary')}</label>
-                                            <input type="number" name="proposedSalary" value={formData.proposedSalary} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">Notice Period</label>
-                                            <input name="noticePeriod" value={formData.noticePeriod} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('candidature.recruiterComments')}</label>
-                                            <textarea rows={3} name="recruiterComments" value={formData.recruiterComments} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-muted-foreground">{t('candidature.hrOpinion')}</label>
-                                            <textarea rows={3} name="hrOpinion" value={formData.hrOpinion} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                        </div>
-                                    </div>
-
-                                    {/* CV Upload Section */}
-                                    <div className="mt-6 border-t border-border pt-4">
-                                        <h3 className="text-sm font-semibold text-primary mb-3">CV / Resume</h3>
-                                        <div className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
-                                            <div className="p-2 rounded-full bg-primary/10 text-primary">
-                                                <FileText size={24} />
+                                    {/* Section 1: Personal Info */}
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-primary mb-4 border-b border-primary/20 pb-2">{t('candidature.personalInfo')}</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.firstName')}</label>
+                                                <input required name="firstName" value={formData.firstName} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
                                             </div>
-                                            <div className="flex-1">
-                                                <input
-                                                    type="file"
-                                                    accept=".pdf,.doc,.docx"
-                                                    onChange={(e) => setCvFile(e.target.files ? e.target.files[0] : null)}
-                                                    className="w-full text-sm text-foreground
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.lastName')}</label>
+                                                <input required name="lastName" value={formData.lastName} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.birthDate')}</label>
+                                                <input type="date" name="birthDate" value={formData.birthDate} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('common.email')}</label>
+                                                <input type="email" required name="email" value={formData.email} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('common.phone')}</label>
+                                                <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('common.gender')}</label>
+                                                <select name="gender" value={formData.gender} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
+                                                    <option value="MALE">Male</option>
+                                                    <option value="FEMALE">Female</option>
+                                                </select>
+                                            </div>
+                                            <div className="col-span-1 md:col-span-3 space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('common.address')}</label>
+                                                <input name="address" value={formData.address} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Section 2: Professional Info */}
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-primary mb-4 border-b border-primary/20 pb-2">{t('candidature.professionalInfo')}</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.position')}</label>
+                                                <input required name="positionAppliedFor" value={formData.positionAppliedFor} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('common.department')}</label>
+                                                <select name="department" value={formData.department} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
+                                                    <option value="">{t('common.department')}</option>
+                                                    {departments.map((dept: any) => (
+                                                        <option key={dept.id} value={dept.name}>{dept.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">Work Site</label>
+                                                <input name="workSite" value={formData.workSite} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">Specialty</label>
+                                                <input name="specialty" value={formData.specialty} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">Level</label>
+                                                <input name="level" value={formData.level} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.experience')}</label>
+                                                <input type="number" name="yearsOfExperience" value={formData.yearsOfExperience} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">Languages</label>
+                                                <input name="language" value={formData.language} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.source')}</label>
+                                                <select name="source" value={formData.source} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
+                                                    <option value="WEBSITE">Website</option>
+                                                    <option value="LINKEDIN">LinkedIn</option>
+                                                    <option value="REFERRAL">Referral</option>
+                                                    <option value="OTHER">Other</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">Recruitment Mode</label>
+                                                <select name="recruitmentMode" value={formData.recruitmentMode} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
+                                                    <option value="EXTERNAL">External</option>
+                                                    <option value="INTERNAL">Internal</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Section 3: Extended Details */}
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-primary mb-4 border-b border-primary/20 pb-2">{t('candidature.extendedInfo')}</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.education')}</label>
+                                                <input name="educationLevel" value={formData.educationLevel} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">Study Specialty</label>
+                                                <input name="studySpecialty" value={formData.studySpecialty} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">Family Situation</label>
+                                                <input name="familySituation" value={formData.familySituation} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.currentSalary')}</label>
+                                                <input type="number" name="currentSalary" value={formData.currentSalary} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.expectedSalary')}</label>
+                                                <input type="number" name="salaryExpectation" value={formData.salaryExpectation} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.proposedSalary')}</label>
+                                                <input type="number" name="proposedSalary" value={formData.proposedSalary} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">Notice Period</label>
+                                                <input name="noticePeriod" value={formData.noticePeriod} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.recruiterComments')}</label>
+                                                <select name="recruiterComments" value={formData.recruiterComments} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
+                                                    <option value="">Select Opinion</option>
+                                                    <option value="Favorable">Favorable</option>
+                                                    <option value="Defavorable">Defavorable</option>
+                                                    <option value="Prioritaire">Prioritaire</option>
+                                                    <option value="Passable">Passable</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.hrOpinion')}</label>
+                                                <select name="hrOpinion" value={formData.hrOpinion} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
+                                                    <option value="">Select Opinion</option>
+                                                    <option value="Favorable">Favorable</option>
+                                                    <option value="Defavorable">Defavorable</option>
+                                                    <option value="Prioritaire">Prioritaire</option>
+                                                    <option value="Passable">Passable</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.managerOpinion')}</label>
+                                                <select name="managerOpinion" value={formData.managerOpinion} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
+                                                    <option value="">Select Opinion</option>
+                                                    <option value="Favorable">Favorable</option>
+                                                    <option value="Defavorable">Defavorable</option>
+                                                    <option value="Prioritaire">Prioritaire</option>
+                                                    <option value="Passable">Passable</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {/* CV Upload Section */}
+                                        <div className="mt-6 border-t border-border pt-4">
+                                            <h3 className="text-sm font-semibold text-primary mb-3">CV / Resume</h3>
+                                            <div className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
+                                                <div className="p-2 rounded-full bg-primary/10 text-primary">
+                                                    <FileText size={24} />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <input
+                                                        type="file"
+                                                        accept=".pdf,.doc,.docx"
+                                                        onChange={(e) => setCvFile(e.target.files ? e.target.files[0] : null)}
+                                                        className="w-full text-sm text-foreground
                                             file:mr-4 file:py-2 file:px-4
                                             file:rounded-full file:border-0
                                             file:text-sm file:font-semibold
                                             file:bg-primary file:text-primary-foreground
                                             hover:file:bg-primary/90
                                             cursor-pointer bg-transparent"
-                                                />
-                                            </div>
-                                            {cvFile && (
-                                                <div className="text-xs text-green-500 font-bold px-3 py-1 bg-green-500/10 rounded-full border border-green-500/20">
-                                                    {cvFile.name}
+                                                    />
                                                 </div>
-                                            )}
+                                                {cvFile && (
+                                                    <div className="text-xs text-green-500 font-bold px-3 py-1 bg-green-500/10 rounded-full border border-green-500/20">
+                                                        {cvFile.name}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                            </form>
-                        </div>
+                                </form>
+                            </div>
 
-                        {/* Modal Footer */}
-                        <div className="px-6 py-4 border-t border-border bg-muted/30 flex justify-end gap-3">
-                            <button onClick={() => setIsFormOpen(false)} className="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-colors">
-                                {t('common.cancel')}
-                            </button>
-                            <button form="create-form" type="submit" className="px-6 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors shadow-lg shadow-primary/20">
-                                {t('common.save')}
-                            </button>
+                            {/* Modal Footer */}
+                            <div className="px-6 py-4 border-t border-border bg-muted/30 flex justify-end gap-3">
+                                <button onClick={() => setIsFormOpen(false)} className="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-colors">
+                                    {t('common.cancel')}
+                                </button>
+                                <button form="create-form" type="submit" className="px-6 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors shadow-lg shadow-primary/20">
+                                    {t('common.save')}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </DashboardLayout>
     );
 }

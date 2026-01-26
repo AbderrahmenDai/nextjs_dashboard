@@ -377,45 +377,45 @@ function UserFormModal({
                             ))}
                         </select>
                     </div>
-            </div>
 
-            <div>
-                <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Status</label>
-                <div className="flex bg-secondary p-1 rounded-xl border border-border">
-                    {(["Active", "In Meeting", "Offline"] as const).map((status) => (
+
+                    <div>
+                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Status</label>
+                        <div className="flex bg-secondary p-1 rounded-xl border border-border">
+                            {(["Active", "In Meeting", "Offline"] as const).map((status) => (
+                                <button
+                                    key={status}
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, status })}
+                                    className={clsx(
+                                        "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all",
+                                        formData.status === status
+                                            ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    {status}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="pt-4 flex justify-end gap-3 border-t border-border mt-2">
                         <button
-                            key={status}
                             type="button"
-                            onClick={() => setFormData({ ...formData, status })}
-                            className={clsx(
-                                "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all",
-                                formData.status === status
-                                    ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-                                    : "text-muted-foreground hover:text-foreground"
-                            )}
+                            onClick={onClose}
+                            className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors font-medium text-sm"
                         >
-                            {status}
+                            Cancel
                         </button>
-                    ))}
-                </div>
-            </div>
-
-            <div className="pt-4 flex justify-end gap-3 border-t border-border mt-2">
-                <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors font-medium text-sm"
-                >
-                    Cancel
-                </button>
-                <button
-                    type="submit"
-                    className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium shadow-lg shadow-primary/20 transition-all text-sm"
-                >
-                    {user ? "Save Changes" : "Create User"}
-                </button>
-            </div>
-        </form>
+                        <button
+                            type="submit"
+                            className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium shadow-lg shadow-primary/20 transition-all text-sm"
+                        >
+                            {user ? "Save Changes" : "Create User"}
+                        </button>
+                    </div>
+                </form>
             </div >
         </div >
     );
