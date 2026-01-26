@@ -37,10 +37,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (socket && socket.connected) return;
 
         console.log("Initialize Socket connection...");
-        // Connect to the same host/port as your backend (or proxy)
-        // Since Next.js proxying might handle /api, but socket.io typically needs a direct open port or same origin
-        // Assuming Backend is at localhost:3001
-        const newSocket = io('http://localhost:3001', {
+        // Connect to the same host/port as your backend
+        // Use environment variable if available, otherwise default to localhost:8080 to match backend
+        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:8080';
+
+        const newSocket = io(socketUrl, {
             transports: ['websocket'], // force websocket
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,

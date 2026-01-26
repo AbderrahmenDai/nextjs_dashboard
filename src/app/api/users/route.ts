@@ -8,9 +8,9 @@ export async function GET() {
         department: true,
       },
     });
-    
+
     // Transform to match frontend interface if needed
-    const formattedUsers = users.map(user => ({
+    const formattedUsers = users.map((user: any) => ({
       ...user,
       department: user.department?.name || 'Unassigned', // Flatten department name for frontend display
       // Ensure role matches specific frontend types if strict, otherwise string is fine
@@ -25,7 +25,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
+
     // Ideally look up department ID by name if frontend sends name
     let departmentId = body.departmentId;
     if (!departmentId && body.department) {

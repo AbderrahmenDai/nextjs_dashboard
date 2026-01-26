@@ -25,7 +25,7 @@ Deploy the `backend` folder to a service that supports persistent Node.js apps. 
 3.  **Root Directory:** Set to `backend`.
 4.  **Environment Variables:** Add:
     *   `DATABASE_URL`: (Your cloud DB string from Phase 1)
-    *   `PORT`: `5000` (or let Railway assign one)
+    *   `PORT`: `8080` (or let Railway assign one)
     *   `CORS_ORIGIN`: `https://your-vercel-app-name.vercel.app` (You'll update this after deploying frontend)
 5.  Deploy. You will get a Backend URL (e.g., `https://my-backend-production.up.railway.app`).
 

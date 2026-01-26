@@ -24,7 +24,7 @@ const createHiringRequest = asyncHandler(async (req, res) => {
     // Notify RH Managers and Directors
     try {
         const [recipients] = await db.query(
-            `SELECT id FROM User WHERE role IN ('RH Manager', 'Direction')`
+            `SELECT id FROM User WHERE role IN ( 'HR_MANAGER', 'RH Manager', 'Direction' , 'ADMIN')`
         );
 
         // Resolve a valid sender ID

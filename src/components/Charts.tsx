@@ -67,7 +67,7 @@ export function PipelineRecruitmentChart() {
             </div>
 
             <div className="flex-1 w-full min-h-0">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <BarChart
                         layout="vertical"
                         data={pipelineData}

@@ -31,6 +31,7 @@ export const translations = {
       users: "Users",
       hiringRequests: "Hiring Requests",
       notifications: "Notifications",
+      calendar: "Calendar",
     },
     dashboard: {
       title: "Recruitment Dashboard",
@@ -218,25 +219,25 @@ export const translations = {
       }
     },
     hiringRequest: {
-        title: "Titre",
-        service: "Service",
-        department: "Département",
-        category: "Catégorie",
-        priority: "Priorité",
-        date: "Date",
-        status: "Statut",
-        requester: "Demandeur",
-        newRequest: "Nouvelle Demande",
-        editRequest: "Modifier Demande",
-        viewDetails: "Voir Détails",
-        budget: "Budget",
-        contractType: "Type de Contrat",
-        reason: "Raison",
-        description: "Description",
-        pendingHR: "En Attente RH",
-        pendingDirector: "En Attente Directeur",
-        approved: "Approuvé",
-        rejected: "Rejeté"
+      title: "Titre",
+      service: "Service",
+      department: "Département",
+      category: "Catégorie",
+      priority: "Priorité",
+      date: "Date",
+      status: "Statut",
+      requester: "Demandeur",
+      newRequest: "Nouvelle Demande",
+      editRequest: "Modifier Demande",
+      viewDetails: "Voir Détails",
+      budget: "Budget",
+      contractType: "Type de Contrat",
+      reason: "Raison",
+      description: "Description",
+      pendingHR: "En Attente RH",
+      pendingDirector: "En Attente Directeur",
+      approved: "Approuvé",
+      rejected: "Rejeté"
     }
   }
 };

@@ -35,9 +35,15 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new Error('Email and password are required');
     }
 
-    const user = await userService.loginUser(email, password);
-    console.log('Login response payload:', user);
-    res.json(user);
+    try {
+        const user = await userService.loginUser(email, password);
+        console.log('Login response payload:', user);
+        res.json(user);
+    } catch (error) {
+        // If service throws invalid credentials, return 401
+        res.status(401);
+        throw new Error('Invalid email or password');
+    }
 });
 
 // @desc    Update user (general fields, excluding password)

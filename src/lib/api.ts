@@ -1,5 +1,5 @@
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 export const api = {
     // --- USERS ---
@@ -10,7 +10,7 @@ export const api = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
             });
-            
+
             if (!response.ok) {
                 // Try to get error message from response
                 let errorMessage = 'Invalid email or password';
@@ -23,7 +23,7 @@ export const api = {
                 }
                 throw new Error(errorMessage);
             }
-            
+
             const userData = await response.json();
             return userData;
         } catch (error: any) {
