@@ -27,6 +27,7 @@ interface Department {
 }
 
 // --- Modal Component ---
+// --- Modal Component ---
 function DepartmentFormModal({
     isOpen,
     onClose,
@@ -48,12 +49,11 @@ function DepartmentFormModal({
         budget: 0,
         siteId: sites.length > 0 ? sites[0].id : "",
         status: "Active",
-        colorCallback: "bg-gray-500"
+        colorCallback: "bg-blue-500"
     });
 
     useEffect(() => {
         if (isOpen) {
-            // eslint-disable-next-line react-hooks/exhaustive-deps
             setFormData(department || {
                 name: "",
                 head: "",
@@ -62,7 +62,7 @@ function DepartmentFormModal({
                 budget: 0,
                 siteId: sites.length > 0 ? sites[0].id : "",
                 status: "Active",
-                colorCallback: "bg-gray-500"
+                colorCallback: "bg-blue-500"
             });
         }
     }, [isOpen, department, sites]);
@@ -75,84 +75,87 @@ function DepartmentFormModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-md shadow-2xl p-6 animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh] custom-scrollbar">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-white">{department ? "Edit Department" : "New Department"}</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="glass-card w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh] custom-scrollbar shadow-2xl">
+                <div className="flex justify-between items-center mb-6 border-b border-border/50 pb-4">
+                    <h2 className="text-xl font-bold text-foreground">{department ? "Edit Department" : "New Department"}</h2>
+                    <button onClick={onClose} className="p-2 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors">
                         <X size={20} />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-1">Department Name</label>
+                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Department Name</label>
                         <input
                             required
                             type="text"
                             value={formData.name || ""}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            className="input-field"
                             placeholder="e.g. Engineering"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-1">Head of Department</label>
+                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Head of Department</label>
                         <input
                             required
                             type="text"
                             value={formData.head || ""}
                             onChange={(e) => setFormData({ ...formData, head: e.target.value })}
-                            className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            className="input-field"
                             placeholder="e.g. John Doe"
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1">Location</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Location</label>
                             <input
                                 required
                                 type="text"
                                 value={formData.location || ""}
                                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                className="input-field"
                                 placeholder="e.g. Building A"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1">Budget ($)</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Budget ($)</label>
                             <input
                                 required
                                 type="number"
                                 min="0"
                                 value={formData.budget || 0}
                                 onChange={(e) => setFormData({ ...formData, budget: parseInt(e.target.value) || 0 })}
-                                className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                className="input-field"
                             />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1">Site</label>
-                            <select
-                                value={formData.siteId}
-                                onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
-                                className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
-                            >
-                                {sites.map(site => (
-                                    <option key={site.id} value={site.id}>{site.name}</option>
-                                ))}
-                            </select>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Site</label>
+                            <div className="relative">
+                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                                <select
+                                    value={formData.siteId}
+                                    onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
+                                    className="input-field pl-9 appearance-none"
+                                >
+                                    {sites.map(site => (
+                                        <option key={site.id} value={site.id}>{site.name}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1">Status</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Status</label>
                             <select
                                 value={formData.status}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value as Department["status"] })}
-                                className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
+                                className="input-field appearance-none"
                             >
                                 <option value="Active">Active</option>
                                 <option value="Restructuring">Restructuring</option>
@@ -162,8 +165,8 @@ function DepartmentFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-1">Color Theme</label>
-                        <div className="flex gap-2 flex-wrap">
+                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Color Theme</label>
+                        <div className="flex gap-2 flex-wrap bg-secondary/30 p-3 rounded-xl border border-border/50">
                             {[
                                 "bg-blue-500", "bg-pink-500", "bg-orange-500", "bg-purple-500",
                                 "bg-red-500", "bg-emerald-500", "bg-teal-500", "bg-indigo-500", "bg-cyan-500"
@@ -173,30 +176,34 @@ function DepartmentFormModal({
                                     type="button"
                                     onClick={() => setFormData({ ...formData, colorCallback: color })}
                                     className={clsx(
-                                        "w-8 h-8 rounded-full transition-transform hover:scale-110 border-2",
-                                        color.replace('bg-', 'bg-'), // Just using the class directly
-                                        formData.colorCallback === color ? "border-white scale-110" : "border-transparent opacity-70 hover:opacity-100"
+                                        "w-8 h-8 rounded-full transition-all duration-200 border-2 shadow-sm hover:scale-110",
+                                        formData.colorCallback === color ? "border-foreground scale-110 ring-2 ring-offset-2 ring-primary/30" : "border-transparent opacity-80 hover:opacity-100"
                                     )}
-                                    style={{ backgroundColor: `var(--tw-${color.replace('bg-', '')})` }}
+                                    // We use inline style for background to ensure it works if tailwind hasn't scanned these specific combined strings
+                                    // But since we use standard palette, clsx with the class name is usually safelist dependent.
+                                    // To be safe, let's map the class to a style or just trust the class.
+                                    // The original code relied on class names, which works if they are safelisted.
+                                    // Let's keep the class approach but add a fallback style.
+                                    style={{ backgroundColor: `var(--tw-color-${color.replace('bg-', '')}-500)` }}
                                 >
-                                    {formData.colorCallback === color && <div className="w-2 h-2 bg-white rounded-full mx-auto" />}
+                                    <div className={clsx("w-full h-full rounded-full", color)}></div>
                                 </button>
                             ))}
                         </div>
                     </div>
 
 
-                    <div className="pt-4 flex justify-end gap-3">
+                    <div className="pt-4 flex justify-end gap-3 border-t border-border/50 mt-4">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors font-medium"
+                            className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors font-medium text-sm"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl font-medium shadow-lg shadow-primary/20 transition-all"
+                            className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium shadow-lg shadow-primary/20 transition-all text-sm"
                         >
                             {department ? "Save Changes" : "Create Department"}
                         </button>
@@ -237,7 +244,6 @@ export default function DepartmentsPage() {
 
     useEffect(() => {
         loadData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const filteredDepts = departments.filter(dept => {
@@ -333,30 +339,34 @@ export default function DepartmentsPage() {
                 />
 
                 {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold text-white tracking-tight">Organization & Sites</h1>
+                        <h1 className="text-3xl font-bold text-foreground tracking-tight">Organization & Sites</h1>
                         <p className="text-muted-foreground mt-1">Manage sites, departments, and allocate budgets.</p>
                     </div>
 
                     {/* Site Switcher */}
-                    <div className="flex bg-slate-900 border border-white/10 rounded-xl p-1">
+                    <div className="flex bg-secondary/50 border border-border rounded-xl p-1.5 shadow-sm">
                         <button
                             onClick={() => setSelectedSiteId("All")}
                             className={clsx(
-                                "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                                selectedSiteId === "All" ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:text-white"
+                                "px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                                selectedSiteId === "All"
+                                    ? "bg-background text-primary shadow-sm ring-1 ring-border"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                             )}
                         >
-                            Tesca Tunisia (All)
+                            All Sites
                         </button>
                         {sites.map(site => (
                             <button
                                 key={site.id}
                                 onClick={() => setSelectedSiteId(site.id)}
                                 className={clsx(
-                                    "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                                    selectedSiteId === site.id ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:text-white"
+                                    "px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                                    selectedSiteId === site.id
+                                        ? "bg-background text-primary shadow-sm ring-1 ring-border"
+                                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                                 )}
                             >
                                 {site.name}
@@ -368,15 +378,19 @@ export default function DepartmentsPage() {
                 {/* Sites Overview Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     {displayedSites.map(site => (
-                        <div key={site.id} className="glass-card p-6 rounded-2xl relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-3 opacity-10">
-                                <Building2 size={120} />
+                        <div key={site.id} className="glass-card p-6 relative overflow-hidden group">
+                            {/* Decorative Background Icon */}
+                            <div className="absolute top-[-20px] right-[-20px] text-primary/5 dark:text-primary/10 transition-transform group-hover:scale-110 duration-500">
+                                <Building2 size={160} />
                             </div>
+
                             <div className="flex justify-between items-start relative z-10">
                                 <div>
                                     <div className="flex items-center gap-3 mb-2">
-                                        <h2 className="text-2xl font-bold text-white">{site.name}</h2>
-                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 text-slate-300 uppercase tracking-wider">{site.description}</span>
+                                        <h2 className="text-2xl font-bold text-foreground">{site.name}</h2>
+                                        <span className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-secondary/80 text-secondary-foreground uppercase tracking-widest border border-border/50 backdrop-blur-sm">
+                                            {site.description}
+                                        </span>
                                     </div>
                                     <div className="flex items-center gap-6 text-sm text-muted-foreground mt-4">
                                         <div className="flex items-center gap-2">
@@ -390,7 +404,7 @@ export default function DepartmentsPage() {
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-sm text-muted-foreground mb-1">Total Budget</p>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Total Budget</p>
                                     {editingBudgetId === `site-${site.id}` ? (
                                         <div className="flex items-center gap-2">
                                             <input
@@ -400,96 +414,99 @@ export default function DepartmentsPage() {
                                                 onChange={(e) => setTempBudget(e.target.value)}
                                                 onBlur={() => saveBudget(site.id, true)}
                                                 onKeyDown={(e) => e.key === 'Enter' && saveBudget(site.id, true)}
-                                                className="w-32 bg-slate-900 border border-white/20 rounded px-2 py-1 text-white font-bold text-right"
+                                                className="w-32 bg-background border border-primary rounded-lg px-2 py-1 text-foreground font-bold text-right outline-none ring-2 ring-primary/20"
                                             />
                                         </div>
                                     ) : (
                                         <div
                                             onClick={() => startEditBudget(`site-${site.id}`, site.budget)}
-                                            className="group/budget flex items-center justify-end gap-2 cursor-pointer hover:text-green-400 transition-colors"
+                                            className="group/budget flex items-center justify-end gap-2 cursor-pointer hover:text-primary transition-colors"
                                         >
-                                            <span className="text-3xl font-bold text-white group-hover/budget:text-green-400">{formatCurrency(site.budget)}</span>
-                                            <Pencil size={14} className="opacity-0 group-hover/budget:opacity-100 transition-opacity" />
+                                            <span className="text-3xl font-bold text-foreground group-hover/budget:text-primary transition-colors tracking-tight">{formatCurrency(site.budget)}</span>
+                                            <Pencil size={14} className="opacity-0 group-hover/budget:opacity-100 transition-opacity text-muted-foreground" />
                                         </div>
                                     )}
                                 </div>
                             </div>
                             {/* Budget Progress Bar */}
-                            <div className="mt-6">
-                                <div className="flex justify-between text-xs mb-2">
-                                    <span className="text-slate-400">Allocated</span>
-                                    <span className="text-white font-medium">{Math.round((departments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.budget, 0) / site.budget) * 100)}%</span>
+                            <div className="mt-8">
+                                <div className="flex justify-between text-xs mb-2 font-medium">
+                                    <span className="text-muted-foreground uppercase tracking-wider">Budget Allocated</span>
+                                    <span className="text-foreground">{Math.round((departments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.budget, 0) / site.budget) * 100)}%</span>
                                 </div>
-                                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                                <div className="w-full h-3 bg-secondary rounded-full overflow-hidden shadow-inner">
                                     <div
-                                        className="h-full bg-primary rounded-full transition-all duration-1000 ease-out"
+                                        className="h-full bg-gradient-to-r from-primary to-purple-500 rounded-full transition-all duration-1000 ease-out shadow-sm relative"
                                         style={{ width: `${Math.min((departments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.budget, 0) / site.budget) * 100, 100)}%` }}
-                                    />
+                                    >
+                                        <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     ))}
                 </div>
 
-                {/* Charts Area - Only show if All is selected or specific logic required, keeping it for now */}
-                {/* <div className="mb-8">
-                    <DepartmentUserCountChart />
-                </div> */}
-
                 {/* Filters & Search - Below header/cards */}
-                <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-                    <div className="relative flex-1 max-w-md">
+                <div className="flex flex-col md:flex-row justify-between gap-4 mb-6 items-center">
+                    <div className="relative flex-1 max-w-md w-full">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                         <input
                             type="text"
                             placeholder="Search departments..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-slate-500"
+                            className="input-field pl-10 bg-card border-border shadow-sm hover:border-primary/30 focus:border-primary/50"
                         />
                     </div>
                     <button
                         onClick={openCreateModal}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl transition-all shadow-lg shadow-primary/25 font-medium"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all shadow-lg shadow-primary/25 font-bold text-sm tracking-wide active:scale-95"
                     >
-                        <Plus size={20} />
-                        <span>New Department</span>
+                        <Plus size={18} strokeWidth={2.5} />
+                        <span>NEW DEPARTMENT</span>
                     </button>
                 </div>
 
                 {/* Departments Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredDepts.map((dept) => (
-                        <div key={dept.id} className="glass-card p-6 rounded-2xl flex flex-col gap-4 group hover:-translate-y-1 transition-transform duration-300">
+                        <div key={dept.id} className="glass-card p-5 flex flex-col gap-4 group hover:-translate-y-1 hover:shadow-xl hover:border-primary/30 transition-all duration-300">
                             <div className="flex justify-between items-start">
-                                <div className="flex items-center gap-3">
-                                    <div className={clsx("w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-lg", dept.colorCallback)}>
-                                        <Building2 size={20} />
+                                <div className="flex items-center gap-3.5">
+                                    <div className={clsx("w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg shadow-black/5 ring-1 ring-black/5", dept.colorCallback)}>
+                                        <Building2 size={24} />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold text-white">{dept.name}</h3>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-slate-300 border border-white/5">{dept.siteId}</span>
+                                        <h3 className="text-lg font-bold text-foreground leading-tight">{dept.name}</h3>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground border border-border">{dept.siteId}</span>
                                             <span className="text-xs text-muted-foreground truncate max-w-[120px]">{dept.location}</span>
                                         </div>
                                     </div>
                                 </div>
-                                <button className="text-muted-foreground hover:text-white transition-colors">
-                                    <MoreHorizontal size={20} />
-                                </button>
+                                <div className="relative group/menu">
+                                    <button className="p-1 px-2 text-muted-foreground hover:text-foreground transition-colors hover:bg-secondary rounded-lg">
+                                        <MoreHorizontal size={20} />
+                                    </button>
+                                    {/* Quick Actions Dropdown (Hidden by default, hover to show purely via CSS or handled via click - kept simple here) */}
+                                </div>
                             </div>
 
-                            <div className="space-y-3 py-2 border-t border-white/5 mt-2">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-muted-foreground">Head</span>
-                                    <span className="text-white font-medium">{dept.head}</span>
+                            <div className="space-y-3 py-3 border-t border-dashed border-border mt-1">
+                                <div className="flex justify-between items-center text-sm group/row hover:bg-secondary/30 p-1.5 rounded-lg transition-colors -mx-1.5">
+                                    <span className="text-muted-foreground font-medium">Head</span>
+                                    <span className="text-foreground font-semibold flex items-center gap-2">
+                                        {dept.head}
+                                        <Users size={14} className="text-primary/70" />
+                                    </span>
                                 </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-muted-foreground">Employees</span>
-                                    <span className="text-white font-medium">{dept.employeeCount}</span>
+                                <div className="flex justify-between items-center text-sm group/row hover:bg-secondary/30 p-1.5 rounded-lg transition-colors -mx-1.5">
+                                    <span className="text-muted-foreground font-medium">Employees</span>
+                                    <span className="text-foreground font-semibold bg-secondary px-2 py-0.5 rounded text-xs border border-border">{dept.employeeCount}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-muted-foreground">Budget</span>
+                                <div className="flex justify-between items-center text-sm group/row hover:bg-secondary/30 p-1.5 rounded-lg transition-colors -mx-1.5">
+                                    <span className="text-muted-foreground font-medium">Budget</span>
                                     {editingBudgetId === `dept-${dept.id}` ? (
                                         <input
                                             autoFocus
@@ -498,37 +515,37 @@ export default function DepartmentsPage() {
                                             onChange={(e) => setTempBudget(e.target.value)}
                                             onBlur={() => saveBudget(dept.id, false)}
                                             onKeyDown={(e) => e.key === 'Enter' && saveBudget(dept.id, false)}
-                                            className="w-24 bg-slate-900 border border-white/20 rounded px-1.5 py-0.5 text-white font-medium text-right text-xs"
+                                            className="w-24 bg-background border border-primary rounded px-1.5 py-0.5 text-foreground font-bold text-right text-xs outline-none"
                                         />
                                     ) : (
                                         <div
                                             onClick={() => startEditBudget(`dept-${dept.id}`, dept.budget)}
-                                            className="group/budget flex items-center gap-2 cursor-pointer hover:text-green-400 transition-colors"
+                                            className="group/budget flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
                                         >
-                                            <span className="text-white font-medium group-hover/budget:text-green-400">{formatCurrency(dept.budget)}</span>
+                                            <span className="text-foreground font-bold group-hover/budget:text-primary transition-colors">{formatCurrency(dept.budget)}</span>
                                             <Pencil size={12} className="opacity-0 group-hover/budget:opacity-100 transition-opacity" />
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between mt-auto pt-4">
-                                <span className={clsx("px-2 py-1 rounded text-xs font-medium border",
-                                    dept.status === 'Active' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                                        'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                            <div className="flex items-center justify-between mt-auto pt-2">
+                                <span className={clsx("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                                    dept.status === 'Active' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' :
+                                        'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
                                 )}>
                                     {dept.status}
                                 </span>
 
-                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
                                     <button
                                         onClick={() => openEditModal(dept)}
-                                        className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                                        className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                                         title="Edit"
                                     >
                                         <Pencil size={16} />
                                     </button>
-                                    <button onClick={() => handleDelete(dept.id)} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Delete">
+                                    <button onClick={() => handleDelete(dept.id)} className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors" title="Delete">
                                         <Trash2 size={16} />
                                     </button>
                                 </div>

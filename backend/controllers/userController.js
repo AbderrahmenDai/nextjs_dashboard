@@ -36,6 +36,7 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 
     const user = await userService.loginUser(email, password);
+    console.log('Login response payload:', user);
     res.json(user);
 });
 

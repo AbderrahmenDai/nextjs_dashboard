@@ -157,7 +157,7 @@ export function Header() {
     };
 
     return (
-        <header className="sticky top-0 z-30 w-full h-16 bg-background/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 transition-all duration-300">
+        <header className="sticky top-0 z-30 w-full h-16 bg-background/60 backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-6 transition-all duration-300">
             {/* Search Bar */}
             <div className="flex-1 max-w-xl relative">
                 <div className="relative group">

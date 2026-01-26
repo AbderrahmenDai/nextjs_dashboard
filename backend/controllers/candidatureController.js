@@ -7,6 +7,12 @@ const getCandidatures = asyncHandler(async (req, res) => {
 });
 
 const createCandidature = asyncHandler(async (req, res) => {
+    console.log("📝 Creating candidature...", req.body);
+    if (req.file) {
+        console.log("mb_found_file", req.file);
+        // Normalize path separators to forward slashes for consistency
+        req.body.cvPath = req.file.path.replace(/\\/g, '/');
+    }
     const newItem = await candidatureService.createCandidature(req.body);
     res.status(201).json(newItem);
 });

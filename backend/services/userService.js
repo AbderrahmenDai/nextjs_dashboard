@@ -60,9 +60,15 @@ const createUser = async (userData) => {
         departmentId
     ]);
 
-    // Send Welcome Email
-    // We send the RAW password so the user knows it
-    await emailService.sendWelcomeEmail(userData.email, userData.name, userData.email, userData.password);
+    // Send Welcome Email (don't fail user creation if email fails)
+    try {
+        console.log('📧 Sending welcome email to:', userData.email);
+        await emailService.sendWelcomeEmail(userData.email, userData.name, userData.email, userData.password);
+        console.log('✅ Welcome email sent successfully');
+    } catch (emailError) {
+        console.error('❌ Failed to send welcome email (user still created):', emailError.message);
+        // Don't throw - user creation should succeed even if email fails
+    }
 
     // Return created user (without password)
     const [user] = await db.query('SELECT * FROM User WHERE id = ?', [id]);

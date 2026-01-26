@@ -19,6 +19,10 @@ app.use('/api/interviews', require('./routes/interviewRoutes'));
 app.use('/api/hiring-requests', require('./routes/hiringRequestRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Error Handler
 app.use(errorHandler);
 

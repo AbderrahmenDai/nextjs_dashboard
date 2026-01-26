@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, BarChart2, Settings, Menu, X, FileText, Briefcase, User, Bell, Users } from "lucide-react";
+import { Home, BarChart2, Settings, Menu, X, FileText, Briefcase, User, Bell, Calendar, Users } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
@@ -41,8 +41,10 @@ export function Sidebar() {
     const navItems = [
         { icon: Home, label: t('common.dashboard'), href: "/" },
         { icon: Briefcase, label: t('common.hiringRequests'), href: "/hiring-requests" },
+        { icon: Briefcase, label: "Postes Vacants", href: "/postes-vacants" },
         { icon: FileText, label: t('common.candidatures'), href: "/candidatures" },
-        { icon: Users, label: "Interviews", href: "/interviews" }, // Using Users icon temporarily or Calendar if imported
+        { icon: Users, label: "Interviews", href: "/interviews" },
+        { icon: Calendar, label: t('common.calendar') || "Calendar", href: "/calendar" },
         { icon: User, label: t('common.users'), href: "/users" },
         { icon: BarChart2, label: t('common.department'), href: "/departments" },
         { icon: Bell, label: t('common.notifications'), href: "/notifications", badge: unreadCount },
@@ -64,7 +66,7 @@ export function Sidebar() {
             {/* Sidebar Container */}
             <aside
                 className={clsx(
-                    "fixed inset-y-0 left-0 z-40 w-72 bg-card/80 backdrop-blur-xl border-r border-border transition-transform duration-300 md:translate-x-0",
+                    "fixed inset-y-0 left-0 z-40 w-72 bg-card/50 backdrop-blur-xl border-r border-border/50 transition-transform duration-300 md:translate-x-0",
                     isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
                 )}
             >

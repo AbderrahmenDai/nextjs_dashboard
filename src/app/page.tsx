@@ -19,14 +19,23 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Home() {
   const [totalBudget, setTotalBudget] = useState(0);
+  const [vacantPositions, setVacantPositions] = useState(0);
   const { t } = useLanguage();
 
   useEffect(() => {
     const loadStats = async () => {
       try {
+        // Load budget
         const sites = await api.getSites();
         const total = sites.reduce((acc: number, site: any) => acc + (Number(site.budget) || 0), 0);
         setTotalBudget(total);
+
+        // Load vacant positions (approved hiring requests)
+        const hiringRequests = await api.getHiringRequests();
+        if (Array.isArray(hiringRequests)) {
+          const approvedCount = hiringRequests.filter((req: any) => req.status === 'Approved').length;
+          setVacantPositions(approvedCount);
+        }
       } catch (error) {
         console.error("Failed to load stats:", error);
       }
@@ -76,7 +85,7 @@ export default function Home() {
         />
         <StatCard
           title="POSTES VACANTS ACTIFS"
-          value="1"
+          value={vacantPositions.toString()}
           change="Open positions"
           trend="up"
           icon={Briefcase}

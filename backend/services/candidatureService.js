@@ -14,8 +14,8 @@ const createCandidature = async (data) => {
             positionAppliedFor, department, specialty, level, yearsOfExperience, language,
             source, hiringRequestId, recruiterComments,
             educationLevel, familySituation, studySpecialty, currentSalary, salaryExpectation,
-            proposedSalary, noticePeriod, hrOpinion, managerOpinion, recruitmentMode, workSite
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            proposedSalary, noticePeriod, hrOpinion, managerOpinion, recruitmentMode, workSite, cvPath
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     // Ensure dates/numbers are handled correctly
@@ -24,7 +24,8 @@ const createCandidature = async (data) => {
         data.positionAppliedFor, data.department, data.specialty, data.level, data.yearsOfExperience || 0, data.language,
         data.source, data.hiringRequestId || null, data.recruiterComments,
         data.educationLevel, data.familySituation, data.studySpecialty, data.currentSalary || 0, data.salaryExpectation || 0,
-        data.proposedSalary || 0, data.noticePeriod, data.hrOpinion, data.managerOpinion, data.recruitmentMode, data.workSite
+        data.proposedSalary || 0, data.noticePeriod, data.hrOpinion, data.managerOpinion, data.recruitmentMode, data.workSite,
+        data.cvPath || null
     ];
 
     await db.query(sql, values);

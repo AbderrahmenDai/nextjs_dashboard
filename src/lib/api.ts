@@ -1,5 +1,5 @@
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export const api = {
     // --- USERS ---
@@ -29,7 +29,7 @@ export const api = {
         } catch (error: any) {
             // Handle network errors
             if (error instanceof TypeError && error.message.includes('fetch')) {
-                throw new Error('Unable to connect to server. Please check if the backend is running on http://localhost:3001');
+                throw new Error('Unable to connect to server. Please check if the backend is running on http://localhost:5000');
             }
             // Re-throw other errors (including our custom Error from above)
             throw error;
@@ -142,10 +142,11 @@ export const api = {
     },
 
     createCandidature: async (candidature: any) => {
+        const isFormData = candidature instanceof FormData;
         const response = await fetch(`${API_BASE_URL}/candidatures`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(candidature),
+            headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+            body: isFormData ? candidature : JSON.stringify(candidature),
         });
         if (!response.ok) throw new Error('Failed to create candidature');
         return response.json();

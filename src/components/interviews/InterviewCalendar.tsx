@@ -3,7 +3,7 @@
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 // Setup the localizer by providing the moment (or globalize) instance
 // to the localizer accessor.
@@ -32,11 +32,16 @@ interface InterviewCalendarProps {
     interviews: Interview[];
 }
 
+import { View } from 'react-big-calendar';
+
 export function InterviewCalendar({ interviews }: InterviewCalendarProps) {
+    const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
+    const [view, setView] = useState<View>('month');
+    const [date, setDate] = useState(new Date());
+
     const events = useMemo(() => {
         return interviews.map(interview => {
             const startDate = new Date(interview.date);
-            // Assuming interviews last 1 hour by default if no end time is provided
             const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
 
             return {
@@ -50,7 +55,7 @@ export function InterviewCalendar({ interviews }: InterviewCalendarProps) {
         });
     }, [interviews]);
 
-    const eventStyleGetter = (event: any, start: Date, end: Date, isSelected: boolean) => {
+    const eventStyleGetter = (event: any) => {
         let backgroundColor = '#3B82F6'; // Default Blue
         if (event.resource.status === 'Completed') {
             if (event.resource.result === 'Passed') backgroundColor = '#10B981'; // Green
@@ -63,17 +68,39 @@ export function InterviewCalendar({ interviews }: InterviewCalendarProps) {
         return {
             style: {
                 backgroundColor,
-                borderRadius: '5px',
-                opacity: 0.8,
+                borderRadius: '6px',
+                opacity: 0.9,
                 color: 'white',
                 border: '0px',
-                display: 'block'
+                display: 'block',
+                fontSize: '0.8rem',
+                padding: '2px 4px'
             }
         };
     };
 
+    const handleSelectSlot = (slotInfo: { start: Date, action: string }) => {
+        // If user clicks on a day (not dragging), switch to day view for that day
+        if (slotInfo.action === 'click') {
+            setDate(slotInfo.start);
+            setView('day');
+        }
+    };
+
+    const handleSelectEvent = (event: any) => {
+        setSelectedInterview(event.resource);
+    };
+
     return (
-        <div className="h-[600px] w-full bg-white/5 p-4 rounded-xl border border-white/10 text-white">
+        <div className="h-[750px] w-full bg-gradient-to-br from-slate-900/50 via-blue-900/20 to-purple-900/30 backdrop-blur-sm p-8 rounded-3xl border border-white/10 text-foreground flex flex-col gap-6 shadow-2xl relative overflow-hidden group">
+            {/* Animated background effects */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+
+            {/* Floating particles */}
+            <div className="absolute top-10 left-10 w-3 h-3 bg-blue-400/20 rounded-full animate-pulse" />
+            <div className="absolute top-20 right-20 w-2 h-2 bg-purple-400/20 rounded-full animate-pulse delay-300" />
+            <div className="absolute bottom-20 left-20 w-2.5 h-2.5 bg-pink-400/20 rounded-full animate-pulse delay-700" />
+
             <Calendar
                 localizer={localizer}
                 events={events}
@@ -82,57 +109,279 @@ export function InterviewCalendar({ interviews }: InterviewCalendarProps) {
                 style={{ height: '100%' }}
                 eventPropGetter={eventStyleGetter}
                 views={['month', 'week', 'day', 'agenda']}
-                defaultView="month"
+                view={view}
+                date={date}
+                onNavigate={setDate}
+                onView={setView}
                 popup
                 selectable
-                onSelectEvent={(event) => alert(
-                    `Candidate: ${event.resource.candidateFirstName} ${event.resource.candidateLastName}\n` +
-                    `Interviewer: ${event.resource.interviewerName || 'Unassigned'}\n` +
-                    `Type: ${event.resource.type}\n` +
-                    `Mode: ${event.resource.mode}\n` +
-                    `Status: ${event.resource.status}`
-                )}
+                onSelectEvent={handleSelectEvent}
+                onSelectSlot={handleSelectSlot}
+                className="font-medium relative z-10"
             />
-            {/* Custom CSS overrides for dark mode compatibility if needed */}
+
+            {/* Enhanced CSS overrides for beautiful calendar styling */}
             <style jsx global>{`
+                /* Calendar container */
                 .rbc-calendar {
-                    color: #d1d5db; /* gray-300 */
+                    color: inherit;
+                    font-family: inherit;
                 }
-                .rbc-toolbar-label {
-                    color: white;
+                
+                /* Toolbar styling */
+                .rbc-toolbar {
+                    padding: 1rem;
+                    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+                    border-radius: 1rem;
+                    margin-bottom: 1.5rem;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    backdrop-filter: blur(10px);
+                }
+                
+                .rbc-toolbar button {
+                    color: inherit;
+                    border: 1px solid rgba(255,255,255,0.2);
+                    border-radius: 0.5rem;
+                    padding: 0.5rem 1rem;
+                    transition: all 0.3s ease;
+                    font-weight: 500;
+                    background: rgba(255,255,255,0.05);
+                }
+                
+                .rbc-toolbar button:hover {
+                    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2));
+                    border-color: rgba(59, 130, 246, 0.5);
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+                }
+                
+                .rbc-toolbar button.rbc-active {
+                    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(147, 51, 234, 0.3));
+                    color: #60a5fa;
                     font-weight: bold;
+                    border-color: rgba(59, 130, 246, 0.6);
+                    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
                 }
-                .rbc-btn-group button {
-                    color: white;
-                    background-color: rgba(255, 255, 255, 0.1);
-                    border: 1px solid rgba(255, 255, 255, 0.2);
+                
+                /* Toolbar label (current month/week) */
+                .rbc-toolbar-label {
+                    font-size: 1.25rem;
+                    font-weight: 700;
+                    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
                 }
-                .rbc-btn-group button:hover {
-                    background-color: rgba(255, 255, 255, 0.2);
-                }
-                .rbc-btn-group button.rbc-active {
-                    background-color: rgba(255, 255, 255, 0.3);
-                    box-shadow: none;
-                }
-                .rbc-off-range-bg {
-                    background-color: rgba(255, 255, 255, 0.05);
-                }
-                .rbc-today {
-                    background-color: rgba(59, 130, 246, 0.1);
-                }
-                .rbc-header {
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-                }
+                
+                /* Month view grid */
                 .rbc-month-view, .rbc-time-view, .rbc-agenda-view {
-                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255,255,255,0.1) !important;
+                    border-radius: 1rem;
+                    overflow: hidden;
+                    background: rgba(255,255,255,0.02);
+                    backdrop-filter: blur(10px);
                 }
+                
+                /* Header cells (day names) */
+                .rbc-header {
+                    border-bottom: 2px solid rgba(59, 130, 246, 0.3) !important;
+                    background: linear-gradient(180deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+                    padding: 1rem 0.5rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    font-size: 0.75rem;
+                    letter-spacing: 0.1em;
+                    color: #93c5fd;
+                }
+                
+                /* Day cells */
                 .rbc-day-bg {
-                    border-left: 1px solid rgba(255, 255, 255, 0.1);
+                    border-color: rgba(255,255,255,0.08) !important;
+                    transition: all 0.3s ease;
                 }
-                .rbc-month-row {
-                    border-top: 1px solid rgba(255, 255, 255, 0.1);
+                
+                .rbc-day-bg:hover {
+                    background: rgba(59, 130, 246, 0.05);
+                }
+                
+                /* Today highlight */
+                .rbc-today {
+                    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(147, 51, 234, 0.15)) !important;
+                    position: relative;
+                }
+                
+                .rbc-today::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 3px;
+                    background: linear-gradient(90deg, #60a5fa, #a78bfa);
+                    animation: pulse 2s ease-in-out infinite;
+                }
+                
+                /* Date numbers */
+                .rbc-date-cell {
+                    padding: 0.5rem;
+                    text-align: right;
+                }
+                
+                .rbc-date-cell button {
+                    font-weight: 600;
+                    color: inherit;
+                    transition: all 0.2s ease;
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 0.5rem;
+                }
+                
+                .rbc-date-cell button:hover {
+                    background: rgba(59, 130, 246, 0.2);
+                    transform: scale(1.1);
+                }
+                
+                .rbc-now .rbc-date-cell button {
+                    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+                    color: white;
+                    font-weight: 700;
+                    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+                    animation: pulse 2s ease-in-out infinite;
+                }
+                
+                /* Off-range dates (other months) */
+                .rbc-off-range-bg {
+                    background-color: rgba(0,0,0,0.1);
+                    opacity: 0.4;
+                }
+                
+                .rbc-off-range .rbc-date-cell button {
+                    opacity: 0.3;
+                }
+                
+                /* Events */
+                .rbc-event {
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                    border-radius: 0.5rem !important;
+                    padding: 0.25rem 0.5rem;
+                    font-weight: 600;
+                    transition: all 0.2s ease;
+                    cursor: pointer;
+                }
+                
+                .rbc-event:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+                }
+                
+                /* Time view styling */
+                .rbc-time-content, .rbc-timeslot-group {
+                    border-color: rgba(255,255,255,0.08) !important;
+                }
+                
+                .rbc-time-slot {
+                    border-top: 1px solid rgba(255,255,255,0.05) !important;
+                }
+                
+                .rbc-current-time-indicator {
+                    background-color: #ef4444;
+                    height: 2px;
+                }
+                
+                /* Agenda view */
+                .rbc-agenda-view table {
+                    border-color: rgba(255,255,255,0.1) !important;
+                }
+                
+                .rbc-agenda-date-cell, .rbc-agenda-time-cell {
+                    padding: 1rem;
+                    font-weight: 600;
+                }
+                
+                .rbc-agenda-event-cell {
+                    padding: 0.75rem;
+                }
+                
+                /* Pulse animation */
+                @keyframes pulse {
+                    0%, 100% {
+                        opacity: 1;
+                    }
+                    50% {
+                        opacity: 0.6;
+                    }
                 }
             `}</style>
+
+            {/* Detail Modal */}
+            {selectedInterview && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedInterview(null)}>
+                    <div className="bg-[#1e1e1e] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+                            <h3 className="text-lg font-bold text-white">Interview Details</h3>
+                            <button onClick={() => setSelectedInterview(null)} className="text-gray-400 hover:text-white transition-colors">✕</button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-lg">
+                                    {selectedInterview.candidateFirstName?.[0]}{selectedInterview.candidateLastName?.[0]}
+                                </div>
+                                <div>
+                                    <h4 className="text-xl font-bold text-white">{selectedInterview.candidateFirstName} {selectedInterview.candidateLastName}</h4>
+                                    <p className="text-sm text-gray-400">{selectedInterview.appliedPosition || 'No Position'}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 text-sm mt-4">
+                                <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+                                    <span className="block text-xs uppercase text-gray-500 font-bold mb-1">Interviewer</span>
+                                    <span className="text-white font-medium">{selectedInterview.interviewerName || 'Unassigned'}</span>
+                                </div>
+                                <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+                                    <span className="block text-xs uppercase text-gray-500 font-bold mb-1">Type</span>
+                                    <span className="text-white font-medium">{selectedInterview.type}</span>
+                                </div>
+                                <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+                                    <span className="block text-xs uppercase text-gray-500 font-bold mb-1">Date</span>
+                                    <span className="text-white font-medium">{new Date(selectedInterview.date).toLocaleDateString()}</span>
+                                </div>
+                                <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+                                    <span className="block text-xs uppercase text-gray-500 font-bold mb-1">Time</span>
+                                    <span className="text-white font-medium">{new Date(selectedInterview.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 pt-2">
+                                <div className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
+                                    <span className="text-sm font-medium text-gray-300">Status</span>
+                                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${selectedInterview.status === 'Completed' ? 'bg-green-500/20 text-green-400' :
+                                        selectedInterview.status === 'Cancelled' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'
+                                        }`}>{selectedInterview.status}</span>
+                                </div>
+                                {selectedInterview.result !== 'Pending' && (
+                                    <div className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
+                                        <span className="text-sm font-medium text-gray-300">Result</span>
+                                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${selectedInterview.result === 'Passed' ? 'text-green-400' :
+                                            selectedInterview.result === 'Failed' ? 'text-red-400' : 'text-yellow-400'
+                                            }`}>{selectedInterview.result}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {selectedInterview.notes && (
+                                <div className="mt-4">
+                                    <span className="block text-xs uppercase text-gray-500 font-bold mb-1">Notes</span>
+                                    <p className="text-sm text-gray-300 bg-white/5 p-3 rounded-lg border border-white/5 italic">"{selectedInterview.notes}"</p>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-4 bg-white/5 border-t border-white/10 flex justify-end">
+                            <button onClick={() => setSelectedInterview(null)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors">Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -79,7 +79,7 @@ const initialFormState: Candidature = {
     managerOpinion: "",
     recruitmentMode: "EXTERNAL",
     workSite: "",
-    status: "New"
+    status: "En attente"
 };
 
 export default function CandidaturesPage() {
@@ -88,6 +88,7 @@ export default function CandidaturesPage() {
     const [departments, setDepartments] = useState<any[]>([]); // To populate dropdown
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [formData, setFormData] = useState<Candidature>(initialFormState);
+    const [cvFile, setCvFile] = useState<File | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [departmentFilter, setDepartmentFilter] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
@@ -124,10 +125,25 @@ export default function CandidaturesPage() {
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await api.createCandidature(formData);
+            const data = new FormData();
+            // Append all fields
+            Object.keys(formData).forEach(key => {
+                const value = (formData as any)[key];
+                if (value !== null && value !== undefined) {
+                    data.append(key, value.toString());
+                }
+            });
+
+            // Append file if exists
+            if (cvFile) {
+                data.append('cvFile', cvFile);
+            }
+
+            await api.createCandidature(data);
             await loadData();
             setIsFormOpen(false);
             setFormData(initialFormState);
+            setCvFile(null);
         } catch (error) {
             console.error("Failed to create candidature:", error);
             alert("Failed to create candidature. Please check the console.");
@@ -150,7 +166,7 @@ export default function CandidaturesPage() {
             // since we don't have a specific endpoint for it yet, or we can assume getAllUsers returns everyone.
             const users = await api.getUsers();
             console.log(users);
-            const deptUsers = users.filter((u: any) => u.dept === cand.department || u.role === 'Direction' || u.role === 'Responsable RH' || u.role === "HR_MANAGER" || u.role === "RECRUITER" || u.role === "DIRECTOR" );
+            const deptUsers = users.filter((u: any) => u.dept === cand.department || u.role === 'Direction' || u.role === 'Responsable RH' || u.role === "HR_MANAGER" || u.role === "RECRUITER" || u.role === "DIRECTOR");
             console.log(deptUsers);
             setPotentialInterviewers(deptUsers);
         } catch (error) {
@@ -245,31 +261,33 @@ export default function CandidaturesPage() {
                         className="w-full bg-card/50 border border-border rounded-xl px-4 py-2 text-foreground appearance-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-sm"
                     >
                         <option value="">{t('candidature.filters.allStatuses')}</option>
-                        <option value="New">New</option>
-                        <option value="Shortlisted">Shortlisted</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Hired">Hired</option>
-                        <option value="Rejected">Rejected</option>
+                        <option value="">{t('candidature.filters.allStatuses')}</option>
+                        <option value="En cours">En cours</option>
+                        <option value="Embauché">Embauché</option>
+                        <option value="Refus du candidat">Refus du candidat</option>
+                        <option value="Non embauché">Non embauché</option>
+                        <option value="Prioritaire">Prioritaire</option>
+                        <option value="En attente">En attente</option>
                     </select>
                 </div>
             </div>
 
             {/* --- List View --- */}
-            <div className="bg-card border border-border/50 rounded-2xl overflow-hidden flex flex-col shadow-xl">
+            {/* --- List View --- */}
+            <div className="glass-card overflow-hidden flex flex-col relative z-10">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-muted-foreground">
-                        <thead className="bg-muted/50 text-foreground uppercase font-bold text-xs sticky top-0">
+                    <table className="data-table">
+                        <thead>
                             <tr>
-                                <th className="px-6 py-4">{t('common.candidatures')}</th>
-                                <th className="px-6 py-4">{t('candidature.position')}</th>
-                                <th className="px-6 py-4">{t('common.department')}</th>
-                                <th className="px-6 py-4">{t('common.status')}</th>
-                                <th className="px-6 py-4">{t('candidature.experience')}</th>
-                                <th className="px-6 py-4 text-right">{t('common.actions')}</th>
+                                <th>{t('common.candidatures')}</th>
+                                <th>{t('candidature.position')}</th>
+                                <th>{t('common.department')}</th>
+                                <th>{t('common.status')}</th>
+                                <th>{t('candidature.experience')}</th>
+                                <th className="text-right">{t('common.actions')}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-border/50">
+                        <tbody>
                             <AnimatePresence mode="popLayout">
                                 {paginatedCandidatures.length === 0 ? (
                                     <motion.tr
@@ -277,8 +295,14 @@ export default function CandidaturesPage() {
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
                                     >
-                                        <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
-                                            {t('candidature.noCandidatures')}
+                                        <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="w-16 h-16 rounded-full bg-secondary/50 flex items-center justify-center mb-2">
+                                                    <Search className="w-8 h-8 opacity-40" />
+                                                </div>
+                                                <p className="text-lg font-medium">{t('candidature.noCandidatures')}</p>
+                                                <p className="text-sm opacity-60">Try adjusting your filters or search terms</p>
+                                            </div>
                                         </td>
                                     </motion.tr>
                                 ) : (
@@ -286,54 +310,71 @@ export default function CandidaturesPage() {
                                         <motion.tr
                                             key={cand.id}
                                             layout
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.95 }}
-                                            transition={{ duration: 0.2, delay: index * 0.05 }}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: 20 }}
+                                            transition={{
+                                                duration: 0.3,
+                                                delay: index * 0.05,
+                                                type: "spring",
+                                                stiffness: 500,
+                                                damping: 30
+                                            }}
                                             onClick={() => openDetails(cand)}
-                                            className="group hover:bg-muted/80 transition-all cursor-pointer border-b border-border/50 last:border-0"
+                                            className="group cursor-pointer hover:bg-muted/30 relative overflow-hidden"
+                                            whileHover={{ scale: 1.002, backgroundColor: "rgba(var(--primary), 0.03)" }}
+                                            whileTap={{ scale: 0.995 }}
                                         >
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform duration-300 ring-2 ring-transparent group-hover:ring-primary/20">
+                                            <td>
+                                                <div className="flex items-center gap-4 py-1">
+                                                    <motion.div
+                                                        whileHover={{ scale: 1.1, rotate: 5 }}
+                                                        className="w-11 h-11 rounded-full bg-gradient-to-br from-primary/20 to-blue-600/20 text-primary flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-background group-hover:ring-primary/30 transition-all duration-300"
+                                                    >
                                                         {cand.firstName[0]}{cand.lastName[0]}
-                                                    </div>
+                                                    </motion.div>
                                                     <div>
-                                                        <div className="text-foreground font-semibold text-sm group-hover:text-primary transition-colors">
+                                                        <div className="text-foreground font-semibold text-sm group-hover:text-primary transition-colors flex items-center gap-2">
                                                             {cand.firstName} {cand.lastName}
+                                                            {cand.status === 'Prioritaire' && <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />}
                                                         </div>
-                                                        <div className="text-xs text-muted-foreground group-hover:text-foreground/80 transition-colors">
+                                                        <div className="text-xs text-muted-foreground/90 font-medium group-hover:text-primary transition-colors">
                                                             {cand.email}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className="text-foreground font-medium text-sm block">
+                                            <td>
+                                                <span className="text-foreground/90 font-medium text-sm block">
                                                     {cand.positionAppliedFor}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className="px-2 py-1 rounded-md bg-secondary/70 text-secondary-foreground text-xs font-medium border border-border/50">
+                                            <td>
+                                                <span className="px-2.5 py-1 rounded-lg bg-secondary/50 text-secondary-foreground text-xs font-medium border border-border/50 group-hover:border-primary/20 transition-colors">
                                                     {cand.department}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold border shadow-sm transition-all ${cand.status === 'Hired' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20' :
-                                                    cand.status === 'Rejected' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-destructive/20' :
-                                                        'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20'
+                                            <td>
+                                                <span className={`px-3 py-1 rounded-full text-[11px] font-bold border shadow-sm transition-all flex w-fit items-center gap-1.5 ${cand.status === 'Embauché' ? 'bg-green-500/10 text-green-600 border-green-500/20' :
+                                                    ['Refus du candidat', 'Non embauché'].includes(cand.status) ? 'bg-red-500/10 text-red-600 border-red-500/20' :
+                                                        cand.status === 'Prioritaire' ? 'bg-purple-500/10 text-purple-600 border-purple-500/20' :
+                                                            'bg-blue-500/10 text-blue-600 border-blue-500/20'
                                                     }`}>
-                                                    {cand.status || 'New'}
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${cand.status === 'Embauché' ? 'bg-green-500' :
+                                                        ['Refus du candidat', 'Non embauché'].includes(cand.status) ? 'bg-red-500' :
+                                                            cand.status === 'Prioritaire' ? 'bg-purple-500' : 'bg-blue-500'
+                                                        }`} />
+                                                    {cand.status || 'En attente'}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-sm font-medium text-muted-foreground">
-                                                {cand.yearsOfExperience} <span className="text-xs font-normal">years</span>
+                                            <td className="text-sm font-medium text-muted-foreground">
+                                                {cand.yearsOfExperience} <span className="text-xs font-normal opacity-70">years</span>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
+                                            <td className="text-right pr-4">
                                                 <motion.button
                                                     whileHover={{ scale: 1.1, backgroundColor: "var(--secondary)" }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    className="p-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                                                    whileTap={{ scale: 0.9 }}
+                                                    className="p-2 rounded-lg text-muted-foreground hover:text-primary transition-colors hover:bg-primary/5"
                                                 >
                                                     <MoreVertical size={18} />
                                                 </motion.button>
@@ -386,7 +427,7 @@ export default function CandidaturesPage() {
 
             {/* --- Details & Interview Modal --- */}
             {selectedCandidature && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm">
                     <div className="bg-card border border-border rounded-2xl w-full max-w-5xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
                         <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-muted/30">
                             <div>
@@ -448,7 +489,7 @@ export default function CandidaturesPage() {
                                             <p className="text-foreground text-sm leading-relaxed">{selectedCandidature.managerOpinion || "No remarks."}</p>
                                         </div>
                                         {selectedCandidature.recruiterComments && (
-                                            <div className="bg-secondary/20 p-4 rounded-lg border-l-4 border-slate-500">
+                                            <div className="bg-secondary/20 p-4 rounded-lg border-l-4 border-primary/40">
                                                 <span className="text-muted-foreground font-bold block mb-1 text-xs uppercase">{t('candidature.recruiterComments')}</span>
                                                 <p className="text-foreground text-sm leading-relaxed">{selectedCandidature.recruiterComments}</p>
                                             </div>
@@ -537,6 +578,7 @@ export default function CandidaturesPage() {
 
             {/* --- Create Modal --- */}
             {isFormOpen && (
+
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                     <div className="bg-card border border-border rounded-2xl w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
                         {/* Modal Header */}
@@ -690,6 +732,35 @@ export default function CandidaturesPage() {
                                         <div className="space-y-1">
                                             <label className="text-sm font-medium text-muted-foreground">{t('candidature.hrOpinion')}</label>
                                             <textarea rows={3} name="hrOpinion" value={formData.hrOpinion} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
+                                        </div>
+                                    </div>
+
+                                    {/* CV Upload Section */}
+                                    <div className="mt-6 border-t border-border pt-4">
+                                        <h3 className="text-sm font-semibold text-primary mb-3">CV / Resume</h3>
+                                        <div className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
+                                            <div className="p-2 rounded-full bg-primary/10 text-primary">
+                                                <FileText size={24} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <input
+                                                    type="file"
+                                                    accept=".pdf,.doc,.docx"
+                                                    onChange={(e) => setCvFile(e.target.files ? e.target.files[0] : null)}
+                                                    className="w-full text-sm text-foreground
+                                            file:mr-4 file:py-2 file:px-4
+                                            file:rounded-full file:border-0
+                                            file:text-sm file:font-semibold
+                                            file:bg-primary file:text-primary-foreground
+                                            hover:file:bg-primary/90
+                                            cursor-pointer bg-transparent"
+                                                />
+                                            </div>
+                                            {cvFile && (
+                                                <div className="text-xs text-green-500 font-bold px-3 py-1 bg-green-500/10 rounded-full border border-green-500/20">
+                                                    {cvFile.name}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

@@ -5,7 +5,7 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : ''
     }
 });
 
@@ -24,7 +24,12 @@ const sendWelcomeEmail = async (to, name, email, password) => {
             </div>
             <p style="font-size: 16px; color: #333;">Please login and change your password as soon as possible.</p>
             <div style="text-align: center; margin-top: 30px;">
-                <a href="http://localhost:3000/auth/sign-in" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Login Now</a>
+                <a href="http://localhost:3001/auth/sign-in" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Login Now</a>
+            </div>
+            <div style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+                <p style="font-size: 16px; color: #333; margin: 0;">Best regards,</p>
+                <p style="font-size: 18px; font-weight: bold; color: #4F46E5; margin: 5px 0;">Hiba Saadani</p>
+                <p style="font-size: 14px; color: #777; margin: 0;">HR Tesca</p>
             </div>
         </div>
         <div style="text-align: center; padding: 20px; font-size: 12px; color: #888;">
@@ -78,6 +83,11 @@ const sendInterviewEmail = async (to, candidateName, date, mode, type, notes) =>
             <div style="text-align: center; margin-top: 30px;">
                 <a href="#" style="background-color: #10B981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Confirm Attendance</a>
             </div>
+            <div style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+                <p style="font-size: 16px; color: #333; margin: 0;">Best regards,</p>
+                <p style="font-size: 18px; font-weight: bold; color: #10B981; margin: 5px 0;">Hiba Saadani</p>
+                <p style="font-size: 14px; color: #777; margin: 0;">HR Tesca</p>
+            </div>
         </div>
         <div style="text-align: center; padding: 20px; font-size: 12px; color: #888;">
             &copy; ${new Date().getFullYear()} HR Dashboard. All rights reserved.
@@ -128,12 +138,14 @@ const sendInterviewerEmail = async (to, interviewerName, candidateName, date, mo
 
             <p style="font-size: 16px; color: #333;">Please ensure you are prepared for the session.</p>
             
-            <div style="text-align: center; margin-top: 30px;">
-                <a href="http://localhost:3000/interviews" style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Dashboard</a>
+            <div style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+                <p style="font-size: 16px; color: #333; margin: 0;">Best regards,</p>
+                <p style="font-size: 18px; font-weight: bold; color: #4F46E5; margin: 5px 0;">Hiba Saadani</p>
+                <p style="font-size: 14px; color: #777; margin: 0;">HR Tesca</p>
             </div>
-        </div>
-        <div style="text-align: center; padding: 20px; font-size: 12px; color: #888;">
-            &copy; ${new Date().getFullYear()} HR Dashboard. All rights reserved.
+            <div style="text-align: center; padding: 20px; font-size: 12px; color: #888;">
+                &copy; ${new Date().getFullYear()} HR Dashboard. All rights reserved.
+            </div>
         </div>
     </div>
     `;

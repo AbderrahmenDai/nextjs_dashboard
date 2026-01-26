@@ -96,27 +96,28 @@ export const translations = {
       filters: {
         allDepartments: "All Departments",
         allStatuses: "All Statuses"
-      },
-      hiringRequest: {
-        title: "Title",
-        service: "Service",
-        department: "Department",
-        category: "Category",
-        date: "Date",
-        status: "Status",
-        requester: "Requester",
-        newRequest: "New Request",
-        editRequest: "Edit Request",
-        viewDetails: "View Details",
-        budget: "Budget",
-        contractType: "Contract Type",
-        reason: "Reason",
-        description: "Description",
-        pendingHR: "Pending HR",
-        pendingDirector: "Pending Director",
-        approved: "Approved",
-        rejected: "Rejected"
       }
+    },
+    hiringRequest: {
+      title: "Title",
+      service: "Service",
+      department: "Department",
+      category: "Category",
+      priority: "Priority",
+      date: "Date",
+      status: "Status",
+      requester: "Requester",
+      newRequest: "New Request",
+      editRequest: "Edit Request",
+      viewDetails: "View Details",
+      budget: "Budget",
+      contractType: "Contract Type",
+      reason: "Reason",
+      description: "Description",
+      pendingHR: "Pending HR",
+      pendingDirector: "Pending Director",
+      approved: "Approved",
+      rejected: "Rejected"
     }
   },
   fr: {
@@ -148,6 +149,7 @@ export const translations = {
       users: "Utilisateurs",
       hiringRequests: "Demandes de Recrutement",
       notifications: "Notifications",
+      calendar: "Calendrier",
     },
     dashboard: {
       title: "Tableau de Bord Recrutement",
@@ -213,12 +215,14 @@ export const translations = {
       filters: {
         allDepartments: "Tous les Départements",
         allStatuses: "Tous les Statuts"
-      },
-      hiringRequest: {
+      }
+    },
+    hiringRequest: {
         title: "Titre",
         service: "Service",
         department: "Département",
         category: "Catégorie",
+        priority: "Priorité",
         date: "Date",
         status: "Statut",
         requester: "Demandeur",
@@ -233,7 +237,6 @@ export const translations = {
         pendingDirector: "En Attente Directeur",
         approved: "Approuvé",
         rejected: "Rejeté"
-      }
     }
   }
 };

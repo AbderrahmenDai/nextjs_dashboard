@@ -37,8 +37,10 @@ const createHiringRequest = async (data) => {
     const sql = `
         INSERT INTO HiringRequest (
             id, title, departmentId, category, status, requesterId, 
-            description, budget, contractType, reason, createdAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            description, budget, contractType, reason, createdAt,
+            site, businessUnit, desiredStartDate, replacementFor, replacementReason,
+            increaseType, increaseDateRange, educationRequirements, skillsRequirements
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const values = [
         id, 
@@ -50,7 +52,16 @@ const createHiringRequest = async (data) => {
         data.description, 
         data.budget, 
         data.contractType, 
-        data.reason
+        data.reason,
+        data.site,
+        data.businessUnit,
+        data.desiredStartDate ? new Date(data.desiredStartDate) : null,
+        data.replacementFor,
+        data.replacementReason,
+        data.increaseType,
+        data.increaseDateRange,
+        data.educationRequirements,
+        data.skillsRequirements
     ];
 
     await db.query(sql, values);
@@ -58,23 +69,37 @@ const createHiringRequest = async (data) => {
 };
 
 const updateHiringRequest = async (id, data) => {
-    const sql = `
-        UPDATE HiringRequest SET
-        title=?, departmentId=?, category=?, status=?, 
-        description=?, budget=?, contractType=?, reason=?
-        WHERE id=?
-    `;
-    const values = [
-        data.title, 
-        data.departmentId, 
-        data.category, 
-        data.status, 
-        data.description, 
-        data.budget, 
-        data.contractType, 
-        data.reason,
-        id
+    // Dynamic update building would be better, but sticking to pattern for now
+    // We fetch existing first to merge? Or just update what's passed?
+    // Let's do a somewhat dynamic update to be safe against missing fields overwriting with NULL if we pass partial data to Service
+    // But the controller usually passes everything or we trust the frontend. 
+    // Let's rewrite this to be dynamic to be safe.
+    
+    const fields = [];
+    const values = [];
+    
+    const updateableColumns = [
+        'title', 'departmentId', 'category', 'status', 'description', 'budget', 'contractType', 'reason',
+        'site', 'businessUnit', 'desiredStartDate', 'replacementFor', 'replacementReason', 
+        'increaseType', 'increaseDateRange', 'educationRequirements', 'skillsRequirements'
     ];
+
+    for (const key of Object.keys(data)) {
+        if (updateableColumns.includes(key)) {
+            fields.push(`${key} = ?`);
+            if (key === 'desiredStartDate' && data[key]) {
+                values.push(new Date(data[key]));
+            } else {
+                values.push(data[key]);
+            }
+        }
+    }
+
+    if (fields.length === 0) return getHiringRequestById(id);
+
+    values.push(id);
+    const sql = `UPDATE HiringRequest SET ${fields.join(', ')} WHERE id = ?`;
+    
     await db.query(sql, values);
     return getHiringRequestById(id);
 };
