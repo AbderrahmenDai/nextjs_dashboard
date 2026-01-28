@@ -273,5 +273,43 @@ export const api = {
         });
         if (!response.ok) throw new Error('Failed to delete notification');
         return response.json();
+    },
+
+    // --- ROLES ---
+    getRoles: async () => {
+        const response = await fetch(`${API_BASE_URL}/roles`);
+        if (!response.ok) throw new Error('Failed to fetch roles');
+        return response.json();
+    },
+
+    createRole: async (role: any) => {
+        const response = await fetch(`${API_BASE_URL}/roles`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(role),
+        });
+        if (!response.ok) throw new Error('Failed to create role');
+        return response.json();
+    },
+
+    updateRole: async (id: string, role: any) => {
+        const response = await fetch(`${API_BASE_URL}/roles/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(role),
+        });
+        if (!response.ok) throw new Error('Failed to update role');
+        return response.json();
+    },
+
+    deleteRole: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/roles/${id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: 'Failed to delete role' }));
+            throw new Error(error.message || 'Failed to delete role');
+        }
+        return response.json();
     }
 };

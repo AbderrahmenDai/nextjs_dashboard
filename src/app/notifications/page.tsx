@@ -17,6 +17,11 @@ interface Notification {
     senderName?: string;
     senderEmail?: string;
     senderAvatarGradient?: string;
+    // Actions fields
+    type?: 'INFO' | 'ACTION_REQUIRED';
+    entityType?: 'HIRING_REQUEST' | null;
+    entityId?: string | null;
+    actions?: string[] | null; // e.g. ["APPROVE", "REJECT"]
 }
 
 export default function NotificationsPage() {
@@ -27,14 +32,23 @@ export default function NotificationsPage() {
 
     const loadNotifications = async () => {
         if (!user?.id) return;
-        
+
         try {
             setIsLoading(true);
             const [notificationsData, unreadData] = await Promise.all([
                 api.getNotifications(user.id),
                 api.getUnreadCount(user.id)
             ]);
-            setNotifications(notificationsData);
+
+            // Parse actions if it comes as string from DB (mysql json sometimes needs parsing depending on driver config)
+            // But usually api returns object. Let's assume api returns parsed json or we ensure it.
+            // If it's pure string from raw query, we might need manual parsing.
+            const parsedNotifications = notificationsData.map((n: any) => ({
+                ...n,
+                actions: typeof n.actions === 'string' ? JSON.parse(n.actions) : n.actions
+            }));
+
+            setNotifications(parsedNotifications);
             setUnreadCount(unreadData.count || 0);
         } catch (error) {
             console.error("Failed to load notifications:", error);
@@ -50,10 +64,52 @@ export default function NotificationsPage() {
         return () => clearInterval(interval);
     }, [user?.id]);
 
+    const handleAction = async (notification: Notification, action: string) => {
+        if (!user || !notification.entityId || notification.entityType !== 'HIRING_REQUEST') return;
+
+        try {
+            let newStatus = '';
+
+            if (action === 'REJECT') {
+                newStatus = 'REJECTED';
+            } else if (action === 'APPROVE') {
+                // Determine status based on User Role (Simple logic for now)
+                // If HR -> HR_APPROVED
+                // If Direction or Admin -> APPROVED
+                const role = user.role?.toUpperCase();
+                if (role === 'HR_MANAGER' || role === 'RH MANAGER') {
+                    newStatus = 'HR_APPROVED';
+                } else if (role === 'DIRECTION' || role === 'ADMIN') {
+                    newStatus = 'APPROVED';
+                } else {
+                    alert("You do not have permission to approve.");
+                    return;
+                }
+            }
+
+            if (newStatus) {
+                await api.updateHiringRequest(notification.entityId, {
+                    status: newStatus,
+                    approverId: user.id
+                });
+
+                // Mark notification as read
+                await handleMarkAsRead(notification.id);
+
+                alert(`Request ${newStatus.toLowerCase().replace('_', ' ')} successfully.`);
+                loadNotifications(); // Refresh to clean up or update UI
+            }
+
+        } catch (error) {
+            console.error("Action failed:", error);
+            alert("Failed to perform action.");
+        }
+    };
+
     const handleMarkAsRead = async (notificationId: string) => {
         try {
             await api.markAsRead(notificationId);
-            setNotifications(notifications.map(n => 
+            setNotifications(notifications.map(n =>
                 n.id === notificationId ? { ...n, isRead: true } : n
             ));
             setUnreadCount(Math.max(0, unreadCount - 1));
@@ -64,7 +120,7 @@ export default function NotificationsPage() {
 
     const handleMarkAllAsRead = async () => {
         if (!user?.id) return;
-        
+
         try {
             await api.markAllAsRead(user.id);
             setNotifications(notifications.map(n => ({ ...n, isRead: true })));
@@ -99,7 +155,7 @@ export default function NotificationsPage() {
         if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
         if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
         if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-        
+
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
     };
 
@@ -169,11 +225,11 @@ export default function NotificationsPage() {
                                     {/* Avatar */}
                                     <div className={clsx(
                                         "w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0",
-                                        notification.senderAvatarGradient 
+                                        notification.senderAvatarGradient
                                             ? `bg-gradient-to-br ${notification.senderAvatarGradient}`
                                             : "bg-gradient-to-br from-gray-500 to-slate-500"
                                     )}>
-                                        {notification.senderName 
+                                        {notification.senderName
                                             ? getInitials(notification.senderName)
                                             : <User size={20} />
                                         }
@@ -183,24 +239,49 @@ export default function NotificationsPage() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-2 mb-1">
                                             <div className="flex-1">
-                                                <p className="text-sm font-semibold text-foreground">
+                                                <p className="text-sm font-bold text-foreground">
                                                     {notification.senderName || 'System'}
                                                 </p>
-                                                <p className="text-sm text-muted-foreground mt-0.5">
+                                                <p className="text-sm text-foreground/80 mt-0.5">
                                                     {notification.message}
                                                 </p>
+
+                                                {/* ACTIONS */}
+                                                {notification.type === 'ACTION_REQUIRED' && notification.actions && Array.isArray(notification.actions) && !notification.isRead && (
+                                                    <div className="mt-3 flex gap-3">
+                                                        {notification.actions.includes('APPROVE') && (
+                                                            <button
+                                                                onClick={() => handleAction(notification, 'APPROVE')}
+                                                                className="px-3 py-1.5 bg-green-500/10 text-green-600 hover:bg-green-500/20 border border-green-500/20 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-1"
+                                                            >
+                                                                <Check size={14} />
+                                                                Approve
+                                                            </button>
+                                                        )}
+                                                        {notification.actions.includes('REJECT') && (
+                                                            <button
+                                                                onClick={() => handleAction(notification, 'REJECT')}
+                                                                className="px-3 py-1.5 bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-1"
+                                                            >
+                                                                <X size={14} />
+                                                                Reject
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
+
                                             {!notification.isRead && (
                                                 <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />
                                             )}
                                         </div>
-                                        
+
                                         <div className="flex items-center justify-between mt-2">
                                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                                 <Clock size={12} />
                                                 <span>{formatDate(notification.createdAt)}</span>
                                             </div>
-                                            
+
                                             <div className="flex items-center gap-2">
                                                 {!notification.isRead && (
                                                     <button

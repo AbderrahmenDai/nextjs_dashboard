@@ -1,30 +1,39 @@
 const db = require('./config/db');
 
-async function updateSchema() {
-    console.log('🔄 Creating Notification table...');
+async function updateNotificationSchema() {
     try {
-        const sql = `
-            CREATE TABLE IF NOT EXISTS Notification (
-                id VARCHAR(50) PRIMARY KEY,
-                senderId VARCHAR(50) NOT NULL,
-                receiverId VARCHAR(50) NOT NULL,
-                message TEXT NOT NULL,
-                createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-                isRead BOOLEAN DEFAULT FALSE,
-                FOREIGN KEY (senderId) REFERENCES User(id) ON DELETE CASCADE,
-                FOREIGN KEY (receiverId) REFERENCES User(id) ON DELETE CASCADE,
-                INDEX idx_receiver (receiverId),
-                INDEX idx_created (createdAt)
-            );
-        `;
-        await db.query(sql);
-        console.log('✅ Notification table created.');
+        console.log('Checking Notification table schema...');
         
+        // Check if columns exist
+        const [columns] = await db.query(`SHOW COLUMNS FROM Notification`);
+        const columnNames = columns.map(c => c.Field);
+
+        if (!columnNames.includes('type')) {
+            console.log('Adding type column...');
+            await db.query(`ALTER TABLE Notification ADD COLUMN type VARCHAR(50) DEFAULT 'INFO'`);
+        }
+
+        if (!columnNames.includes('entityType')) {
+            console.log('Adding entityType column...');
+            await db.query(`ALTER TABLE Notification ADD COLUMN entityType VARCHAR(50) NULL`);
+        }
+
+        if (!columnNames.includes('entityId')) {
+            console.log('Adding entityId column...');
+            await db.query(`ALTER TABLE Notification ADD COLUMN entityId VARCHAR(36) NULL`);
+        }
+
+        if (!columnNames.includes('actions')) {
+            console.log('Adding actions column...');
+            await db.query(`ALTER TABLE Notification ADD COLUMN actions JSON NULL`);
+        }
+
+        console.log('Notification schema updated successfully.');
         process.exit(0);
     } catch (error) {
-        console.error('❌ Failed to update schema:', error);
+        console.error('Error updating schema:', error);
         process.exit(1);
     }
 }
 
-updateSchema();
+updateNotificationSchema();

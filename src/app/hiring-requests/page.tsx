@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { clsx } from "clsx";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 // --- Types ---
 interface HiringRequest {
@@ -463,19 +464,24 @@ export default function HiringRequestsPage() {
         loadData();
     }, []);
 
+    const { user } = useAuth(); // Get user from auth context
+
     const handleCreate = async (data: Partial<HiringRequest>) => {
         try {
-            // Hardcode requesterId for now since we don't have auth context fully
-            // In a real app, backend would take user from token, or specific selector
-            // We'll skip requesterId in frontend or send a placeholder if DB requires it.
-            // DB has requesterId foreign key to User. Let's pick a user if possible or leave empty.
-            const payload = { ...data, requesterId: 'user1' }; // Mock user ID or handle in backend
+            if (!user?.id) {
+                alert("You must be logged in to create a request.");
+                return;
+            }
+
+            // Pass the actual logged-in user's ID
+            const payload = { ...data, requesterId: user.id };
             await api.createHiringRequest(payload);
             loadData();
             setIsModalOpen(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to create request:", error);
-            alert("Failed to create request");
+            // Display specific error message from backend (e.g., role restriction)
+            alert(error.message || "Failed to create request");
         }
     };
 

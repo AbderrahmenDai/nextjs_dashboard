@@ -12,7 +12,8 @@ interface User {
     name: string;
     email: string;
     password?: string; // Optional for existing users in display, but form will use it
-    role: "Responsable RH" | "Responsable Recrutement" | "Direction" | "Demandeur" | "Employee"; // Keeping Employee as fallback
+    role: string; // Dynamic role name
+    roleId: string;
     department: string;
     departmentId?: string;
     status: "Active" | "Offline" | "In Meeting";
@@ -22,6 +23,12 @@ interface User {
 interface Department {
     id: string;
     name: string;
+}
+
+interface Role {
+    id: string;
+    name: string;
+    description?: string;
 }
 
 
@@ -243,20 +250,22 @@ function UserFormModal({
     onClose,
     onSave,
     user,
-    departments
+    departments,
+    roles
 }: {
     isOpen: boolean;
     onClose: () => void;
     onSave: (user: Partial<User>) => void;
     user: User | null;
     departments: Department[];
+    roles: Role[];
 }) {
     // Only set initial state on open, but we need state for controlled inputs
     const [formData, setFormData] = useState<Partial<User>>({
         name: "",
         email: "",
         password: "",
-        role: "Demandeur",
+        role: "Demandeur", // Default fallback
         departmentId: "",
         status: "Active",
         avatarGradient: "from-gray-500 to-slate-500"
@@ -268,13 +277,13 @@ function UserFormModal({
                 name: "",
                 email: "",
                 password: "",
-                role: "Demandeur",
+                role: roles.length > 0 ? roles[0].name : "Demandeur",
                 departmentId: departments.length > 0 ? departments[0].id : "",
                 status: "Active",
                 avatarGradient: "from-gray-500 to-slate-500"
             });
         }
-    }, [isOpen, user, departments]);
+    }, [isOpen, user, departments, roles]);
 
     if (!isOpen) return null;
 
@@ -355,13 +364,13 @@ function UserFormModal({
                         <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Role</label>
                         <select
                             value={formData.role}
-                            onChange={(e) => setFormData({ ...formData, role: e.target.value as User["role"] })}
+                            onChange={(e) => setFormData({ ...formData, role: e.target.value, roleId: roles.find(role => role.name === e.target.value)?.id })}
                             className="input-field appearance-none cursor-pointer"
                         >
-                            <option value="Responsable RH">Responsable RH</option>
-                            <option value="Responsable Recrutement">Responsable Recrutement</option>
-                            <option value="Direction">Direction</option>
-                            <option value="Demandeur">Demandeur</option>
+                            {roles.length === 0 && <option value="">Loading...</option>}
+                            {roles.map(role => (
+                                <option key={role.id} value={role.name}>{role.name}</option>
+                            ))}
                         </select>
                     </div>
                     <div>
@@ -424,6 +433,7 @@ function UserFormModal({
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
+    const [roles, setRoles] = useState<Role[]>([]); // New state for roles
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -433,12 +443,14 @@ export default function UsersPage() {
     // --- Fetch Users on Mount ---
     const loadData = async () => {
         try {
-            const [usersData, departmentsData] = await Promise.all([
+            const [usersData, departmentsData, rolesData] = await Promise.all([
                 api.getUsers(),
-                api.getDepartments()
+                api.getDepartments(),
+                api.getRoles()
             ]);
             setUsers(usersData);
             setDepartments(departmentsData);
+            setRoles(rolesData);
         } catch (error) {
             console.error("Failed to load data:", error);
         }
@@ -515,6 +527,7 @@ export default function UsersPage() {
                     onSave={handleSaveUser}
                     user={editingUser}
                     departments={departments}
+                    roles={roles}
                 />
                 <PasswordChangeModal
                     isOpen={!!passwordChangeUser}
@@ -586,7 +599,7 @@ export default function UsersPage() {
                                 {/* Role Badge */}
                                 <div className={clsx(
                                     "px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider",
-                                    user.role === "Responsable RH" || user.role === "Direction" ? "bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-300" :
+                                    user.role === "HR_MANAGER" || user.role === "Direction" ? "bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-300" :
                                         user.role === "Responsable Recrutement" ? "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-300" :
                                             "bg-secondary border-border text-muted-foreground"
                                 )}>

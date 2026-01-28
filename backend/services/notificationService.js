@@ -32,12 +32,12 @@ const getUnreadCount = async (receiverId) => {
 // Create a new notification
 const createNotification = async (notificationData) => {
     const id = uuidv4();
-    const { senderId, receiverId, message } = notificationData;
+    const { senderId, receiverId, message, type = 'INFO', entityType = null, entityId = null, actions = null } = notificationData;
     
     await db.query(`
-        INSERT INTO Notification (id, senderId, receiverId, message, createdAt, isRead)
-        VALUES (?, ?, ?, ?, NOW(), FALSE)
-    `, [id, senderId, receiverId, message]);
+        INSERT INTO Notification (id, senderId, receiverId, message, type, entityType, entityId, actions, createdAt, isRead)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), FALSE)
+    `, [id, senderId, receiverId, message, type, entityType, entityId, actions ? JSON.stringify(actions) : null]);
     
     // Return the created notification with sender info
     const [notifications] = await db.query(`
@@ -93,11 +93,37 @@ const deleteNotification = async (notificationId) => {
     return { message: 'Notification deleted' };
 };
 
+// Resolve actionable notifications (e.g. when request is Approved/Rejected)
+const resolveActions = async (entityId, entityType, resolutionMessage) => {
+    // Update all matching notifications to remove actions and set new message
+    await db.query(`
+        UPDATE Notification
+        SET 
+            type = 'INFO',
+            actions = NULL,
+            message = ?,
+            isRead = FALSE
+        WHERE entityId = ? AND entityType = ? AND type = 'ACTION_REQUIRED'
+    `, [resolutionMessage, entityId, entityType]);
+    
+    // Notify users about the update via socket (we'd need to fetch them first to notify individually,
+    // or just rely on them refreshing/polling. For now let's just update DB.)
+    // Ideally we emit an event to all receivers of these notifications.
+    
+    const [updatedNotifications] = await db.query(`
+        SELECT * FROM Notification 
+        WHERE entityId = ? AND entityType = ? AND type = 'INFO' AND message = ?
+    `, [entityId, entityType, resolutionMessage]);
+    
+    return updatedNotifications;
+};
+
 module.exports = {
     getNotificationsByReceiver,
     getUnreadCount,
     createNotification,
     markAsRead,
     markAllAsRead,
-    deleteNotification
+    deleteNotification,
+    resolveActions
 };

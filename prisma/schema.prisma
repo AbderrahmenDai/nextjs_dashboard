@@ -36,7 +36,9 @@ model User {
   name           String
   email          String      @unique
   password       String?
-  role           String
+  roleId         String?     // Optional during migration, should be required later
+  role           Role?       @relation(fields: [roleId], references: [id])
+  
   status         String      @default("Active")
   avatarGradient String
   departmentId   String?
@@ -46,4 +48,12 @@ model User {
   // departmentName String? 
 
   @@index([departmentId])
+  @@index([roleId])
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  users       User[]
 }

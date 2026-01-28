@@ -4,7 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
 import {
     Plus, MoreVertical, FileText, XCircle, Search, Filter,
-    Calendar, Clock, User
+    Calendar, Clock, User, ArrowRight, ArrowLeft, CheckCircle
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { AnimatePresence, motion } from "framer-motion";
@@ -87,6 +87,7 @@ export default function CandidaturesPage() {
     const [candidatures, setCandidatures] = useState<Candidature[]>([]);
     const [departments, setDepartments] = useState<any[]>([]); // To populate dropdown
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState<Candidature>(initialFormState);
     const [cvFile, setCvFile] = useState<File | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
@@ -141,7 +142,9 @@ export default function CandidaturesPage() {
 
             await api.createCandidature(data);
             await loadData();
+            await loadData();
             setIsFormOpen(false);
+            setCurrentStep(1);
             setFormData(initialFormState);
             setCvFile(null);
         } catch (error) {
@@ -341,14 +344,14 @@ export default function CandidaturesPage() {
                                 <div className="flex items-center gap-4">
                                     <div className="text-right space-y-1">
                                         <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${cand.status === 'Embauché'
-                                                ? 'bg-green-500/10 text-green-600 border border-green-500/20'
-                                                : cand.status === 'En cours'
-                                                    ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20'
-                                                    : cand.status === 'Prioritaire'
-                                                        ? 'bg-orange-500/10 text-orange-600 border border-orange-500/20'
-                                                        : cand.status === 'Non embauché' || cand.status === 'Refus du candidat'
-                                                            ? 'bg-red-500/10 text-red-600 border border-red-500/20'
-                                                            : 'bg-gray-500/10 text-gray-600 border border-gray-500/20'
+                                            ? 'bg-green-500/10 text-green-600 border border-green-500/20'
+                                            : cand.status === 'En cours'
+                                                ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20'
+                                                : cand.status === 'Prioritaire'
+                                                    ? 'bg-orange-500/10 text-orange-600 border border-orange-500/20'
+                                                    : cand.status === 'Non embauché' || cand.status === 'Refus du candidat'
+                                                        ? 'bg-red-500/10 text-red-600 border border-red-500/20'
+                                                        : 'bg-gray-500/10 text-gray-600 border border-gray-500/20'
                                             }`}>
                                             {cand.status}
                                         </div>
@@ -583,212 +586,348 @@ export default function CandidaturesPage() {
                                 </button>
                             </div>
 
+                            {/* Stepper Indicator */}
+                            <div className="px-6 py-4 border-b border-border bg-card/50">
+                                <div className="flex items-center justify-center">
+                                    <div className="flex items-center w-full max-w-2xl">
+                                        {/* Step 1 */}
+                                        <div className="flex flex-col items-center relative z-10 group">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${currentStep >= 1 ? 'bg-primary text-primary-foreground scale-110 shadow-lg shadow-primary/20' : 'bg-secondary text-muted-foreground'}`}>
+                                                {currentStep > 1 ? <CheckCircle size={18} /> : 1}
+                                            </div>
+                                            <div className={`text-xs font-bold mt-2 uppercase tracking-wide transition-colors ${currentStep >= 1 ? 'text-primary' : 'text-muted-foreground'}`}>
+                                                {t('candidature.personalInfo')}
+                                            </div>
+                                        </div>
+
+                                        {/* Connector 1-2 */}
+                                        <div className={`flex-1 h-1 mx-2 rounded-full transition-all duration-500 ${currentStep >= 2 ? 'bg-primary' : 'bg-secondary'}`} />
+
+                                        {/* Step 2 */}
+                                        <div className="flex flex-col items-center relative z-10 group">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${currentStep >= 2 ? 'bg-primary text-primary-foreground scale-110 shadow-lg shadow-primary/20' : 'bg-secondary text-muted-foreground'}`}>
+                                                {currentStep > 2 ? <CheckCircle size={18} /> : 2}
+                                            </div>
+                                            <div className={`text-xs font-bold mt-2 uppercase tracking-wide transition-colors ${currentStep >= 2 ? 'text-primary' : 'text-muted-foreground'}`}>
+                                                {t('candidature.professionalInfo')}
+                                            </div>
+                                        </div>
+
+                                        {/* Connector 2-3 */}
+                                        <div className={`flex-1 h-1 mx-2 rounded-full transition-all duration-500 ${currentStep >= 3 ? 'bg-primary' : 'bg-secondary'}`} />
+
+                                        {/* Step 3 */}
+                                        <div className="flex flex-col items-center relative z-10 group">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${currentStep >= 3 ? 'bg-primary text-primary-foreground scale-110 shadow-lg shadow-primary/20' : 'bg-secondary text-muted-foreground'}`}>
+                                                3
+                                            </div>
+                                            <div className={`text-xs font-bold mt-2 uppercase tracking-wide transition-colors ${currentStep >= 3 ? 'text-primary' : 'text-muted-foreground'}`}>
+                                                {t('candidature.evaluations')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Modal Body - Scrollable */}
                             <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                                <form id="create-form" onSubmit={handleCreate} className="space-y-8">
+                                <form id="create-form" onSubmit={handleCreate} className="space-y-6">
 
-                                    {/* Section 1: Personal Info */}
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-primary mb-4 border-b border-primary/20 pb-2">{t('candidature.personalInfo')}</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.firstName')}</label>
-                                                <input required name="firstName" value={formData.firstName} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.lastName')}</label>
-                                                <input required name="lastName" value={formData.lastName} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.birthDate')}</label>
-                                                <input type="date" name="birthDate" value={formData.birthDate} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('common.email')}</label>
-                                                <input type="email" required name="email" value={formData.email} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('common.phone')}</label>
-                                                <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('common.gender')}</label>
-                                                <select name="gender" value={formData.gender} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
-                                                    <option value="MALE">Male</option>
-                                                    <option value="FEMALE">Female</option>
-                                                </select>
-                                            </div>
-                                            <div className="col-span-1 md:col-span-3 space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('common.address')}</label>
-                                                <input name="address" value={formData.address} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Section 2: Professional Info */}
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-primary mb-4 border-b border-primary/20 pb-2">{t('candidature.professionalInfo')}</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.position')}</label>
-                                                <input required name="positionAppliedFor" value={formData.positionAppliedFor} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('common.department')}</label>
-                                                <select name="department" value={formData.department} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
-                                                    <option value="">{t('common.department')}</option>
-                                                    {departments.map((dept: any) => (
-                                                        <option key={dept.id} value={dept.name}>{dept.name}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">Work Site</label>
-                                                <input name="workSite" value={formData.workSite} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">Specialty</label>
-                                                <input name="specialty" value={formData.specialty} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">Level</label>
-                                                <input name="level" value={formData.level} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.experience')}</label>
-                                                <input type="number" name="yearsOfExperience" value={formData.yearsOfExperience} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">Languages</label>
-                                                <input name="language" value={formData.language} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.source')}</label>
-                                                <select name="source" value={formData.source} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
-                                                    <option value="WEBSITE">Website</option>
-                                                    <option value="LINKEDIN">LinkedIn</option>
-                                                    <option value="REFERRAL">Referral</option>
-                                                    <option value="OTHER">Other</option>
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">Recruitment Mode</label>
-                                                <select name="recruitmentMode" value={formData.recruitmentMode} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
-                                                    <option value="EXTERNAL">External</option>
-                                                    <option value="INTERNAL">Internal</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Section 3: Extended Details */}
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-primary mb-4 border-b border-primary/20 pb-2">{t('candidature.extendedInfo')}</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.education')}</label>
-                                                <input name="educationLevel" value={formData.educationLevel} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">Study Specialty</label>
-                                                <input name="studySpecialty" value={formData.studySpecialty} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">Family Situation</label>
-                                                <input name="familySituation" value={formData.familySituation} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.currentSalary')}</label>
-                                                <input type="number" name="currentSalary" value={formData.currentSalary} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.expectedSalary')}</label>
-                                                <input type="number" name="salaryExpectation" value={formData.salaryExpectation} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.proposedSalary')}</label>
-                                                <input type="number" name="proposedSalary" value={formData.proposedSalary} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">Notice Period</label>
-                                                <input name="noticePeriod" value={formData.noticePeriod} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50" />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.recruiterComments')}</label>
-                                                <select name="recruiterComments" value={formData.recruiterComments} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
-                                                    <option value="">Select Opinion</option>
-                                                    <option value="Favorable">Favorable</option>
-                                                    <option value="Defavorable">Defavorable</option>
-                                                    <option value="Prioritaire">Prioritaire</option>
-                                                    <option value="Passable">Passable</option>
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.hrOpinion')}</label>
-                                                <select name="hrOpinion" value={formData.hrOpinion} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
-                                                    <option value="">Select Opinion</option>
-                                                    <option value="Favorable">Favorable</option>
-                                                    <option value="Defavorable">Defavorable</option>
-                                                    <option value="Prioritaire">Prioritaire</option>
-                                                    <option value="Passable">Passable</option>
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-sm font-medium text-muted-foreground">{t('candidature.managerOpinion')}</label>
-                                                <select name="managerOpinion" value={formData.managerOpinion} onChange={handleInputChange} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:ring-2 focus:ring-primary/50">
-                                                    <option value="">Select Opinion</option>
-                                                    <option value="Favorable">Favorable</option>
-                                                    <option value="Defavorable">Defavorable</option>
-                                                    <option value="Prioritaire">Prioritaire</option>
-                                                    <option value="Passable">Passable</option>
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        {/* CV Upload Section */}
-                                        <div className="mt-6 border-t border-border pt-4">
-                                            <h3 className="text-sm font-semibold text-primary mb-3">CV / Resume</h3>
-                                            <div className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
-                                                <div className="p-2 rounded-full bg-primary/10 text-primary">
-                                                    <FileText size={24} />
+                                    {/* Step 1: Personal Info */}
+                                    {currentStep === 1 && (
+                                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.firstName')} <span className="text-destructive">*</span></label>
+                                                    <input required name="firstName" value={formData.firstName} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
                                                 </div>
-                                                <div className="flex-1">
-                                                    <input
-                                                        type="file"
-                                                        accept=".pdf,.doc,.docx"
-                                                        onChange={(e) => setCvFile(e.target.files ? e.target.files[0] : null)}
-                                                        className="w-full text-sm text-foreground
-                                            file:mr-4 file:py-2 file:px-4
-                                            file:rounded-full file:border-0
-                                            file:text-sm file:font-semibold
-                                            file:bg-primary file:text-primary-foreground
-                                            hover:file:bg-primary/90
-                                            cursor-pointer bg-transparent"
-                                                    />
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.lastName')} <span className="text-destructive">*</span></label>
+                                                    <input required name="lastName" value={formData.lastName} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
                                                 </div>
-                                                {cvFile && (
-                                                    <div className="text-xs text-green-500 font-bold px-3 py-1 bg-green-500/10 rounded-full border border-green-500/20">
-                                                        {cvFile.name}
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.birthDate')}</label>
+                                                    <input type="date" name="birthDate" value={formData.birthDate} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('common.email')} <span className="text-destructive">*</span></label>
+                                                    <input type="email" required name="email" value={formData.email} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('common.phone')}</label>
+                                                    <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('common.gender')}</label>
+                                                    <div className="relative">
+                                                        <select name="gender" value={formData.gender} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
+                                                            <option value="MALE">Male</option>
+                                                            <option value="FEMALE">Female</option>
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                                        </div>
                                                     </div>
-                                                )}
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">Family Situation</label>
+                                                    <input name="familySituation" value={formData.familySituation} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                                <div className="col-span-1 md:col-span-2 space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('common.address')}</label>
+                                                    <input name="address" value={formData.address} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
 
+                                    {/* Step 2: Professional Info */}
+                                    {currentStep === 2 && (
+                                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.position')} <span className="text-destructive">*</span></label>
+                                                    <input required name="positionAppliedFor" value={formData.positionAppliedFor} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('common.department')}</label>
+                                                    <div className="relative">
+                                                        <select name="department" value={formData.department} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
+                                                            <option value="">{t('common.department')}</option>
+                                                            {departments.map((dept: any) => (
+                                                                <option key={dept.id} value={dept.name}>{dept.name}</option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">Work Site</label>
+                                                    <input name="workSite" value={formData.workSite} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">Specialty</label>
+                                                    <input name="specialty" value={formData.specialty} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">Level</label>
+                                                    <input name="level" value={formData.level} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.experience')}</label>
+                                                    <input type="number" name="yearsOfExperience" value={formData.yearsOfExperience} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.education')}</label>
+                                                    <input name="educationLevel" value={formData.educationLevel} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">Study Specialty</label>
+                                                    <input name="studySpecialty" value={formData.studySpecialty} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">Languages</label>
+                                                    <input name="language" value={formData.language} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.source')}</label>
+                                                    <div className="relative">
+                                                        <select name="source" value={formData.source} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
+                                                            <option value="WEBSITE">Website</option>
+                                                            <option value="LINKEDIN">LinkedIn</option>
+                                                            <option value="REFERRAL">Referral</option>
+                                                            <option value="OTHER">Other</option>
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">Recruitment Mode</label>
+                                                    <div className="relative">
+                                                        <select name="recruitmentMode" value={formData.recruitmentMode} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
+                                                            <option value="EXTERNAL">External</option>
+                                                            <option value="INTERNAL">Internal</option>
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Step 3: Evaluations & Offer */}
+                                    {currentStep === 3 && (
+                                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.currentSalary')}</label>
+                                                    <div className="relative">
+                                                        <input type="number" name="currentSalary" value={formData.currentSalary} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none pr-8" />
+                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">€</span>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.expectedSalary')}</label>
+                                                    <div className="relative">
+                                                        <input type="number" name="salaryExpectation" value={formData.salaryExpectation} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none pr-8" />
+                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">€</span>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.proposedSalary')}</label>
+                                                    <div className="relative">
+                                                        <input type="number" name="proposedSalary" value={formData.proposedSalary} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none pr-8" />
+                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">€</span>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">Notice Period</label>
+                                                    <input name="noticePeriod" value={formData.noticePeriod} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-5">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.recruiterComments')}</label>
+                                                    <div className="relative">
+                                                        <select name="recruiterComments" value={formData.recruiterComments} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
+                                                            <option value="">Select Opinion</option>
+                                                            <option value="Favorable">Favorable</option>
+                                                            <option value="Defavorable">Defavorable</option>
+                                                            <option value="Prioritaire">Prioritaire</option>
+                                                            <option value="Passable">Passable</option>
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.hrOpinion')}</label>
+                                                    <div className="relative">
+                                                        <select name="hrOpinion" value={formData.hrOpinion} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
+                                                            <option value="">Select Opinion</option>
+                                                            <option value="Favorable">Favorable</option>
+                                                            <option value="Defavorable">Defavorable</option>
+                                                            <option value="Prioritaire">Prioritaire</option>
+                                                            <option value="Passable">Passable</option>
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.managerOpinion')}</label>
+                                                    <div className="relative">
+                                                        <select name="managerOpinion" value={formData.managerOpinion} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
+                                                            <option value="">Select Opinion</option>
+                                                            <option value="Favorable">Favorable</option>
+                                                            <option value="Defavorable">Defavorable</option>
+                                                            <option value="Prioritaire">Prioritaire</option>
+                                                            <option value="Passable">Passable</option>
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* CV Upload Section */}
+                                            <div className="mt-6 border-t border-border pt-4">
+                                                <h3 className="text-sm font-semibold text-primary mb-3">CV / Resume</h3>
+                                                <div className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors group cursor-pointer relative">
+                                                    <div className="p-3 rounded-full bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+                                                        <FileText size={24} />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            {cvFile ? cvFile.name : "Click to upload or drag and drop"}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                            PDF, DOC, DOCX up to 10MB
+                                                        </p>
+                                                        <input
+                                                            type="file"
+                                                            accept=".pdf,.doc,.docx"
+                                                            onChange={(e) => setCvFile(e.target.files ? e.target.files[0] : null)}
+                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                        />
+                                                    </div>
+                                                    {cvFile && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => { e.preventDefault(); setCvFile(null); }}
+                                                            className="p-1 hover:bg-destructive/10 text-destructive rounded-full"
+                                                        >
+                                                            <XCircle size={18} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </form>
                             </div>
 
-                            {/* Modal Footer */}
-                            <div className="px-6 py-4 border-t border-border bg-muted/30 flex justify-end gap-3">
-                                <button onClick={() => setIsFormOpen(false)} className="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-colors">
-                                    {t('common.cancel')}
-                                </button>
-                                <button form="create-form" type="submit" className="px-6 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors shadow-lg shadow-primary/20">
-                                    {t('common.save')}
-                                </button>
+                            {/* Modal Footer (Navigation) */}
+                            <div className="px-6 py-4 border-t border-border bg-muted/30 flex justify-between items-center">
+                                <div>
+                                    {currentStep > 1 ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setCurrentStep(currentStep - 1)}
+                                            className="px-4 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-medium transition-colors flex items-center gap-2"
+                                        >
+                                            <ArrowLeft size={18} />
+                                            Back
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsFormOpen(false)}
+                                            className="px-4 py-2.5 rounded-xl text-muted-foreground hover:text-foreground font-medium transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div>
+                                    {currentStep < 3 ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const form = document.querySelector('#create-form') as HTMLFormElement;
+                                                if (form.checkValidity()) {
+                                                    setCurrentStep(currentStep + 1);
+                                                } else {
+                                                    form.reportValidity();
+                                                }
+                                            }}
+                                            className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors shadow-lg shadow-primary/20 flex items-center gap-2"
+                                        >
+                                            Next
+                                            <ArrowRight size={18} />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            form="create-form"
+                                            type="submit"
+                                            className="px-6 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium transition-colors shadow-lg shadow-green-600/20 flex items-center gap-2"
+                                        >
+                                            <CheckCircle size={18} />
+                                            {t('common.save')}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
