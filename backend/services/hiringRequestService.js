@@ -81,7 +81,8 @@ const updateHiringRequest = async (id, data) => {
     const updateableColumns = [
         'title', 'departmentId', 'category', 'status', 'description', 'budget', 'contractType', 'reason',
         'site', 'businessUnit', 'desiredStartDate', 'replacementFor', 'replacementReason', 
-        'increaseType', 'increaseDateRange', 'educationRequirements', 'skillsRequirements'
+        'increaseType', 'increaseDateRange', 'educationRequirements', 'skillsRequirements',
+        'rejectionReason'
     ];
 
     for (const key of Object.keys(data)) {

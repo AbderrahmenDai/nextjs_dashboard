@@ -30,6 +30,11 @@ export default function NotificationsPage() {
     const [unreadCount, setUnreadCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Rejection Modal State
+    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    const [notificationToReject, setNotificationToReject] = useState<Notification | null>(null);
+    const [rejectionReason, setRejectionReason] = useState("");
+
     const loadNotifications = async () => {
         if (!user?.id) return;
 
@@ -71,7 +76,10 @@ export default function NotificationsPage() {
             let newStatus = '';
 
             if (action === 'REJECT') {
-                newStatus = 'REJECTED';
+                setNotificationToReject(notification);
+                setRejectionReason("");
+                setIsRejectModalOpen(true);
+                return;
             } else if (action === 'APPROVE') {
                 // Determine status based on User Role (Simple logic for now)
                 // If HR -> HR_APPROVED
@@ -166,6 +174,34 @@ export default function NotificationsPage() {
             .join("")
             .toUpperCase()
             .slice(0, 2);
+    };
+
+    const confirmReject = async () => {
+        if (!notificationToReject || !notificationToReject.entityId || !user?.id) return;
+
+        try {
+            if (!rejectionReason.trim()) {
+                alert("Please provide a reason for rejection.");
+                return;
+            }
+
+            await api.updateHiringRequest(notificationToReject.entityId, {
+                status: 'REJECTED',
+                rejectionReason: rejectionReason,
+                approverId: user.id
+            });
+
+            // Mark notification as read
+            await handleMarkAsRead(notificationToReject.id);
+
+            alert("Request rejected successfully.");
+            setIsRejectModalOpen(false);
+            setNotificationToReject(null);
+            loadNotifications();
+        } catch (error) {
+            console.error("Rejection failed:", error);
+            alert("Failed to reject request.");
+        }
     };
 
     return (
@@ -308,6 +344,44 @@ export default function NotificationsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Rejection Modal */}
+            {isRejectModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-card w-full max-w-md p-6 rounded-2xl shadow-2xl border border-border animate-in zoom-in-95 duration-200">
+                        <h3 className="text-xl font-bold mb-2 flex items-center gap-2 text-destructive">
+                            <X className="w-6 h-6" />
+                            Reject Request
+                        </h3>
+                        <p className="text-muted-foreground mb-4">
+                            Please provide a reason for rejecting this hiring request. This will be sent to the requester.
+                        </p>
+
+                        <textarea
+                            className="w-full min-h-[100px] p-3 rounded-xl border border-border bg-secondary/50 focus:ring-2 focus:ring-destructive/20 focus:border-destructive outline-none resize-none mb-6"
+                            placeholder="Enter rejection reason..."
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                            autoFocus
+                        />
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setIsRejectModalOpen(false)}
+                                className="px-4 py-2 text-sm font-medium hover:bg-secondary rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmReject}
+                                className="px-4 py-2 text-sm font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg transition-colors shadow-lg shadow-destructive/20"
+                            >
+                                Confirm Rejection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </DashboardLayout>
     );
 }

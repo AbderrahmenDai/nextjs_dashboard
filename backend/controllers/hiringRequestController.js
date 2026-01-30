@@ -171,10 +171,11 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
 
             // Scenario 3: Rejected -> Notify Requester
             if (status === 'REJECTED') {
+                 const reasonText = req.body.rejectionReason ? ` Reason: ${req.body.rejectionReason}` : '';
                  await sendNotification(
                    approverId, 
                    currentRequest.requesterId, 
-                   `Your hiring request "${currentRequest.title}" has been REJECTED by ${actorName}.`
+                   `Your hiring request "${currentRequest.title}" has been REJECTED by ${actorName}.${reasonText}`
                );
                
                // Resolve outstanding Action Notifications

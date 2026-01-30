@@ -34,6 +34,7 @@ interface HiringRequest {
     increaseDateRange?: string;
     educationRequirements?: string;
     skillsRequirements?: string;
+    rejectionReason?: string;
 }
 
 interface Site {
@@ -82,7 +83,8 @@ function RequestModal({
         description: "",
         reason: "", // Justification
         educationRequirements: "",
-        skillsRequirements: ""
+        skillsRequirements: "",
+        rejectionReason: ""
     });
 
     useEffect(() => {
@@ -106,7 +108,8 @@ function RequestModal({
                     description: "",
                     reason: "",
                     educationRequirements: "",
-                    skillsRequirements: ""
+                    skillsRequirements: "",
+                    rejectionReason: ""
                 });
             }
         }
@@ -410,6 +413,20 @@ function RequestModal({
                                 </select>
                             </div>
 
+                            {formData.status === 'Rejected' && (
+                                <div className="flex flex-col gap-1 flex-1 mx-4 animate-in fade-in zoom-in duration-300">
+                                    <span className="text-xs font-bold uppercase text-red-500">Motif du refus (Requis) :</span>
+                                    <textarea
+                                        required
+                                        rows={1}
+                                        placeholder="Veuillez indiquer le motif du refus..."
+                                        value={formData.rejectionReason || ""}
+                                        onChange={(e) => setFormData({ ...formData, rejectionReason: e.target.value })}
+                                        className="bg-red-50 border border-red-200 rounded text-sm px-2 py-1 text-red-900 focus:outline-none focus:ring-1 focus:ring-red-500 w-full min-h-[40px]"
+                                    />
+                                </div>
+                            )}
+
                             <div className="flex gap-3">
                                 <button
                                     type="button"
@@ -488,7 +505,7 @@ export default function HiringRequestsPage() {
     const handleUpdate = async (data: Partial<HiringRequest>) => {
         if (!selectedRequest) return;
         try {
-            const payload = { ...data };
+            const payload = { ...data, approverId: user?.id };
             await api.updateHiringRequest(selectedRequest.id, payload);
             loadData();
             setIsModalOpen(false);
