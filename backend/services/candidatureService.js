@@ -41,12 +41,13 @@ const updateCandidature = async (id, data) => {
         UPDATE Candidature SET 
         firstName=?, lastName=?, email=?, phone=?, address=?, 
         positionAppliedFor=?, department=?, specialty=?, level=?, status=?,
-        recruiterComments=?, hrOpinion=?, managerOpinion=?, proposedSalary=?
+        recruiterComments=?, hrOpinion=?, managerOpinion=?, proposedSalary=?, cvPath=COALESCE(?, cvPath)
         WHERE id=?
     `, [
         data.firstName, data.lastName, data.email, data.phone, data.address,
         data.positionAppliedFor, data.department, data.specialty, data.level, data.status,
         data.recruiterComments, data.hrOpinion, data.managerOpinion, data.proposedSalary,
+        data.cvPath || null,
         id
     ]);
     

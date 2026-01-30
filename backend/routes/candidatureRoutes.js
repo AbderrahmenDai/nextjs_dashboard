@@ -44,7 +44,7 @@ const {
 
 router.get('/', getCandidatures);
 router.post('/', upload.single('cvFile'), createCandidature); // 'cvFile' is the field name
-router.put('/:id', updateCandidature);
+router.put('/:id', upload.single('cvFile'), updateCandidature);
 router.delete('/:id', deleteCandidature);
 
 module.exports = router;

@@ -4,7 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
 import {
     Plus, MoreVertical, FileText, XCircle, Search, Filter,
-    Calendar, Clock, User, ArrowRight, ArrowLeft, CheckCircle
+    Calendar, Clock, User, ArrowRight, ArrowLeft, CheckCircle, Edit, Trash2
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { AnimatePresence, motion } from "framer-motion";
@@ -47,6 +47,7 @@ interface Candidature {
     recruitmentMode: "EXTERNAL" | "INTERNAL";
     workSite: string;
 
+    cvPath?: string;
     status: string;
     createdAt?: string;
 }
@@ -123,7 +124,7 @@ export default function CandidaturesPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleCreate = async (e: React.FormEvent) => {
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             const data = new FormData();
@@ -140,17 +141,72 @@ export default function CandidaturesPage() {
                 data.append('cvFile', cvFile);
             }
 
-            await api.createCandidature(data);
-            await loadData();
+            if (formData.id) {
+                await api.updateCandidature(formData.id, data);
+            } else {
+                await api.createCandidature(data);
+            }
+
             await loadData();
             setIsFormOpen(false);
             setCurrentStep(1);
             setFormData(initialFormState);
             setCvFile(null);
         } catch (error) {
-            console.error("Failed to create candidature:", error);
-            alert("Failed to create candidature. Please check the console.");
+            console.error("Failed to save candidature:", error);
+            alert("Failed to save candidature. Please check the console.");
         }
+    };
+
+    const handleDelete = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!confirm("Are you sure you want to delete this candidature?")) return;
+        try {
+            await api.deleteCandidature(id);
+            await loadData();
+            if (selectedCandidature?.id === id) setSelectedCandidature(null);
+        } catch (error) {
+            console.error("Failed to delete candidature:", error);
+            alert("Failed to delete candidature.");
+        }
+    }
+
+    const handleEdit = (cand: Candidature, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setFormData({
+            ...initialFormState, // Start with defaults
+            ...cand, // Overlay existing data
+            birthDate: cand.birthDate ? cand.birthDate.split('T')[0] : "",
+            firstName: cand.firstName || "",
+            lastName: cand.lastName || "",
+            email: cand.email || "",
+            phone: cand.phone || "",
+            address: cand.address || "",
+            positionAppliedFor: cand.positionAppliedFor || "",
+            department: cand.department || "",
+            specialty: cand.specialty || "",
+            level: cand.level || "",
+            yearsOfExperience: cand.yearsOfExperience || 0,
+            language: cand.language || "",
+            recruiterComments: cand.recruiterComments || "",
+            educationLevel: cand.educationLevel || "",
+            familySituation: cand.familySituation || "",
+            studySpecialty: cand.studySpecialty || "",
+            currentSalary: cand.currentSalary || 0,
+            salaryExpectation: cand.salaryExpectation || 0,
+            proposedSalary: cand.proposedSalary || 0,
+            noticePeriod: cand.noticePeriod || "",
+            hrOpinion: cand.hrOpinion || "",
+            managerOpinion: cand.managerOpinion || "",
+            workSite: cand.workSite || "",
+            cvPath: cand.cvPath || "",
+            // Ensure enums or selects are valid or default strings, not null
+            source: cand.source || "WEBSITE",
+            recruitmentMode: cand.recruitmentMode || "EXTERNAL",
+            gender: cand.gender || "MALE",
+        });
+        setCurrentStep(1);
+        setIsFormOpen(true);
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -224,7 +280,11 @@ export default function CandidaturesPage() {
                     <p className="text-muted-foreground mt-1">{t('candidature.subtitle')}</p>
                 </div>
                 <button
-                    onClick={() => setIsFormOpen(true)}
+                    onClick={() => {
+                        setFormData(initialFormState);
+                        setCurrentStep(1);
+                        setIsFormOpen(true);
+                    }}
                     className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl flex items-center gap-2 transition-colors font-medium shadow-lg shadow-primary/20"
                 >
                     <Plus size={20} />
@@ -362,15 +422,32 @@ export default function CandidaturesPage() {
                                             </div>
                                         )}
                                     </div>
-                                    <button
-                                        className="p-2 rounded-lg hover:bg-secondary/50 transition-colors opacity-0 group-hover:opacity-100"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            openDetails(cand);
-                                        }}
-                                    >
-                                        <MoreVertical size={20} className="text-muted-foreground" />
-                                    </button>
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            className="p-2 rounded-lg hover:bg-orange-500/10 hover:text-orange-600 transition-colors"
+                                            onClick={(e) => handleEdit(cand, e)}
+                                            title="Edit"
+                                        >
+                                            <Edit size={18} />
+                                        </button>
+                                        <button
+                                            className="p-2 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                            onClick={(e) => handleDelete(cand.id!, e)}
+                                            title="Delete"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                        <button
+                                            className="p-2 rounded-lg hover:bg-secondary/50 transition-colors"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                openDetails(cand);
+                                            }}
+                                            title="View Details"
+                                        >
+                                            <MoreVertical size={20} className="text-muted-foreground" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </motion.div>
@@ -559,7 +636,30 @@ export default function CandidaturesPage() {
                                         <div className="space-y-2">
                                             <button className="w-full py-2 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/20 text-sm font-medium transition-colors">{t('candidature.markHired')}</button>
                                             <button className="w-full py-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 text-sm font-medium transition-colors">{t('candidature.reject')}</button>
-                                            <button className="w-full py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground border border-border text-sm font-medium transition-colors">{t('candidature.downloadCV')}</button>
+                                            <button
+                                                onClick={() => {
+                                                    if (selectedCandidature?.cvPath) {
+                                                        const url = `http://localhost:3001/${selectedCandidature.cvPath}`;
+                                                        window.open(url, '_blank');
+                                                    } else {
+                                                        alert("No CV available");
+                                                    }
+                                                }}
+                                                className="w-full py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground border border-border text-sm font-medium transition-colors"
+                                            >
+                                                {t('candidature.downloadCV')}
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    if (selectedCandidature) {
+                                                        handleEdit(selectedCandidature, e);
+                                                        setSelectedCandidature(null);
+                                                    }
+                                                }}
+                                                className="w-full py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-sm font-medium transition-colors"
+                                            >
+                                                Edit Candidature
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -631,7 +731,7 @@ export default function CandidaturesPage() {
 
                             {/* Modal Body - Scrollable */}
                             <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                                <form id="create-form" onSubmit={handleCreate} className="space-y-6">
+                                <form id="create-form" onSubmit={handleSave} className="space-y-6">
 
                                     {/* Step 1: Personal Info */}
                                     {currentStep === 1 && (
@@ -849,25 +949,41 @@ export default function CandidaturesPage() {
                                                     </div>
                                                     <div className="flex-1">
                                                         <p className="text-sm font-semibold text-foreground">
-                                                            {cvFile ? cvFile.name : "Click to upload or drag and drop"}
+                                                            {cvFile ? cvFile.name : (formData.cvPath ? `Current: ${formData.cvPath.split(/[/\\]/).pop()} (Click to replace)` : "Click to upload or drag and drop")}
                                                         </p>
                                                         <p className="text-xs text-muted-foreground mt-0.5">
+                                                            {formData.cvPath && !cvFile && (
+                                                                <a
+                                                                    href={`http://localhost:8080/${formData.cvPath}`}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="text-primary hover:underline mr-2 relative z-20"
+                                                                >
+                                                                    View Current CV
+                                                                </a>
+                                                            )}
                                                             PDF, DOC, DOCX up to 10MB
                                                         </p>
                                                         <input
                                                             type="file"
                                                             accept=".pdf,.doc,.docx"
                                                             onChange={(e) => setCvFile(e.target.files ? e.target.files[0] : null)}
-                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                                         />
                                                     </div>
-                                                    {cvFile && (
+                                                    {(cvFile || formData.cvPath) && (
                                                         <button
                                                             type="button"
-                                                            onClick={(e) => { e.preventDefault(); setCvFile(null); }}
-                                                            className="p-1 hover:bg-destructive/10 text-destructive rounded-full"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setCvFile(null);
+                                                            }}
+                                                            className="p-1 hover:bg-destructive/10 text-destructive rounded-full relative z-20"
+                                                            title={cvFile ? "Remove selected file" : "Keep current file"}
                                                         >
-                                                            <XCircle size={18} />
+                                                            {cvFile ? <XCircle size={18} /> : null}
                                                         </button>
                                                     )}
                                                 </div>
@@ -904,7 +1020,8 @@ export default function CandidaturesPage() {
                                     {currentStep < 3 ? (
                                         <button
                                             type="button"
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                                e.preventDefault();
                                                 const form = document.querySelector('#create-form') as HTMLFormElement;
                                                 if (form.checkValidity()) {
                                                     setCurrentStep(currentStep + 1);

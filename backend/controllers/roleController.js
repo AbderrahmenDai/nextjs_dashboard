@@ -14,7 +14,7 @@ const getRoles = asyncHandler(async (req, res) => {
 // @route   POST /api/roles
 // @access  Public
 const createRole = asyncHandler(async (req, res) => {
-    const { name, description } = req.body;
+    const { name, description, departmentId } = req.body;
 
     if (!name) {
         res.status(400);
@@ -29,9 +29,14 @@ const createRole = asyncHandler(async (req, res) => {
     }
 
     const id = uuidv4();
-    await db.query('INSERT INTO Role (id, name, description) VALUES (?, ?, ?)', [id, name, description]);
+    await db.query('INSERT INTO Role (id, name, description, departmentId) VALUES (?, ?, ?, ?)', [id, name, description, departmentId]);
 
-    const [role] = await db.query('SELECT * FROM Role WHERE id = ?', [id]);
+    const [role] = await db.query(`
+        SELECT r.*, d.name as departmentName 
+        FROM Role r 
+        LEFT JOIN Department d ON r.departmentId = d.id 
+        WHERE r.id = ?
+    `, [id]);
     res.status(201).json(role[0]);
 });
 
@@ -40,7 +45,7 @@ const createRole = asyncHandler(async (req, res) => {
 // @access  Public
 const updateRole = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { name, description } = req.body;
+    const { name, description, departmentId } = req.body;
 
     if (!name) {
         res.status(400);
@@ -54,9 +59,14 @@ const updateRole = asyncHandler(async (req, res) => {
         throw new Error('Role name already in use');
     }
 
-    await db.query('UPDATE Role SET name = ?, description = ? WHERE id = ?', [name, description, id]);
+    await db.query('UPDATE Role SET name = ?, description = ?, departmentId = ? WHERE id = ?', [name, description, departmentId, id]);
     
-    const [role] = await db.query('SELECT * FROM Role WHERE id = ?', [id]);
+    const [role] = await db.query(`
+        SELECT r.*, d.name as departmentName 
+        FROM Role r 
+        LEFT JOIN Department d ON r.departmentId = d.id 
+        WHERE r.id = ?
+    `, [id]);
     res.json(role[0]);
 });
 

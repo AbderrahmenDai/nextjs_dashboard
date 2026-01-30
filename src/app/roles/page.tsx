@@ -9,6 +9,13 @@ interface Role {
     id: string;
     name: string;
     description?: string;
+    departmentId?: string;
+    departmentName?: string;
+}
+
+interface Department {
+    id: string;
+    name: string;
 }
 
 function RoleFormModal({
@@ -24,15 +31,19 @@ function RoleFormModal({
 }) {
     const [formData, setFormData] = useState<Partial<Role>>({
         name: "",
-        description: ""
+        description: "",
+        departmentId: ""
     });
+    const [departments, setDepartments] = useState<Department[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(role || { name: "", description: "" });
+            setFormData(role || { name: "", description: "", departmentId: "" });
             setError("");
+            // Fetch depts
+            api.getDepartments().then(setDepartments).catch(console.error);
         }
     }, [isOpen, role]);
 
@@ -82,6 +93,19 @@ function RoleFormModal({
                             className="input-field"
                             placeholder="e.g. MANAGER"
                         />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Department</label>
+                        <select
+                            value={formData.departmentId || ""}
+                            onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+                            className="input-field"
+                        >
+                            <option value="">Select Department (Optional)</option>
+                            {departments.map((dept) => (
+                                <option key={dept.id} value={dept.id}>{dept.name}</option>
+                            ))}
+                        </select>
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Description</label>
@@ -218,6 +242,11 @@ export default function RolesPage() {
                             </div>
                             <div>
                                 <h3 className="text-lg font-bold mb-1">{role.name}</h3>
+                                {role.departmentName && (
+                                    <span className="text-xs font-bold uppercase bg-primary/10 text-primary px-2 py-0.5 rounded mb-2 inline-block">
+                                        {role.departmentName}
+                                    </span>
+                                )}
                                 <p className="text-sm text-muted-foreground line-clamp-2">{role.description || "No description provided."}</p>
                             </div>
                             <div className="mt-auto pt-4 border-t border-border/50 flex justify-between items-center text-xs text-muted-foreground font-medium">

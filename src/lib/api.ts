@@ -152,6 +152,25 @@ export const api = {
         return response.json();
     },
 
+    updateCandidature: async (id: string, candidature: any) => {
+        const isFormData = candidature instanceof FormData;
+        const response = await fetch(`${API_BASE_URL}/candidatures/${id}`, {
+            method: 'PUT',
+            headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+            body: isFormData ? candidature : JSON.stringify(candidature),
+        });
+        if (!response.ok) throw new Error('Failed to update candidature');
+        return response.json();
+    },
+
+    deleteCandidature: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/candidatures/${id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Failed to delete candidature');
+        return response.json();
+    },
+
     // --- INTERVIEWS ---
     getAllInterviews: async () => {
         const response = await fetch(`${API_BASE_URL}/interviews`);

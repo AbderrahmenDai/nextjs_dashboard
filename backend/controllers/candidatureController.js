@@ -18,6 +18,9 @@ const createCandidature = asyncHandler(async (req, res) => {
 });
 
 const updateCandidature = asyncHandler(async (req, res) => {
+    if (req.file) {
+        req.body.cvPath = req.file.path.replace(/\\/g, '/');
+    }
     const updated = await candidatureService.updateCandidature(req.params.id, req.body);
     res.json(updated);
 });
