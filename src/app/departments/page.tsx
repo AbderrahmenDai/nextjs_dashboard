@@ -18,6 +18,7 @@ interface Department {
     id: string;
     name: string;
     head: string;
+    headEmail: string;
     location: string;
     employeeCount: number;
     budget: number;
@@ -44,6 +45,7 @@ function DepartmentFormModal({
     const [formData, setFormData] = useState<Partial<Department>>({
         name: "",
         head: "",
+        headEmail: "",
         location: "",
         employeeCount: 0,
         budget: 0,
@@ -57,6 +59,7 @@ function DepartmentFormModal({
             setFormData(department || {
                 name: "",
                 head: "",
+                headEmail: "",
                 location: "",
                 employeeCount: 0,
                 budget: 0,
@@ -98,15 +101,15 @@ function DepartmentFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Head of Department</label>
+                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Head of Department Email</label>
                         <input
-                            required
-                            type="text"
-                            value={formData.head || ""}
-                            onChange={(e) => setFormData({ ...formData, head: e.target.value })}
+                            type="email"
+                            value={formData.headEmail || ""}
+                            onChange={(e) => setFormData({ ...formData, headEmail: e.target.value })}
                             className="input-field"
-                            placeholder="e.g. John Doe"
+                            placeholder="e.g. john.doe@example.com"
                         />
+                        <p className="text-[10px] text-muted-foreground mt-1">If the email exists, the user becomes the head. Leave empty to remove head.</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -280,9 +283,10 @@ export default function DepartmentsPage() {
             }
             setIsModalOpen(false);
             setEditingDept(null);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to save", error);
-            alert("Failed to save department");
+            const message = error.response?.data?.message || "Failed to save department";
+            alert(message);
         }
     }
 
@@ -496,9 +500,14 @@ export default function DepartmentsPage() {
                             <div className="space-y-3 py-3 border-t border-dashed border-border mt-1">
                                 <div className="flex justify-between items-center text-sm group/row hover:bg-secondary/30 p-1.5 rounded-lg transition-colors -mx-1.5">
                                     <span className="text-muted-foreground font-medium">Head</span>
-                                    <span className="text-foreground font-semibold flex items-center gap-2">
-                                        {dept.head}
-                                        <Users size={14} className="text-primary/70" />
+                                    <span className="text-foreground font-semibold flex flex-col items-end">
+                                        <div className="flex items-center gap-2">
+                                            {dept.head || "Not Assigned"}
+                                            <Users size={14} className="text-primary/70" />
+                                        </div>
+                                        {dept.headEmail && (
+                                            <span className="text-[10px] text-muted-foreground font-normal">{dept.headEmail}</span>
+                                        )}
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center text-sm group/row hover:bg-secondary/30 p-1.5 rounded-lg transition-colors -mx-1.5">

@@ -13,16 +13,24 @@ const getDepartments = asyncHandler(async (req, res) => {
 // @route   POST /api/departments
 // @access  Public
 const createDepartment = asyncHandler(async (req, res) => {
-    const dept = await departmentService.createDepartment(req.body);
-    res.status(201).json(dept);
+    try {
+        const dept = await departmentService.createDepartment(req.body);
+        res.status(201).json(dept);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
 });
 
 // @desc    Update department
 // @route   PUT /api/departments/:id
 // @access  Public
 const updateDepartment = asyncHandler(async (req, res) => {
-    const dept = await departmentService.updateDepartment(req.params.id, req.body);
-    res.json(dept);
+    try {
+        const dept = await departmentService.updateDepartment(req.params.id, req.body);
+        res.json(dept);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
 });
 
 // @desc    Delete department

@@ -19,6 +19,7 @@ model Department {
   id            String   @id @default(uuid())
   name          String
   head          String
+  headEmail     String?
   location      String
   employeeCount Int      @default(0)
   budget        Float

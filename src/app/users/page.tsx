@@ -388,26 +388,6 @@ function UserFormModal({
                     </div>
 
 
-                    <div>
-                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Status</label>
-                        <div className="flex bg-secondary p-1 rounded-xl border border-border">
-                            {(["Active", "In Meeting", "Offline"] as const).map((status) => (
-                                <button
-                                    key={status}
-                                    type="button"
-                                    onClick={() => setFormData({ ...formData, status })}
-                                    className={clsx(
-                                        "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all",
-                                        formData.status === status
-                                            ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    {status}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
 
                     <div className="pt-4 flex justify-end gap-3 border-t border-border mt-2">
                         <button

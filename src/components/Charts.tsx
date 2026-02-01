@@ -373,6 +373,7 @@ export function RecruitmentRateChart() {
 
 // --- Department User Count Data ---
 const colorMap: { [key: string]: string } = {
+    // Standard Utility Classes
     "bg-red-500": "#ef4444",
     "bg-orange-500": "#f97316",
     "bg-amber-500": "#f59e0b",
@@ -384,31 +385,37 @@ const colorMap: { [key: string]: string } = {
     "bg-cyan-500": "#06b6d4",
     "bg-sky-500": "#0ea5e9",
     "bg-blue-500": "#3b82f6",
-    "bg-indigo-500": "#6366f1", // Indigo
-    "bg-violet-500": "#8b5cf6", // Violet
+    "bg-indigo-500": "#6366f1",
+    "bg-violet-500": "#8b5cf6",
     "bg-purple-500": "#a855f7",
     "bg-fuchsia-500": "#d946ef",
     "bg-pink-500": "#ec4899",
     "bg-rose-500": "#f43f5e",
     "bg-slate-500": "#64748b",
     "bg-gray-500": "#6b7280",
+    // Gradient Strings from Seed Data
+    "from-pink-500 to-rose-500": "#ec4899",
+    "from-blue-500 to-cyan-500": "#3b82f6",
+    "from-purple-500 to-pink-500": "#a855f7",
+    "from-green-500 to-emerald-500": "#22c55e",
+    "from-orange-500 to-red-500": "#f97316",
 };
 
 // Enhanced tooltip component for Department Chart
 const DepartmentTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
-        const data = payload[0] as unknown as CustomTooltipPayload;
+        const item = payload[0];
         return (
             <div className="bg-card/95 backdrop-blur-xl border border-border shadow-2xl rounded-xl px-5 py-4 text-sm animate-in fade-in zoom-in duration-200">
                 <p className="font-bold text-lg mb-2 text-foreground flex items-center gap-2">
                     <span
-                        className="w-3 h-3 rounded-full shadow-lg animate-pulse"
-                        style={{ backgroundColor: data.fill }}
+                        className="w-3 h-3 rounded-full shadow-lg"
+                        style={{ backgroundColor: item.payload?.fill || item.color }}
                     />
-                    {String(data.payload?.name)}
+                    {item.payload?.name}
                 </p>
                 <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-primary">{data.value}</span>
+                    <span className="text-2xl font-black text-primary">{item.value}</span>
                     <span className="text-xs text-muted-foreground uppercase tracking-wider">employees</span>
                 </div>
             </div>
@@ -516,14 +523,7 @@ export function DepartmentUserCountChart() {
             {/* Animated background gradient */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
-            {/* Floating particles effect */}
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-                <div className="absolute top-[20%] left-[10%] w-2 h-2 bg-primary/20 rounded-full animate-pulse" />
-                <div className="absolute top-[60%] right-[15%] w-1.5 h-1.5 bg-purple-500/20 rounded-full animate-pulse delay-300" />
-                <div className="absolute bottom-[30%] left-[70%] w-2.5 h-2.5 bg-blue-500/20 rounded-full animate-pulse delay-700" />
-            </div>
-
-            <div className="relative z-10">
+            <div className="relative z-10 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-bold text-foreground uppercase tracking-wider opacity-90 flex items-center gap-2">
                         <span className="w-1 h-6 bg-gradient-to-b from-primary to-purple-500 rounded-full" />
@@ -616,22 +616,20 @@ export function DepartmentUserCountChart() {
                                 <Bar
                                     dataKey="value"
                                     radius={[8, 8, 0, 0]}
-                                    shape={AnimatedBar}
                                     isAnimationActive={true}
-                                    animationBegin={0}
-                                    animationDuration={800}
-                                    animationEasing="ease-out"
+                                    animationDuration={1000}
                                 >
                                     {data.map((entry, index) => (
                                         <Cell
                                             key={`cell-${index}`}
-                                            fill={`url(#gradient-${index})`}
+                                            fill={entry.fill}
+                                            fillOpacity={0.8}
                                         />
                                     ))}
                                     <LabelList
                                         dataKey="value"
                                         position="top"
-                                        className="fill-foreground font-bold transition-all duration-300"
+                                        className="fill-foreground font-bold"
                                         fontSize={13}
                                         dy={-8}
                                     />

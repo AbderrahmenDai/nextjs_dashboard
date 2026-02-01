@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Plus, Search, Filter, FileText, Edit, Trash2, Eye, X } from "lucide-react";
+import { Plus, Search, Filter, FileText, Edit, Trash2, Eye, X, Printer } from "lucide-react";
 import { useState, useEffect } from "react";
 import { clsx } from "clsx";
 import { api } from "@/lib/api";
@@ -75,7 +75,8 @@ function RequestModal({
     sites,
     allRoles,
     allCandidates,
-    isViewOnly = false
+    isViewOnly = false,
+    onPrint
 }: {
     isOpen: boolean;
     onClose: () => void;
@@ -86,6 +87,7 @@ function RequestModal({
     allRoles: Role[];
     allCandidates: Candidate[];
     isViewOnly?: boolean;
+    onPrint: (req: HiringRequest) => void;
 }) {
     const { t } = useLanguage();
     const [formData, setFormData] = useState<Partial<HiringRequest>>({
@@ -195,9 +197,20 @@ function RequestModal({
                             Demande d&apos;Autorisation d&apos;Embauche
                         </h2>
                     </div>
-                    <button onClick={onClose} className="p-2.5 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all">
-                        <X size={24} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {isViewOnly && request && (
+                            <button
+                                onClick={() => onPrint(request)}
+                                className="p-2.5 hover:bg-primary/10 text-primary rounded-xl transition-all"
+                                title="Print Report"
+                            >
+                                <Printer size={24} />
+                            </button>
+                        )}
+                        <button onClick={onClose} className="p-2.5 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all">
+                            <X size={24} />
+                        </button>
+                    </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar bg-card/50 p-6 space-y-6">
@@ -632,6 +645,166 @@ export default function HiringRequestsPage() {
         setIsModalOpen(true);
     };
 
+    const handlePrint = (req: HiringRequest) => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+
+        const date = new Date(req.createdAt).toLocaleDateString();
+        const startDate = req.desiredStartDate ? new Date(req.desiredStartDate).toLocaleDateString() : 'N/A';
+
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Hiring Request - ${req.title}</title>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; line-height: 1.6; padding: 40px; }
+                    .header { text-align: center; border-bottom: 3px solid #3b82f6; padding-bottom: 20px; margin-bottom: 30px; }
+                    .header h1 { margin: 0; color: #1e40af; text-transform: uppercase; letter-spacing: 2px; }
+                    .header p { margin: 5px 0 0; color: #666; font-weight: bold; }
+                    
+                    .section { margin-bottom: 30px; background: #fff; }
+                    .section-title { background: #f3f4f6; padding: 8px 15px; font-weight: bold; text-transform: uppercase; border-left: 4px solid #3b82f6; margin-bottom: 15px; font-size: 14px; }
+                    
+                    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                    .field { margin-bottom: 10px; }
+                    .label { font-weight: bold; font-size: 12px; color: #666; text-transform: uppercase; display: block; }
+                    .value { font-size: 14px; color: #111; border-bottom: 1px solid #eee; padding-bottom: 2px; }
+                    
+                    .full-width { grid-column: span 2; }
+                    
+                    .text-block { background: #fafafa; padding: 15px; border: 1px solid #eee; border-radius: 4px; font-size: 13px; white-space: pre-wrap; }
+                    
+                    .footer { margin-top: 60px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 40px; text-align: center; }
+                    .signature-box { border-top: 1px solid #333; padding-top: 10px; font-size: 12px; }
+                    
+                    @media print {
+                        body { padding: 0; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>Demande d&apos;Autorisation d&apos;Embauche</h1>
+                    <p>Référence: HR-${req.id.substring(0, 8)}</p>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Informations Générales</div>
+                    <div class="grid">
+                        <div class="field">
+                            <span class="label">Titre du Poste</span>
+                            <div class="value">${req.title}</div>
+                        </div>
+                        <div class="field">
+                            <span class="label">Date de la Demande</span>
+                            <div class="value">${date}</div>
+                        </div>
+                        <div class="field">
+                            <span class="label">Département / Service</span>
+                            <div class="value">${req.departmentName || req.departmentId}</div>
+                        </div>
+                        <div class="field">
+                            <span class="label">Site / Lieu de Travail</span>
+                            <div class="value">${req.site || 'N/A'}</div>
+                        </div>
+                        <div class="field">
+                            <span class="label">Catégorie</span>
+                            <div class="value">${req.category}</div>
+                        </div>
+                        <div class="field">
+                            <span class="label">Type de Contrat</span>
+                            <div class="value">${req.contractType}</div>
+                        </div>
+                        <div class="field">
+                            <span class="label">Priorité</span>
+                            <div class="value">${req.priority || 'Medium'}</div>
+                        </div>
+                        <div class="field">
+                            <span class="label">Date Souhaitée d&apos;Engagement</span>
+                            <div class="value">${startDate}</div>
+                        </div>
+                        <div class="field">
+                            <span class="label">Demandeur</span>
+                            <div class="value">${req.requesterName || 'N/A'}</div>
+                        </div>
+                        <div class="field">
+                            <span class="label">Statut Actuel</span>
+                            <div class="value">${req.status}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Contexte de la Demande</div>
+                    <div class="grid">
+                        <div class="field full-width">
+                            <span class="label">Type d&apos;Augmentation / Remplacement</span>
+                            <div class="value">
+                                ${req.replacementFor ? `Remplacement de: ${req.replacementFor} (Motif: ${req.replacementReason || 'N/A'})` : ''}
+                                ${req.increaseType === 'Budgeted' ? `Augmentation Budgétée (${req.increaseDateRange || 'N/A'})` : ''}
+                                ${req.increaseType === 'Non-Budgeted' ? 'Augmentation Non Budgétée' : ''}
+                            </div>
+                        </div>
+                        <div class="field full-width">
+                            <span class="label">Justification précise</span>
+                            <div class="text-block">${req.reason || 'Aucune justification fournie.'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Missions et Caractéristiques du Poste</div>
+                    <div class="text-block">${req.description || 'Aucune description fournie.'}</div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Profil Recherché</div>
+                    <div class="grid">
+                        <div class="field full-width">
+                            <span class="label">Formation souhaitée</span>
+                            <div class="value">${req.educationRequirements || 'N/A'}</div>
+                        </div>
+                        <div class="field full-width">
+                            <span class="label">Compétences indispensables</span>
+                            <div class="text-block">${req.skillsRequirements || 'N/A'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <div class="signature-box">
+                        <strong>Signature du Demandeur</strong>
+                        <br><br><br>
+                        ${req.requesterName || ''}
+                    </div>
+                    <div class="signature-box">
+                        <strong>Avis RH</strong>
+                        <br><br><br>
+                        Cachet et Signature
+                    </div>
+                    <div class="signature-box">
+                        <strong>Direction Générale</strong>
+                        <br><br><br>
+                        Décision et Signature
+                    </div>
+                </div>
+
+                <script>
+                    window.onload = function() {
+                        window.print();
+                        // Optional: window.close();
+                    };
+                </script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(html);
+        printWindow.document.close();
+    };
+
     // Helper for Status Colors
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -655,6 +828,7 @@ export default function HiringRequestsPage() {
                     allRoles={allRoles}
                     allCandidates={allCandidates}
                     isViewOnly={isViewOnly}
+                    onPrint={handlePrint}
                 />
 
                 {/* Header */}
@@ -744,6 +918,13 @@ export default function HiringRequestsPage() {
                                                     title={t('hiringRequest.viewDetails')}
                                                 >
                                                     <Eye size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handlePrint(req)}
+                                                    className="p-2 hover:bg-secondary rounded-lg text-primary hover:text-primary/80 transition-colors"
+                                                    title="Print Report"
+                                                >
+                                                    <Printer size={18} />
                                                 </button>
                                                 <button
                                                     onClick={() => openEditModal(req)}

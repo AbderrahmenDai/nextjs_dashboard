@@ -11,7 +11,7 @@ import { api } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function SettingsPage() {
-    const { user, login } = useAuth(); // login used to refresh user state if needed, or we might need a refreshUser method
+    const { user, login, updateUserData } = useAuth(); // login used to refresh user state if needed, or we might need a refreshUser method
     const { theme, setTheme } = useTheme();
     const { language, setLanguage, t } = useLanguage();
     const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'preferences'>('profile');
@@ -20,6 +20,7 @@ export default function SettingsPage() {
     const [profileData, setProfileData] = useState({
         name: user?.name || "",
         email: user?.email || "",
+        status: user?.status || "Active",
     });
     const [isProfileSaving, setIsProfileSaving] = useState(false);
 
@@ -37,8 +38,8 @@ export default function SettingsPage() {
         setIsProfileSaving(true);
         try {
             await api.updateUser(user.id, profileData);
+            updateUserData(profileData);
             alert("Profile updated successfully");
-            // Ideally we should refresh the user context here
         } catch (error) {
             console.error("Failed to update profile", error);
             alert("Failed to update profile");
@@ -135,6 +136,26 @@ export default function SettingsPage() {
                                                     onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
                                                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary/50"
                                                 />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-muted-foreground mb-1">Status</label>
+                                                <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                                                    {(["Active", "In Meeting", "Offline"] as const).map((status) => (
+                                                        <button
+                                                            key={status}
+                                                            type="button"
+                                                            onClick={() => setProfileData({ ...profileData, status })}
+                                                            className={clsx(
+                                                                "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all",
+                                                                profileData.status === status
+                                                                    ? "bg-primary text-white shadow-sm"
+                                                                    : "text-muted-foreground hover:text-white"
+                                                            )}
+                                                        >
+                                                            {status}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
                                             <div className="pt-4">
                                                 <button

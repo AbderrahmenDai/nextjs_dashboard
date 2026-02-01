@@ -3,16 +3,17 @@ const { v4: uuidv4 } = require('uuid');
 const emailService = require('./emailService');
 
 const getAllInterviews = async () => {
-    // Join with User (Interviewer) and Candidature (Candidate)
+    // Join with User (Interviewer), Role, and Candidature (Candidate)
     const sql = `
         SELECT i.*, 
                u.name as interviewerName, 
-               u.role as interviewerRole,
+               r.name as interviewerRole,
                c.firstName as candidateFirstName,
                c.lastName as candidateLastName,
                c.positionAppliedFor as appliedPosition
         FROM Interview i
         LEFT JOIN User u ON i.interviewerId = u.id
+        LEFT JOIN Role r ON u.roleId = r.id
         LEFT JOIN Candidature c ON i.candidatureId = c.id
         ORDER BY i.date ASC
     `;
@@ -22,9 +23,10 @@ const getAllInterviews = async () => {
 
 const getInterviewsByCandidature = async (candidatureId) => {
     const sql = `
-        SELECT i.*, u.name as interviewerName, u.role as interviewerRole
+        SELECT i.*, u.name as interviewerName, r.name as interviewerRole
         FROM Interview i
         LEFT JOIN User u ON i.interviewerId = u.id
+        LEFT JOIN Role r ON u.roleId = r.id
         WHERE i.candidatureId = ?
         ORDER BY i.date ASC
     `;
@@ -129,12 +131,13 @@ const getInterviewById = async (id) => {
     const sql = `
         SELECT i.*, 
                u.name as interviewerName, 
-               u.role as interviewerRole,
+               r.name as interviewerRole,
                c.firstName as candidateFirstName,
                c.lastName as candidateLastName,
                c.positionAppliedFor as appliedPosition
         FROM Interview i
         LEFT JOIN User u ON i.interviewerId = u.id
+        LEFT JOIN Role r ON u.roleId = r.id
         LEFT JOIN Candidature c ON i.candidatureId = c.id
         WHERE i.id = ?
     `;
