@@ -16,6 +16,7 @@ interface Role {
 interface Department {
     id: string;
     name: string;
+    siteId?: string;
 }
 
 function RoleFormModal({
@@ -57,7 +58,7 @@ function RoleFormModal({
             await onSave(formData);
             onClose();
         } catch (err: any) {
-            setError(err.message || "Failed to save role");
+            setError(err.message || "Échec de l'enregistrement du poste");
         } finally {
             setIsLoading(false);
         }
@@ -73,7 +74,7 @@ function RoleFormModal({
                             <Shield className="w-5 h-5" />
                         </div>
                         <h2 className="text-2xl font-bold text-white tracking-tight">
-                            {role ? "Edit Role" : "Add Role"}
+                            {role ? "Modifier le Poste" : "Ajouter un Poste"}
                         </h2>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-all relative z-10">
@@ -90,24 +91,24 @@ function RoleFormModal({
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Role Name</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Nom du Poste</label>
                             <input
                                 required
                                 type="text"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 className="input-field"
-                                placeholder="e.g. MANAGER"
+                                placeholder="ex: Technicien Qualité"
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Department</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Département</label>
                             <select
                                 value={formData.departmentId || ""}
                                 onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
                                 className="input-field"
                             >
-                                <option value="">Select Department (Optional)</option>
+                                <option value="">Sélectionner un département (Optionnel)</option>
                                 {departments.map((dept) => (
                                     <option key={dept.id} value={dept.id}>{dept.name}</option>
                                 ))}
@@ -119,7 +120,7 @@ function RoleFormModal({
                                 value={formData.description || ""}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 className="input-field min-h-[100px]"
-                                placeholder="Describe the role's responsibilities..."
+                                placeholder="Décrivez les responsabilités du poste..."
                             />
                         </div>
                         <div className="flex justify-end gap-3 pt-4 border-t border-border">
@@ -129,7 +130,7 @@ function RoleFormModal({
                                 className="px-4 py-2 text-muted-foreground hover:bg-secondary rounded-lg transition-colors font-medium text-sm"
                                 disabled={isLoading}
                             >
-                                Cancel
+                                Annuler
                             </button>
                             <button
                                 type="submit"
@@ -137,7 +138,7 @@ function RoleFormModal({
                                 className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium shadow-lg transition-all flex items-center gap-2 text-sm"
                             >
                                 {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {role ? "Save Changes" : "Create Role"}
+                                {role ? "Enregistrer" : "Créer le Poste"}
                             </button>
                         </div>
                     </form>
@@ -149,7 +150,11 @@ function RoleFormModal({
 
 export default function RolesPage() {
     const [roles, setRoles] = useState<Role[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [sites, setSites] = useState<{ id: string; name: string }[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedDepartment, setSelectedDepartment] = useState("all");
+    const [selectedSite, setSelectedSite] = useState("all");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRole, setEditingRole] = useState<Role | null>(null);
 
@@ -162,8 +167,28 @@ export default function RolesPage() {
         }
     };
 
+    const loadDepartments = async () => {
+        try {
+            const data = await api.getDepartments();
+            setDepartments(data);
+        } catch (error) {
+            console.error("Failed to fetch departments:", error);
+        }
+    };
+
+    const loadSites = async () => {
+        try {
+            const data = await api.getSites();
+            setSites(data);
+        } catch (error) {
+            console.error("Failed to fetch sites:", error);
+        }
+    };
+
     useEffect(() => {
         loadRoles();
+        loadDepartments();
+        loadSites();
     }, []);
 
     const handleSave = async (roleData: Partial<Role>) => {
@@ -176,7 +201,7 @@ export default function RolesPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this role?")) return;
+        if (!confirm("Êtes-vous sûr de vouloir supprimer ce poste ?")) return;
         try {
             await api.deleteRole(id);
             setRoles(roles.filter(r => r.id !== id));
@@ -185,10 +210,23 @@ export default function RolesPage() {
         }
     };
 
-    const filteredRoles = roles.filter(r =>
-        r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (r.description || "").toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredRoles = roles.filter(r => {
+        const matchesSearch =
+            r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (r.description || "").toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesDepartment =
+            selectedDepartment === "all" ||
+            r.departmentId === selectedDepartment;
+
+        // Pour filtrer par site, on doit vérifier le site du département
+        const matchesSite = selectedSite === "all" || (() => {
+            const dept = departments.find(d => d.id === r.departmentId);
+            return dept && dept.siteId === selectedSite;
+        })();
+
+        return matchesSearch && matchesDepartment && matchesSite;
+    });
 
     return (
         <DashboardLayout>
@@ -202,27 +240,78 @@ export default function RolesPage() {
 
                 <div className="flex justify-between items-center mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Role Management</h1>
-                        <p className="text-muted-foreground mt-1">Manage system roles and permissions.</p>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-3xl font-bold tracking-tight">Gestion des Postes</h1>
+                            <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-black rounded-full border border-primary/20">
+                                {filteredRoles.length}
+                            </span>
+                        </div>
+                        <p className="text-muted-foreground mt-1">Gérez les postes et positions de votre organisation.</p>
                     </div>
                     <button
                         onClick={() => { setEditingRole(null); setIsModalOpen(true); }}
                         className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl shadow-lg transition-all hover:bg-primary/90 font-bold text-sm"
                     >
                         <Plus size={18} />
-                        <span>Add Role</span>
+                        <span>Ajouter un Poste</span>
                     </button>
                 </div>
 
-                <div className="bg-card/50 border border-border rounded-xl p-1 mb-6 max-w-md relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                    <input
-                        type="text"
-                        placeholder="Search roles..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-transparent p-2 pl-10 outline-none placeholder:text-muted-foreground/50"
-                    />
+                <div className="space-y-4 mb-6">
+                    <div className="bg-card/50 border border-border rounded-xl p-1 max-w-md relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Rechercher un poste..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-transparent p-2 pl-10 outline-none placeholder:text-muted-foreground/50"
+                        />
+                    </div>
+
+                    <div className="flex gap-4 flex-wrap">
+                        <div className="flex-1 min-w-[200px]">
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Département</label>
+                            <select
+                                value={selectedDepartment}
+                                onChange={(e) => setSelectedDepartment(e.target.value)}
+                                className="w-full input-field appearance-none cursor-pointer"
+                            >
+                                <option value="all">Tous les départements</option>
+                                {departments.map(dept => (
+                                    <option key={dept.id} value={dept.id}>{dept.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="flex-1 min-w-[200px]">
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Site</label>
+                            <select
+                                value={selectedSite}
+                                onChange={(e) => setSelectedSite(e.target.value)}
+                                className="w-full input-field appearance-none cursor-pointer"
+                            >
+                                <option value="all">Tous les sites</option>
+                                {sites.map(site => (
+                                    <option key={site.id} value={site.id}>{site.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {(selectedDepartment !== "all" || selectedSite !== "all") && (
+                            <div className="flex items-end">
+                                <button
+                                    onClick={() => {
+                                        setSelectedDepartment("all");
+                                        setSelectedSite("all");
+                                    }}
+                                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                                >
+                                    Réinitialiser les filtres
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -265,7 +354,7 @@ export default function RolesPage() {
                     {filteredRoles.length === 0 && (
                         <div className="col-span-full py-12 text-center text-muted-foreground bg-secondary/20 rounded-xl border border-dashed border-border">
                             <Shield className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                            <p>No roles found.</p>
+                            <p>Aucun poste trouvé.</p>
                         </div>
                     )}
                 </div>

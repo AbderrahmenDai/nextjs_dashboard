@@ -1,12 +1,14 @@
 const db = require('./config/db');
-async function run() {
+
+async function listRoles() {
     try {
-        const [rows] = await db.query('SELECT * FROM Role');
-        console.log(JSON.stringify(rows, null, 2));
-    } catch (e) {
-        console.error(e);
-    } finally {
+        const [roles] = await db.query('SELECT * FROM Role ORDER BY name');
+        console.log(JSON.stringify(roles, null, 2));
         process.exit(0);
+    } catch (error) {
+        console.error('Error:', error.message);
+        process.exit(1);
     }
 }
-run();
+
+listRoles();

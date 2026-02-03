@@ -17,13 +17,24 @@ const getAllUsers = async () => {
         LEFT JOIN Role ON User.roleId = Role.id
     `);
     
+    
     // Transform to match frontend expected structure
-    return rows.map(u => ({
-        ...u,
-        department: u.departmentName || 'Unassigned',
-        site: u.siteName || 'Unassigned',
-        role: u.roleName || u.role || 'Employee' // Fallback to legacy or default
-    }));
+    return rows.map(u => {
+        const transformed = {
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            status: u.status || 'Active',
+            avatarGradient: u.avatarGradient || 'from-gray-500 to-slate-500',
+            departmentId: u.departmentId,
+            roleId: u.roleId,
+            department: u.departmentName || 'Unassigned',
+            site: u.siteName || 'Unassigned',
+            role: u.roleName || u.role || 'Employee' // Fallback to legacy or default
+        };
+        // Don't send password to frontend
+        return transformed;
+    });
 };
 
 // Create user (signup)
