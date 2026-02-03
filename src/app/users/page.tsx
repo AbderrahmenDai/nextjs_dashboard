@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Lock, Search, Filter, Plus, Pencil, Trash2, X, AlertTriangle, Loader2, User as UserIcon } from "lucide-react";
 import { clsx } from "clsx";
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
 
 // --- Types ---
@@ -11,13 +12,19 @@ interface User {
     id: string;
     name: string;
     email: string;
-    password?: string; // Optional for existing users in display, but form will use it
-    role: string; // Dynamic role name
+    password?: string;
+    role: string;
     roleId: string;
     department: string;
     departmentId?: string;
+    site?: string;
     status: "Active" | "Offline" | "In Meeting";
     avatarGradient: string;
+}
+
+interface Site {
+    id: string;
+    name: string;
 }
 
 interface Department {
@@ -30,9 +37,6 @@ interface Role {
     name: string;
     description?: string;
 }
-
-
-
 
 // --- Password Change Modal ---
 function PasswordChangeModal({
@@ -84,88 +88,91 @@ function PasswordChangeModal({
         try {
             await onSave(password);
             onClose();
-        } catch (err: any) {
-            setError(err.message || "Failed to update password");
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Failed to update password");
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="glass-card w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
-                <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
+        <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+            <div className="modal-card w-full max-w-md p-0 animate-in fade-in zoom-in duration-300">
+                <div className="px-6 py-5 gradient-premium flex justify-between items-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-white/5 backdrop-blur-[2px]"></div>
+                    <div className="flex items-center gap-3 relative z-10">
+                        <div className="p-2.5 bg-white/20 rounded-xl text-white shadow-inner">
                             <Lock className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-foreground">Change Password</h2>
-                            <p className="text-sm text-muted-foreground">{userName}</p>
+                            <h2 className="text-xl font-bold text-white tracking-tight">Change Password</h2>
+                            <p className="text-sm text-white/70">{userName}</p>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                        className="p-2 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors relative z-10"
                         disabled={isLoading}
                     >
                         <X size={20} />
                     </button>
                 </div>
 
-                {error && (
-                    <div className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0" />
-                        <p className="text-sm text-destructive font-medium">{error}</p>
-                    </div>
-                )}
+                <div className="p-6">
+                    {error && (
+                        <div className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0" />
+                            <p className="text-sm text-destructive font-medium">{error}</p>
+                        </div>
+                    )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">New Password</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="input-field"
-                            placeholder="Enter new password"
-                            disabled={isLoading}
-                            required
-                        />
-                    </div>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">New Password</label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="input-field"
+                                placeholder="Enter new password"
+                                disabled={isLoading}
+                                required
+                            />
+                        </div>
 
-                    <div>
-                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Confirm Password</label>
-                        <input
-                            type="password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="input-field"
-                            placeholder="Confirm new password"
-                            disabled={isLoading}
-                            required
-                        />
-                    </div>
+                        <div>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Confirm Password</label>
+                            <input
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                className="input-field"
+                                placeholder="Confirm new password"
+                                disabled={isLoading}
+                                required
+                            />
+                        </div>
 
-                    <div className="pt-4 flex justify-end gap-3 border-t border-border mt-2">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            disabled={isLoading}
-                            className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors font-medium text-sm"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium shadow-lg shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
-                        >
-                            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                            <span>Change Password</span>
-                        </button>
-                    </div>
-                </form>
+                        <div className="pt-4 flex justify-end gap-3 border-t border-border mt-2">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                disabled={isLoading}
+                                className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors font-medium text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium shadow-lg shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                            >
+                                {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                <span>Change Password</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );
@@ -200,44 +207,52 @@ function DeleteConfirmationModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="glass-card w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
-                <div className="flex items-start gap-4 mb-6">
-                    <div className="p-3 bg-red-500/10 rounded-xl">
-                        <AlertTriangle className="w-6 h-6 text-red-500" />
-                    </div>
-                    <div className="flex-1">
-                        <h2 className="text-xl font-bold text-foreground mb-2">Delete User</h2>
-                        <p className="text-muted-foreground text-sm leading-relaxed">
-                            Are you sure you want to delete <span className="font-semibold text-foreground">{userName}</span>? This action cannot be undone.
-                        </p>
+        <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+            <div className="modal-card w-full max-w-md p-0 overflow-hidden animate-in fade-in zoom-in duration-300 shadow-2xl">
+                <div className="px-6 py-6 bg-gradient-to-br from-red-600 to-rose-600 flex justify-between items-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
+                    <div className="flex items-center gap-3 relative z-10">
+                        <div className="p-2.5 bg-white/20 rounded-xl text-white shadow-inner">
+                            <AlertTriangle className="w-5 h-5" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white tracking-tight">Delete User</h2>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                        className="p-2 hover:bg-white/10 rounded-xl text-white/80 hover:text-white transition-all relative z-10"
                         disabled={isLoading}
                     >
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={isLoading}
-                        className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors font-medium text-sm"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleConfirm}
-                        disabled={isLoading}
-                        className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium shadow-lg shadow-red-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
-                    >
-                        {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                        <span>Delete User</span>
-                    </button>
+                <div className="p-6">
+                    <div className="flex items-start gap-4 mb-8">
+                        <div className="flex-1">
+                            <p className="text-muted-foreground text-sm leading-relaxed">
+                                Are you sure you want to delete <span className="font-bold text-foreground">{userName}</span>? This action is permanent and cannot be undone.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={isLoading}
+                            className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleConfirm}
+                            disabled={isLoading}
+                            className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold shadow-lg shadow-red-600/20 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 text-sm"
+                        >
+                            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                            <span>Delete User</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -293,20 +308,21 @@ function UserFormModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="glass-card w-full max-w-lg p-0 overflow-hidden shadow-2xl ring-1 ring-white/10 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+            <div className="modal-card w-full max-w-lg p-0 shadow-2xl animate-in zoom-in-95 duration-300">
                 {/* Header with improved contrast */}
-                <div className="px-6 py-5 border-b border-border/50 bg-gradient-to-r from-secondary/50 to-transparent flex justify-between items-center">
-                    <div>
-                        <h2 className="text-xl font-bold text-foreground tracking-tight">
+                <div className="px-6 py-6 gradient-premium flex justify-between items-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
+                    <div className="relative z-10">
+                        <h2 className="text-2xl font-bold text-white tracking-tight">
                             {user ? "Edit User" : "Add New User"}
                         </h2>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-sm text-white/80 mt-1">
                             {user ? "Modify user details below" : "Create a new team member account"}
                         </p>
                     </div>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all">
-                        <X size={20} />
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-all relative z-10">
+                        <X size={24} />
                     </button>
                 </div>
 
@@ -405,16 +421,20 @@ function UserFormModal({
                         </button>
                     </div>
                 </form>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 }
 
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
-    const [roles, setRoles] = useState<Role[]>([]); // New state for roles
+    const [sites, setSites] = useState<Site[]>([]);
+    const [roles, setRoles] = useState<Role[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedDepartment, setSelectedDepartment] = useState("All");
+    const [selectedSite, setSelectedSite] = useState("All");
+    const [isFilterVisible, setIsFilterVisible] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [passwordChangeUser, setPasswordChangeUser] = useState<User | null>(null);
@@ -423,14 +443,16 @@ export default function UsersPage() {
     // --- Fetch Users on Mount ---
     const loadData = async () => {
         try {
-            const [usersData, departmentsData, rolesData] = await Promise.all([
+            const [usersData, departmentsData, rolesData, sitesData] = await Promise.all([
                 api.getUsers(),
                 api.getDepartments(),
-                api.getRoles()
+                api.getRoles(),
+                api.getSites()
             ]);
             setUsers(usersData);
             setDepartments(departmentsData);
             setRoles(rolesData);
+            setSites(sitesData);
         } catch (error) {
             console.error("Failed to load data:", error);
         }
@@ -440,11 +462,16 @@ export default function UsersPage() {
         loadData();
     }, []);
 
-    const filteredUsers = users.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.department.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsers = users.filter(user => {
+        const matchesSearch =
+            user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.email.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesDept = selectedDepartment === "All" || user.department === selectedDepartment;
+        const matchesSite = selectedSite === "All" || user.site === selectedSite;
+
+        return matchesSearch && matchesDept && matchesSite;
+    });
 
     const handleDelete = async () => {
         if (!deleteUser) return;
@@ -522,120 +549,204 @@ export default function UsersPage() {
                     userName={deleteUser?.name || ""}
                 />
 
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-foreground tracking-tight">User Management</h1>
-                        <p className="text-muted-foreground mt-1">Manage system users, roles, and permissions.</p>
-                    </div>
-                    <button
-                        onClick={openCreateModal}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all shadow-lg shadow-primary/25 font-bold text-sm"
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.6 }}
                     >
-                        <Plus size={18} strokeWidth={2.5} />
-                        <span>Add User</span>
-                    </button>
+                        <div className="flex items-center gap-4">
+                            <h1 className="text-4xl font-black tracking-tight premium-gradient-text">
+                                Utilisateurs
+                            </h1>
+                            <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-black rounded-full border border-primary/20">
+                                {users.length}
+                            </span>
+                        </div>
+                        <p className="text-muted-foreground mt-2 font-medium">Gérez les accès et les informations de votre équipe</p>
+                    </motion.div>
+                    <motion.button
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={openCreateModal}
+                        className="btn-primary flex items-center gap-3 px-8 py-4 text-base shadow-indigo-500/25"
+                    >
+                        <Plus size={20} strokeWidth={3} />
+                        <span>Nouvel Utilisateur</span>
+                    </motion.button>
                 </div>
 
-                {/* Filters & Search */}
-                <div className="flex flex-col md:flex-row gap-4 mb-6">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search by name, email, or department..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="input-field pl-10 bg-card/50"
-                        />
+                <div className="space-y-6 mb-12">
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="relative flex-1 group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={20} />
+                            <input
+                                type="text"
+                                placeholder="Rechercher un talent ou un email..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="input-field pl-12 h-14 bg-white/40 border-white/60 text-base"
+                            />
+                        </div>
+                        <button
+                            onClick={() => setIsFilterVisible(!isFilterVisible)}
+                            className={clsx(
+                                "flex items-center gap-2 px-6 h-14 border-2 rounded-2xl transition-all font-bold group shadow-sm",
+                                isFilterVisible
+                                    ? "bg-primary text-primary-foreground border-primary shadow-xl shadow-primary/30"
+                                    : "bg-white/40 border-white/60 text-foreground hover:bg-white/60"
+                            )}
+                        >
+                            <Filter size={20} className={clsx("transition-transform duration-300", isFilterVisible && "rotate-180")} />
+                            <span>Filtrer</span>
+                        </button>
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-3 bg-card border border-border rounded-xl hover:bg-secondary text-foreground transition-colors font-medium">
-                        <Filter size={18} />
-                        <span>Filter</span>
-                    </button>
+
+                    <AnimatePresence>
+                        {isFilterVisible && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0, y: -20 }}
+                                animate={{ opacity: 1, height: "auto", y: 0 }}
+                                exit={{ opacity: 0, height: 0, y: -20 }}
+                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                className="glass-card p-8 rounded-[2rem] grid grid-cols-1 md:grid-cols-2 gap-8 overflow-hidden"
+                            >
+                                <div className="space-y-3">
+                                    <label className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Département</label>
+                                    <select
+                                        value={selectedDepartment}
+                                        onChange={(e) => setSelectedDepartment(e.target.value)}
+                                        className="input-field h-12 appearance-none cursor-pointer bg-white/40 dark:bg-black/40 border-white/60 dark:border-white/5"
+                                    >
+                                        <option value="All">Tous les départements</option>
+                                        {departments.map(dept => (
+                                            <option key={dept.id} value={dept.name}>{dept.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Site / Emplacement</label>
+                                    <select
+                                        value={selectedSite}
+                                        onChange={(e) => setSelectedSite(e.target.value)}
+                                        className="input-field h-12 appearance-none cursor-pointer bg-white/40 dark:bg-black/40 border-white/60 dark:border-white/5"
+                                    >
+                                        <option value="All">Tous les sites</option>
+                                        {sites.map(site => (
+                                            <option key={site.id} value={site.name}>{site.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
-                {/* User Table (Card List Style) */}
-                <div className="grid grid-cols-1 gap-4">
-                    {filteredUsers.map((user) => (
-                        <div key={user.id} className="glass-card p-4 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group hover:shadow-lg transition-all duration-300 border-l-4 border-l-transparent hover:border-l-primary">
-                            <div className="flex items-center gap-4 w-full md:w-auto">
-                                {/* Avatar */}
-                                <div className={clsx("w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg bg-gradient-to-br shadow-md ring-2 ring-background", user.avatarGradient)}>
-                                    {user.name.charAt(0) + (user.name.split(' ')[1] ? user.name.split(' ')[1].charAt(0) : '')}
-                                </div>
+                {/* User Cards Grid */}
+                <motion.div
+                    layout
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                >
+                    <AnimatePresence mode="popLayout">
+                        {filteredUsers.map((user, idx) => (
+                            <motion.div
+                                key={user.id}
+                                layout
+                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+                                transition={{ delay: idx * 0.05, type: "spring", stiffness: 260, damping: 20 }}
+                                className="glass-card group hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 relative"
+                            >
+                                {/* Background Decorative Elements with user colors */}
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-green-200/20 dark:bg-green-500/10 rounded-bl-full -mr-12 -mt-12 group-hover:bg-green-200/30 transition-colors duration-500" />
+                                <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-300/20 dark:bg-blue-500/10 rounded-tr-full -ml-12 -mb-12 group-hover:bg-blue-300/30 transition-colors duration-500" />
 
-                                {/* Info */}
-                                <div>
-                                    <h4 className="text-base font-bold text-foreground flex items-center gap-2">
-                                        {user.name}
-                                        {user.id === '3' && <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded border border-primary/20">ME</span>}
-                                    </h4>
-                                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                                </div>
-                            </div>
+                                <div className="p-8 relative z-10">
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div className={clsx(
+                                            "w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-xl rotate-3 group-hover:rotate-0 transition-transform duration-500 bg-gradient-to-br",
+                                            user.avatarGradient || "from-indigo-500 to-purple-600"
+                                        )}>
+                                            {user.name.charAt(0)}
+                                        </div>
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">
+                                            <button
+                                                onClick={() => openEditModal(user)}
+                                                className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white transition-all shadow-sm"
+                                            >
+                                                <Pencil size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => setDeleteUser(user)}
+                                                className="p-2.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                    </div>
 
-                            <div className="flex flex-wrap items-center gap-2 md:gap-6 w-full md:w-auto mt-2 md:mt-0">
-                                {/* Role Badge */}
-                                <div className={clsx(
-                                    "px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider",
-                                    user.role === "HR_MANAGER" || user.role === "Direction" ? "bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-300" :
-                                        user.role === "Responsable Recrutement" ? "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-300" :
-                                            "bg-secondary border-border text-muted-foreground"
-                                )}>
-                                    {user.role}
-                                </div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
+                                                {user.name}
+                                                {user.id === '3' && <span className="text-[10px] bg-blue-200 text-blue-700 px-2 py-0.5 rounded border border-blue-300 font-black">ME</span>}
+                                            </h3>
+                                            <p className="text-sm text-muted-foreground font-medium truncate">{user.email}</p>
+                                        </div>
 
-                                {/* Department */}
-                                <div className="text-sm text-foreground/80 font-medium px-3 py-1 bg-secondary/50 rounded-lg border border-border/50">
-                                    {user.department}
-                                </div>
+                                        <div className="flex flex-wrap items-center gap-3 py-4 border-y border-border/40">
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20">
+                                                {user.role}
+                                            </div>
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-3 py-1.5 bg-secondary/50 rounded-lg border border-border/50">
+                                                {user.department}
+                                            </div>
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-blue-500 px-3 py-1.5 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                                                {user.site}
+                                            </div>
+                                        </div>
 
-                                {/* Status */}
-                                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/30 border border-border/30">
-                                    <span className={clsx("w-2 h-2 rounded-full animate-pulse",
-                                        user.status === 'Active' ? 'bg-emerald-400' :
-                                            user.status === 'In Meeting' ? 'bg-amber-400' : 'bg-slate-400'
-                                    )} />
-                                    <span className="text-xs font-bold text-muted-foreground uppercase">{user.status}</span>
+                                        <div className="flex justify-between items-center pt-2">
+                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/30 border border-border/30">
+                                                <div className={clsx(
+                                                    "w-2 h-2 rounded-full shadow-[0_0_8px_currentColor] animate-pulse",
+                                                    user.status === 'Active' ? 'bg-emerald-400 text-emerald-400' :
+                                                        user.status === 'In Meeting' ? 'bg-amber-400 text-amber-400' : 'bg-slate-400 text-slate-400'
+                                                )} />
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{user.status}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => setPasswordChangeUser(user)}
+                                                className="text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary transition-colors flex items-center gap-1.5 group/btn"
+                                            >
+                                                <Lock size={12} className="group-hover/btn:scale-110 transition-transform" />
+                                                Reset Password
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </motion.div>
 
-                                {/* Actions */}
-                                <div className="flex items-center gap-1 ml-auto md:ml-0 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-                                    <button
-                                        onClick={() => openEditModal(user)}
-                                        className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                                        title="Edit User"
-                                    >
-                                        <Pencil size={18} />
-                                    </button>
-                                    <button
-                                        onClick={() => setPasswordChangeUser(user)}
-                                        className="p-2 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors"
-                                        title="Change Password"
-                                    >
-                                        <Lock size={18} />
-                                    </button>
-                                    <button
-                                        onClick={() => setDeleteUser(user)}
-                                        className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                                        title="Delete User"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
-                            </div>
+                {filteredUsers.length === 0 && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-center py-20 text-muted-foreground bg-secondary/10 rounded-[3rem] border-2 border-dashed border-border flex flex-col items-center"
+                    >
+                        <div className="w-20 h-20 bg-secondary/20 rounded-full flex items-center justify-center mb-4">
+                            <Search size={40} className="opacity-30" />
                         </div>
-                    ))}
-
-                    {filteredUsers.length === 0 && (
-                        <div className="text-center py-12 text-muted-foreground bg-secondary/20 rounded-xl border border-dashed border-border flex flex-col items-center">
-                            <Search size={32} className="mb-2 opacity-50" />
-                            <p>No users found matching your search.</p>
-                        </div>
-                    )}
-                </div>
+                        <h3 className="text-xl font-black text-foreground mb-1">Aucun utilisateur trouvé</h3>
+                        <p className="font-medium">Essayez d&apos;ajuster vos filtres de recherche.</p>
+                    </motion.div>
+                )}
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }

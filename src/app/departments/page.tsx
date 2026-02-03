@@ -1,7 +1,8 @@
 "use client";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { MoreHorizontal, Search, Plus, Pencil, Trash2, Building2, Users, X } from "lucide-react";
+import { MoreHorizontal, Search, Plus, Pencil, Trash2, Building2, Users, X, ChevronDown, Check } from "lucide-react";
+import * as Icons from "lucide-react";
 import { clsx } from "clsx";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
@@ -25,9 +26,17 @@ interface Department {
     siteId: string;
     status: "Active" | "Restructuring" | "Inactive";
     colorCallback: string;
+    logoUrl?: string;
+    icon?: string;
 }
 
-// --- Modal Component ---
+// Available Icons Map
+const AVAILABLE_ICONS = [
+    "Building2", "Users", "Briefcase", "Activity", "Cpu",
+    "Database", "Layout", "Factory", "Truck", "Wrench", "ShieldAlert",
+    "Zap", "BarChart", "DollarSign", "Package", "ClipboardCheck", "TrendingUp"
+];
+
 // --- Modal Component ---
 function DepartmentFormModal({
     isOpen,
@@ -42,33 +51,29 @@ function DepartmentFormModal({
     department: Department | null;
     sites: Site[];
 }) {
-    const [formData, setFormData] = useState<Partial<Department>>({
-        name: "",
-        head: "",
-        headEmail: "",
-        location: "",
-        employeeCount: 0,
-        budget: 0,
-        siteId: sites.length > 0 ? sites[0].id : "",
-        status: "Active",
-        colorCallback: "bg-blue-500"
+    const [formData, setFormData] = useState<Partial<Department>>(() => {
+        if (department) return department;
+        return {
+            name: "",
+            head: "",
+            headEmail: "",
+            location: "",
+            employeeCount: 0,
+            budget: 0,
+            siteId: sites.length > 0 ? sites[0].id : "",
+            status: "Active",
+            colorCallback: "bg-blue-500",
+            icon: "Building2"
+        };
     });
 
+    const [isIconDropdownOpen, setIsIconDropdownOpen] = useState(false);
+
     useEffect(() => {
-        if (isOpen) {
-            setFormData(department || {
-                name: "",
-                head: "",
-                headEmail: "",
-                location: "",
-                employeeCount: 0,
-                budget: 0,
-                siteId: sites.length > 0 ? sites[0].id : "",
-                status: "Active",
-                colorCallback: "bg-blue-500"
-            });
+        if (!isOpen) {
+            // Optional: Parent key handles reset on remount
         }
-    }, [isOpen, department, sites]);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -78,140 +83,206 @@ function DepartmentFormModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="glass-card w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh] custom-scrollbar shadow-2xl">
-                <div className="flex justify-between items-center mb-6 border-b border-border/50 pb-4">
-                    <h2 className="text-xl font-bold text-foreground">{department ? "Edit Department" : "New Department"}</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors">
+        <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+            <div className="modal-card w-full max-w-md p-0 animate-in fade-in zoom-in duration-300 overflow-y-auto max-h-[90vh] custom-scrollbar shadow-2xl">
+                <div className="px-6 py-6 gradient-premium flex justify-between items-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
+                    <div className="flex items-center gap-3 relative z-10">
+                        <div className="p-2.5 bg-white/20 rounded-xl text-white shadow-inner">
+                            <Building2 className="w-5 h-5" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white tracking-tight">
+                            {department ? "Edit Department" : "New Department"}
+                        </h2>
+                    </div>
+                    <button onClick={onClose} className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-all relative z-10">
                         <X size={20} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Department Name</label>
-                        <input
-                            required
-                            type="text"
-                            value={formData.name || ""}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="input-field"
-                            placeholder="e.g. Engineering"
-                        />
-                    </div>
+                <div className="p-6">
 
-                    <div>
-                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Head of Department Email</label>
-                        <input
-                            type="email"
-                            value={formData.headEmail || ""}
-                            onChange={(e) => setFormData({ ...formData, headEmail: e.target.value })}
-                            className="input-field"
-                            placeholder="e.g. john.doe@example.com"
-                        />
-                        <p className="text-[10px] text-muted-foreground mt-1">If the email exists, the user becomes the head. Leave empty to remove head.</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
+                    <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Location</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Department Name</label>
                             <input
                                 required
                                 type="text"
-                                value={formData.location || ""}
-                                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                value={formData.name || ""}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 className="input-field"
-                                placeholder="e.g. Building A"
+                                placeholder="e.g. Engineering"
                             />
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Budget ($)</label>
-                            <input
-                                required
-                                type="number"
-                                min="0"
-                                value={formData.budget || 0}
-                                onChange={(e) => setFormData({ ...formData, budget: parseInt(e.target.value) || 0 })}
-                                className="input-field"
-                            />
-                        </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Site</label>
-                            <div className="relative">
-                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Head of Department Email</label>
+                            <input
+                                type="email"
+                                value={formData.headEmail || ""}
+                                onChange={(e) => setFormData({ ...formData, headEmail: e.target.value })}
+                                className="input-field"
+                                placeholder="e.g. john.doe@example.com"
+                            />
+                            <p className="text-[10px] text-muted-foreground mt-1">If the email exists, the user becomes the head. Leave empty to remove head.</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Location</label>
+                                <input
+                                    required
+                                    type="text"
+                                    value={formData.location || ""}
+                                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                    className="input-field"
+                                    placeholder="e.g. Building A"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Budget ($)</label>
+                                <input
+                                    required
+                                    type="number"
+                                    min="0"
+                                    value={formData.budget || 0}
+                                    onChange={(e) => setFormData({ ...formData, budget: parseInt(e.target.value) || 0 })}
+                                    className="input-field"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Site</label>
+                                <div className="relative">
+                                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                                    <select
+                                        value={formData.siteId}
+                                        onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
+                                        className="input-field pl-9 appearance-none"
+                                    >
+                                        {sites.map(site => (
+                                            <option key={site.id} value={site.id}>{site.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Status</label>
                                 <select
-                                    value={formData.siteId}
-                                    onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
-                                    className="input-field pl-9 appearance-none"
+                                    value={formData.status}
+                                    onChange={(e) => setFormData({ ...formData, status: e.target.value as Department["status"] })}
+                                    className="input-field appearance-none"
                                 >
-                                    {sites.map(site => (
-                                        <option key={site.id} value={site.id}>{site.name}</option>
-                                    ))}
+                                    <option value="Active">Active</option>
+                                    <option value="Restructuring">Restructuring</option>
+                                    <option value="Inactive">Inactive</option>
                                 </select>
                             </div>
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Status</label>
-                            <select
-                                value={formData.status}
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value as Department["status"] })}
-                                className="input-field appearance-none"
+
+                        {/* Icon Selection */}
+                        <div className="relative">
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Icon</label>
+                            <button
+                                type="button"
+                                onClick={() => setIsIconDropdownOpen(!isIconDropdownOpen)}
+                                className="input-field flex items-center justify-between text-left"
                             >
-                                <option value="Active">Active</option>
-                                <option value="Restructuring">Restructuring</option>
-                                <option value="Inactive">Inactive</option>
-                            </select>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-5 h-5 flex items-center justify-center text-primary/70">
+                                        {formData.icon && (Icons as any)[formData.icon] ? (
+                                            (() => { const Icon = (Icons as any)[formData.icon]; return <Icon size={20} /> })()
+                                        ) : null}
+                                    </div>
+
+                                    <span className="text-sm font-medium">
+                                        {formData.icon || "Select Icon"}
+                                    </span>
+                                </div>
+                                <ChevronDown size={16} className="opacity-50" />
+                            </button>
+
+                            {isIconDropdownOpen && (
+                                <div className="absolute z-50 mt-1 w-full bg-card border border-border rounded-xl shadow-xl max-h-48 overflow-y-auto grid grid-cols-4 gap-2 p-2">
+                                    {AVAILABLE_ICONS.map(iconName => {
+                                        const IconComp = (Icons as any)[iconName];
+                                        return (
+                                            <button
+                                                key={iconName}
+                                                type="button"
+                                                onClick={() => {
+                                                    setFormData({ ...formData, icon: iconName });
+                                                    setIsIconDropdownOpen(false);
+                                                }}
+                                                className={clsx(
+                                                    "flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg transition-all hover:bg-secondary",
+                                                    formData.icon === iconName ? "bg-primary/10 text-primary ring-1 ring-primary/20" : "text-muted-foreground"
+                                                )}
+                                            >
+                                                {IconComp && <IconComp size={20} />}
+                                                <span className="text-[10px] truncate w-full text-center">{iconName}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
-                    </div>
 
-                    <div>
-                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Color Theme</label>
-                        <div className="flex gap-2 flex-wrap bg-secondary/30 p-3 rounded-xl border border-border/50">
-                            {[
-                                "bg-blue-500", "bg-pink-500", "bg-orange-500", "bg-purple-500",
-                                "bg-red-500", "bg-emerald-500", "bg-teal-500", "bg-indigo-500", "bg-cyan-500"
-                            ].map((color) => (
-                                <button
-                                    key={color}
-                                    type="button"
-                                    onClick={() => setFormData({ ...formData, colorCallback: color })}
-                                    className={clsx(
-                                        "w-8 h-8 rounded-full transition-all duration-200 border-2 shadow-sm hover:scale-110",
-                                        formData.colorCallback === color ? "border-foreground scale-110 ring-2 ring-offset-2 ring-primary/30" : "border-transparent opacity-80 hover:opacity-100"
-                                    )}
-                                    // We use inline style for background to ensure it works if tailwind hasn't scanned these specific combined strings
-                                    // But since we use standard palette, clsx with the class name is usually safelist dependent.
-                                    // To be safe, let's map the class to a style or just trust the class.
-                                    // The original code relied on class names, which works if they are safelisted.
-                                    // Let's keep the class approach but add a fallback style.
-                                    style={{ backgroundColor: `var(--tw-color-${color.replace('bg-', '')}-500)` }}
-                                >
-                                    <div className={clsx("w-full h-full rounded-full", color)}></div>
-                                </button>
-                            ))}
+                        <div>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Color Theme</label>
+                            <div className="flex gap-2 flex-wrap bg-secondary/30 p-3 rounded-xl border border-border/50">
+                                {[
+                                    "bg-blue-500", "bg-pink-500", "bg-orange-500", "bg-purple-500",
+                                    "bg-red-500", "bg-emerald-500", "bg-teal-500", "bg-indigo-500", "bg-cyan-500"
+                                ].map((color) => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, colorCallback: color })}
+                                        className={clsx(
+                                            "w-8 h-8 rounded-full transition-all duration-200 border-2 shadow-sm hover:scale-110",
+                                            formData.colorCallback === color ? "border-foreground scale-110 ring-2 ring-offset-2 ring-primary/30" : "border-transparent opacity-80 hover:opacity-100"
+                                        )}
+                                        style={{ backgroundColor: `var(--tw-color-${color.replace('bg-', '')}-500)` }}
+                                    >
+                                        <div className={clsx("w-full h-full rounded-full", color)}></div>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+
+                        {/* Optional Logo URL */}
+                        <div>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Logo URL (Optional Image)</label>
+                            <input
+                                type="text"
+                                value={formData.logoUrl || ""}
+                                onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                                className="input-field"
+                                placeholder="http://..."
+                            />
+                        </div>
 
 
-                    <div className="pt-4 flex justify-end gap-3 border-t border-border/50 mt-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors font-medium text-sm"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium shadow-lg shadow-primary/20 transition-all text-sm"
-                        >
-                            {department ? "Save Changes" : "Create Department"}
-                        </button>
-                    </div>
-                </form>
+                        <div className="pt-4 flex justify-end gap-3 border-t border-border/50 mt-4">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors font-medium text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium shadow-lg shadow-primary/20 transition-all text-sm"
+                            >
+                                {department ? "Save Changes" : "Create Department"}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );
@@ -335,6 +406,7 @@ export default function DepartmentsPage() {
         <DashboardLayout>
             <div className="flex flex-col h-full relative">
                 <DepartmentFormModal
+                    key={editingDept?.id || (isModalOpen ? 'new' : 'closed')}
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     onSave={handleSaveDepartment}
@@ -355,10 +427,9 @@ export default function DepartmentsPage() {
                             onClick={() => setSelectedSiteId("All")}
                             className={clsx(
                                 "px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
-                                selectedSiteId === "All"
-                                    ? "bg-background text-primary shadow-sm ring-1 ring-border"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                                "bg-background text-primary shadow-sm ring-1 ring-border"
                             )}
+                            style={{ opacity: selectedSiteId === "All" ? 1 : 0.6 }}
                         >
                             All Sites
                         </button>
@@ -473,94 +544,102 @@ export default function DepartmentsPage() {
                 </div>
 
                 {/* Departments Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredDepts.map((dept) => (
-                        <div key={dept.id} className="glass-card p-5 flex flex-col gap-4 group hover:-translate-y-1 hover:shadow-xl hover:border-primary/30 transition-all duration-300">
-                            <div className="flex justify-between items-start">
-                                <div className="flex items-center gap-3.5">
-                                    <div className={clsx("w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg shadow-black/5 ring-1 ring-black/5", dept.colorCallback)}>
-                                        <Building2 size={24} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold text-foreground leading-tight">{dept.name}</h3>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground border border-border">{dept.siteId}</span>
-                                            <span className="text-xs text-muted-foreground truncate max-w-[120px]">{dept.location}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="relative group/menu">
-                                    <button className="p-1 px-2 text-muted-foreground hover:text-foreground transition-colors hover:bg-secondary rounded-lg">
-                                        <MoreHorizontal size={20} />
-                                    </button>
-                                    {/* Quick Actions Dropdown (Hidden by default, hover to show purely via CSS or handled via click - kept simple here) */}
-                                </div>
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-hidden bg-gray-100">
+                    {filteredDepts.map((dept) => {
+                        const IconComponent = dept.icon && (Icons as any)[dept.icon] ? (Icons as any)[dept.icon] : Building2;
 
-                            <div className="space-y-3 py-3 border-t border-dashed border-border mt-1">
-                                <div className="flex justify-between items-center text-sm group/row hover:bg-secondary/30 p-1.5 rounded-lg transition-colors -mx-1.5">
-                                    <span className="text-muted-foreground font-medium">Head</span>
-                                    <span className="text-foreground font-semibold flex flex-col items-end">
-                                        <div className="flex items-center gap-2">
-                                            {dept.head || "Not Assigned"}
-                                            <Users size={14} className="text-primary/70" />
+                        return (
+                            <div key={dept.id} className="glass-card p-5 flex flex-col gap-4 group hover:-translate-y-1 hover:shadow-xl hover:border-primary/30 transition-all duration-300">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3.5">
+                                        <div className={clsx("w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg shadow-black/5 ring-1 ring-black/5", dept.colorCallback)}>
+                                            {dept.logoUrl ? (
+                                                <img src={dept.logoUrl} alt={dept.name} className="w-full h-full object-cover rounded-xl" />
+                                            ) : (
+                                                <IconComponent size={24} />
+                                            )}
                                         </div>
-                                        {dept.headEmail && (
-                                            <span className="text-[10px] text-muted-foreground font-normal">{dept.headEmail}</span>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-foreground leading-tight">{dept.name}</h3>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground border border-border">{dept.siteId}</span>
+                                                <span className="text-xs text-muted-foreground truncate max-w-[120px]">{dept.location}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="relative group/menu">
+                                        <button className="p-1 px-2 text-muted-foreground hover:text-foreground transition-colors hover:bg-secondary rounded-lg">
+                                            <MoreHorizontal size={20} />
+                                        </button>
+                                        {/* Quick Actions Dropdown (Hidden by default, hover to show purely via CSS or handled via click - kept simple here) */}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3 py-3 border-t border-dashed border-border mt-1">
+                                    <div className="flex justify-between items-center text-sm group/row hover:bg-secondary/30 p-1.5 rounded-lg transition-colors -mx-1.5">
+                                        <span className="text-muted-foreground font-medium">Head</span>
+                                        <span className="text-foreground font-semibold flex flex-col items-end">
+                                            <div className="flex items-center gap-2">
+                                                {dept.head || "Not Assigned"}
+                                                <Users size={14} className="text-primary/70" />
+                                            </div>
+                                            {dept.headEmail && (
+                                                <span className="text-[10px] text-muted-foreground font-normal">{dept.headEmail}</span>
+                                            )}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm group/row hover:bg-secondary/30 p-1.5 rounded-lg transition-colors -mx-1.5">
+                                        <span className="text-muted-foreground font-medium">Employees</span>
+                                        <span className="text-foreground font-semibold bg-secondary px-2 py-0.5 rounded text-xs border border-border">{dept.employeeCount}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm group/row hover:bg-secondary/30 p-1.5 rounded-lg transition-colors -mx-1.5">
+                                        <span className="text-muted-foreground font-medium">Budget</span>
+                                        {editingBudgetId === `dept-${dept.id}` ? (
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                value={tempBudget}
+                                                onChange={(e) => setTempBudget(e.target.value)}
+                                                onBlur={() => saveBudget(dept.id, false)}
+                                                onKeyDown={(e) => e.key === 'Enter' && saveBudget(dept.id, false)}
+                                                className="w-24 bg-background border border-primary rounded px-1.5 py-0.5 text-foreground font-bold text-right text-xs outline-none"
+                                            />
+                                        ) : (
+                                            <div
+                                                onClick={() => startEditBudget(`dept-${dept.id}`, dept.budget)}
+                                                className="group/budget flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
+                                            >
+                                                <span className="text-foreground font-bold group-hover/budget:text-primary transition-colors">{formatCurrency(dept.budget)}</span>
+                                                <Pencil size={12} className="opacity-0 group-hover/budget:opacity-100 transition-opacity" />
+                                            </div>
                                         )}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between mt-auto pt-2">
+                                    <span className={clsx("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                                        dept.status === 'Active' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' :
+                                            'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
+                                    )}>
+                                        {dept.status}
                                     </span>
-                                </div>
-                                <div className="flex justify-between items-center text-sm group/row hover:bg-secondary/30 p-1.5 rounded-lg transition-colors -mx-1.5">
-                                    <span className="text-muted-foreground font-medium">Employees</span>
-                                    <span className="text-foreground font-semibold bg-secondary px-2 py-0.5 rounded text-xs border border-border">{dept.employeeCount}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-sm group/row hover:bg-secondary/30 p-1.5 rounded-lg transition-colors -mx-1.5">
-                                    <span className="text-muted-foreground font-medium">Budget</span>
-                                    {editingBudgetId === `dept-${dept.id}` ? (
-                                        <input
-                                            autoFocus
-                                            type="text"
-                                            value={tempBudget}
-                                            onChange={(e) => setTempBudget(e.target.value)}
-                                            onBlur={() => saveBudget(dept.id, false)}
-                                            onKeyDown={(e) => e.key === 'Enter' && saveBudget(dept.id, false)}
-                                            className="w-24 bg-background border border-primary rounded px-1.5 py-0.5 text-foreground font-bold text-right text-xs outline-none"
-                                        />
-                                    ) : (
-                                        <div
-                                            onClick={() => startEditBudget(`dept-${dept.id}`, dept.budget)}
-                                            className="group/budget flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
+
+                                    <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                                        <button
+                                            onClick={() => openEditModal(dept)}
+                                            className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                                            title="Edit"
                                         >
-                                            <span className="text-foreground font-bold group-hover/budget:text-primary transition-colors">{formatCurrency(dept.budget)}</span>
-                                            <Pencil size={12} className="opacity-0 group-hover/budget:opacity-100 transition-opacity" />
-                                        </div>
-                                    )}
+                                            <Pencil size={16} />
+                                        </button>
+                                        <button onClick={() => handleDelete(dept.id)} className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors" title="Delete">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-
-                            <div className="flex items-center justify-between mt-auto pt-2">
-                                <span className={clsx("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
-                                    dept.status === 'Active' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' :
-                                        'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
-                                )}>
-                                    {dept.status}
-                                </span>
-
-                                <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-                                    <button
-                                        onClick={() => openEditModal(dept)}
-                                        className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                                        title="Edit"
-                                    >
-                                        <Pencil size={16} />
-                                    </button>
-                                    <button onClick={() => handleDelete(dept.id)} className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors" title="Delete">
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </DashboardLayout>

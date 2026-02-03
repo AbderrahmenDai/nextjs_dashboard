@@ -5,11 +5,15 @@ const emailService = require('./emailService');
 
 // Get all users
 const getAllUsers = async () => {
-    // Join with Department and Role
+    // Join with Department, Role, and Site (via Department)
     const [rows] = await db.query(`
-        SELECT User.*, Department.name as departmentName, Role.name as roleName
+        SELECT User.*, 
+               Department.name as departmentName, 
+               Role.name as roleName,
+               Site.name as siteName
         FROM User 
         LEFT JOIN Department ON User.departmentId = Department.id
+        LEFT JOIN Site ON Department.siteId = Site.id
         LEFT JOIN Role ON User.roleId = Role.id
     `);
     
@@ -17,6 +21,7 @@ const getAllUsers = async () => {
     return rows.map(u => ({
         ...u,
         department: u.departmentName || 'Unassigned',
+        site: u.siteName || 'Unassigned',
         role: u.roleName || u.role || 'Employee' // Fallback to legacy or default
     }));
 };

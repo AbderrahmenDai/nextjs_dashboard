@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Bell, Check, CheckCheck, Trash2, X, Clock, User } from "lucide-react";
+import { Bell, Check, CheckCheck, Trash2, X, Clock, User, XCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -347,37 +347,50 @@ export default function NotificationsPage() {
 
             {/* Rejection Modal */}
             {isRejectModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-card w-full max-w-md p-6 rounded-2xl shadow-2xl border border-border animate-in zoom-in-95 duration-200">
-                        <h3 className="text-xl font-bold mb-2 flex items-center gap-2 text-destructive">
-                            <X className="w-6 h-6" />
-                            Reject Request
-                        </h3>
-                        <p className="text-muted-foreground mb-4">
-                            Please provide a reason for rejecting this hiring request. This will be sent to the requester.
-                        </p>
-
-                        <textarea
-                            className="w-full min-h-[100px] p-3 rounded-xl border border-border bg-secondary/50 focus:ring-2 focus:ring-destructive/20 focus:border-destructive outline-none resize-none mb-6"
-                            placeholder="Enter rejection reason..."
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            autoFocus
-                        />
-
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => setIsRejectModalOpen(false)}
-                                className="px-4 py-2 text-sm font-medium hover:bg-secondary rounded-lg transition-colors"
-                            >
-                                Cancel
+                <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-20 bg-black/60 backdrop-blur-sm transition-all duration-300">
+                    <div className="modal-card w-full max-w-md p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                        <div className="px-6 py-6 bg-gradient-to-br from-red-600 to-rose-600 flex justify-between items-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
+                            <div className="flex items-center gap-3 relative z-10">
+                                <div className="p-2.5 bg-white/20 rounded-xl text-white shadow-inner">
+                                    <XCircle className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-2xl font-bold text-white tracking-tight">
+                                    Reject Request
+                                </h2>
+                            </div>
+                            <button onClick={() => setIsRejectModalOpen(false)} className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-all relative z-10">
+                                <X size={20} />
                             </button>
-                            <button
-                                onClick={confirmReject}
-                                className="px-4 py-2 text-sm font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg transition-colors shadow-lg shadow-destructive/20"
-                            >
-                                Confirm Rejection
-                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            <p className="text-muted-foreground mb-4">
+                                Please provide a reason for rejecting this hiring request. This will be sent to the requester.
+                            </p>
+
+                            <textarea
+                                className="w-full min-h-[120px] p-4 rounded-xl border border-border bg-secondary/30 focus:ring-2 focus:ring-red-500/20 focus:border-red-500/50 outline-none resize-none mb-6 transition-all"
+                                placeholder="Enter rejection reason..."
+                                value={rejectionReason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                autoFocus
+                            />
+
+                            <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
+                                <button
+                                    onClick={() => setIsRejectModalOpen(false)}
+                                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={confirmReject}
+                                    className="px-6 py-2 text-sm font-bold bg-red-600 hover:bg-red-500 text-white rounded-lg transition-all shadow-lg shadow-red-600/20 active:scale-95"
+                                >
+                                    Confirm Rejection
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

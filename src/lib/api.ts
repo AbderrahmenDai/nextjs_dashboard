@@ -1,5 +1,5 @@
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8080/api';
 
 export const api = {
     // --- USERS ---
@@ -29,7 +29,7 @@ export const api = {
         } catch (error: any) {
             // Handle network errors
             if (error instanceof TypeError && error.message.includes('fetch')) {
-                throw new Error('Unable to connect to server. Please check if the backend is running on http://localhost:5000');
+                throw new Error('Unable to connect to server. Please check if the backend is running on http://127.0.0.1:8080');
             }
             // Re-throw other errors (including our custom Error from above)
             throw error;

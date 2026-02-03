@@ -1,22 +1,34 @@
-"use client";
-
 import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    BarChart, Bar, Cell, PieChart, Pie, Legend,
-    LabelList, RadialBarChart, RadialBar,
-    TooltipProps
+    ResponsiveContainer,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    Cell,
+    PieChart,
+    Pie,
+    LabelList,
+    AreaChart,
+    Area,
+    RadialBarChart,
+    RadialBar
 } from "recharts";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
+import { clsx } from "clsx";
+import { motion } from "framer-motion";
 
 // --- Shared Components & Config ---
 
 interface CustomTooltipPayload {
     name: string;
-    value: number | string;
+    value: number;
     color?: string;
     fill?: string;
+    unit?: string;
     payload?: Record<string, unknown>;
 }
 
@@ -27,18 +39,24 @@ interface Department {
     colorCallback?: string;
 }
 
-// --- Shared Components & Config ---
+interface CustomTooltipProps {
+    active?: boolean;
+    payload?: any[];
+    label?: string;
+}
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
-        const data = payload[0] as unknown as CustomTooltipPayload;
         return (
-            <div className="bg-card/90 backdrop-blur-xl border border-border shadow-2xl rounded-xl px-4 py-3 text-sm">
-                <p className="font-semibold mb-1 text-foreground">{label ? label : data.name}</p>
-                <p className="text-foreground font-bold flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: data.color || data.fill }}></span>
-                    {data.value}
-                </p>
+            <div className="bg-background/80 backdrop-blur-xl border border-border shadow-2xl rounded-2xl p-4 min-w-[150px] animate-in fade-in zoom-in duration-200">
+                <div className="flex items-center gap-2 mb-2 border-b border-border pb-2">
+                    <div className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: payload[0].color || payload[0].fill }}></div>
+                    <p className="font-bold text-xs uppercase tracking-widest text-muted-foreground">{label || payload[0].name}</p>
+                </div>
+                <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-foreground">{payload[0].value}</span>
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase">{payload[0].unit || 'units'}</span>
+                </div>
             </div>
         );
     }
@@ -46,7 +64,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 // --- Pipeline Data ---
-const pipelineData = [
+const defaultPipelineData = [
     { value: 4, name: "Validation demande", fill: "#4f46e5" }, // Indigo 600
     { value: 4, name: "Redaction & Diffusion", fill: "#6366f1" }, // Indigo 500
     { value: 4, name: "Collecte candidatures", fill: "#818cf8" }, // Indigo 400
@@ -58,53 +76,65 @@ const pipelineData = [
     { value: 2, name: "Offre d'emploi", fill: "#fda4af" }, // Rose 300
 ];
 
-export function PipelineRecruitmentChart() {
+export function PipelineRecruitmentChart({ data = defaultPipelineData }: { data?: any[] }) {
     return (
-        <div className="bg-card dark:bg-[#1e1e2e]/80 border border-slate-100 dark:border-white/5 p-6 rounded-2xl h-[450px] flex flex-col shadow-xl dark:shadow-2xl transition-all hover:border-primary/20">
-            <div className="flex justify-between items-end mb-6 px-2">
-                <h3 className="text-lg font-bold text-foreground uppercase tracking-wider opacity-90">Pipeline de Recrutement</h3>
-                <span className="text-xs text-primary bg-primary/10 px-2 py-1 rounded-lg border border-primary/20 font-medium">Live View</span>
+        <div className="glass-card p-8 rounded-3xl h-[500px] flex flex-col group relative overflow-hidden ring-offset-background">
+            <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:opacity-10 transition-all duration-700 -rotate-12 translate-x-12 -translate-y-12">
+                <div className="w-64 h-64 border-[20px] border-primary rounded-full" />
             </div>
 
-            <div className="flex-1 w-full min-h-0">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <div className="relative z-10 flex justify-between items-start mb-8">
+                <div>
+                    <h3 className="text-xl font-black text-foreground uppercase tracking-tighter">Flux de Recrutement</h3>
+                    <p className="text-xs text-muted-foreground font-medium mt-1">Analyse du tunnel de conversion en temps réel</p>
+                </div>
+                <div className="flex gap-2">
+                    <span className="text-[10px] font-black text-primary bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20 uppercase tracking-widest">Live Optimization</span>
+                </div>
+            </div>
+
+            <div className="flex-1 w-full min-h-0 relative z-10">
+                <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         layout="vertical"
-                        data={pipelineData}
-                        margin={{ top: 0, right: 20, bottom: 0, left: 0 }}
-                        barSize={20}
-                        barGap={4}
+                        data={data}
+                        margin={{ top: 0, right: 60, bottom: 0, left: 20 }}
+                        barSize={14}
+                        barGap={12}
                     >
                         <defs>
-                            <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stopColor="#6366f1" stopOpacity={0.8} />
-                                <stop offset="100%" stopColor="#ec4899" stopOpacity={1} />
+                            <linearGradient id="pipelineGradient" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stopColor="#818cf8" />
+                                <stop offset="100%" stopColor="#c084fc" />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="2 4" horizontal={false} stroke="var(--border)" opacity={0.3} />
+                        <CartesianGrid strokeDasharray="4 4" horizontal={false} stroke="var(--border)" opacity={0.4} />
                         <XAxis type="number" hide />
                         <YAxis
                             dataKey="name"
                             type="category"
                             width={160}
-                            tick={{ fill: 'currentColor', fontSize: 13, fontWeight: 500 }}
-                            className="text-muted-foreground"
+                            tick={{ fill: 'currentColor', fontSize: 11, fontWeight: 700 }}
+                            className="text-muted-foreground/70 uppercase tracking-tight"
                             axisLine={false}
                             tickLine={false}
-                            dx={-10}
                         />
-                        <Tooltip cursor={{ fill: 'rgba(100,100,100,0.05)', radius: 8 }} content={<CustomTooltip />} />
+                        <Tooltip
+                            cursor={{ fill: 'rgba(129, 140, 248, 0.05)', radius: 10 }}
+                            content={<CustomTooltip />}
+                        />
                         <Bar
                             dataKey="value"
-                            radius={[0, 6, 6, 0]}
-                            fill="url(#barGradient)"
-                            background={{ fill: 'rgba(100,100,100,0.05)' }}
+                            radius={[0, 10, 10, 0]}
+                            fill="url(#pipelineGradient)"
+                            background={{ fill: 'rgba(100,100,100,0.03)', radius: 10 }}
                         >
                             <LabelList
                                 dataKey="value"
                                 position="right"
-                                className="fill-foreground font-bold text-xs"
-                                offset={10}
+                                className="fill-foreground font-black text-[11px]"
+                                offset={15}
+                                formatter={(v: any) => v > 0 ? `${v} Pers.` : ''}
                             />
                         </Bar>
                     </BarChart>
@@ -115,38 +145,52 @@ export function PipelineRecruitmentChart() {
 }
 
 // --- Application Sources Data ---
-const sourcesData = [
+const defaultSourcesData = [
     { name: "Site officiel", value: 67, fill: "#f43f5e" }, // Rose 500
     { name: "Linkedin", value: 33, fill: "#0ea5e9" }, // Sky 500 (Vibrant)
 ];
 
-export function ApplicationSourcesChart() {
+export function ApplicationSourcesChart({ data = defaultSourcesData }: { data?: any[] }) {
+    const total = data.reduce((acc, curr) => acc + (curr.value || 0), 0);
+
     return (
-        <div className="bg-card dark:bg-[#1e1e2e]/80 border border-slate-100 dark:border-white/5 p-6 rounded-2xl h-[400px] flex flex-col shadow-xl dark:shadow-2xl transition-all hover:border-primary/20">
-            <h3 className="text-lg font-bold text-foreground mb-6 text-center uppercase tracking-wider opacity-90">Sources de Demande</h3>
+        <div className="glass-card p-8 rounded-3xl h-[400px] flex flex-col group relative overflow-hidden">
+            <h3 className="text-lg font-black text-foreground mb-1 uppercase tracking-tighter">Canaux d&apos;Acquisition</h3>
+            <p className="text-xs text-muted-foreground font-medium mb-6">Origine des talents</p>
+
             <div className="flex-1 w-full min-h-0 relative">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
-                            data={sourcesData}
-                            innerRadius={70}
-                            outerRadius={100}
-                            paddingAngle={4}
+                            data={data}
+                            innerRadius={75}
+                            outerRadius={105}
+                            paddingAngle={8}
                             dataKey="value"
-                            cornerRadius={6}
+                            cornerRadius={12}
+                            stroke="none"
                         >
-                            {sourcesData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.fill} strokeWidth={0} />
+                            {data.map((entry, index) => (
+                                <Cell
+                                    key={`cell-${index}`}
+                                    fill={entry.fill}
+                                    className="transition-all duration-300 hover:opacity-80 outline-none"
+                                />
                             ))}
                         </Pie>
                         <Tooltip content={<CustomTooltip />} />
-                        <Legend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '12px', color: 'var(--muted-foreground)' }} />
+                        <Legend
+                            verticalAlign="bottom"
+                            align="center"
+                            iconType="circle"
+                            wrapperStyle={{ paddingTop: '25px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}
+                        />
                     </PieChart>
                 </ResponsiveContainer>
                 {/* Center Text */}
                 <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                    <span className="text-3xl font-bold text-foreground block">100%</span>
-                    <span className="text-xs text-muted-foreground uppercase tracking-widest">Total</span>
+                    <span className="text-3xl font-black text-foreground block tracking-tighter">{total}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-60">Total Hits</span>
                 </div>
             </div>
         </div>
@@ -154,31 +198,46 @@ export function ApplicationSourcesChart() {
 }
 
 // --- Recruitment Mode Data ---
-const modeData = [
+const defaultModeData = [
     { name: "Externe", value: 4, fill: "#3b82f6" }, // Blue
     { name: "Interne", value: 3, fill: "#8b5cf6" }, // Violet
 ];
 
-export function RecruitmentModeChart() {
+export function RecruitmentModeChart({ data = defaultModeData }: { data?: any[] }) {
     return (
-        <div className="bg-card dark:bg-[#1e1e2e]/80 border border-slate-100 dark:border-white/5 p-6 rounded-2xl h-[300px] flex flex-col shadow-xl dark:shadow-2xl transition-all hover:border-primary/20">
-            <h3 className="text-lg font-bold text-foreground mb-6 text-center uppercase tracking-wider opacity-90">Mode de Recrutement</h3>
+        <div className="glass-card p-6 rounded-3xl h-[320px] flex flex-col group relative overflow-hidden">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-sm font-black text-foreground uppercase tracking-widest opacity-80">Stratégie Source</h3>
+                <div className="w-8 h-1 bg-primary/20 rounded-full" />
+            </div>
+
             <div className="flex-1 w-full min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={modeData} barSize={50}>
+                    <BarChart data={data} barSize={40} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <defs>
-                            <linearGradient id="splitColorBar" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
-                                <stop offset="100%" stopColor="#8b5cf6" stopOpacity={1} />
+                            <linearGradient id="modeGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="hsl(var(--primary))" />
+                                <stop offset="100%" stopColor="hsl(var(--primary) / 0.5)" />
                             </linearGradient>
                         </defs>
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--muted-foreground)', fontSize: 13 }} dy={10} />
-                        <Tooltip cursor={{ fill: 'rgba(100,100,100,0.05)' }} content={<CustomTooltip />} />
-                        <Bar dataKey="value" radius={[12, 12, 0, 0]}>
-                            {modeData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                        <XAxis
+                            dataKey="name"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 10, fontWeight: 800, textTransform: 'uppercase' }}
+                            dy={15}
+                        />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} />
+                        <Tooltip cursor={{ fill: 'rgba(var(--primary), 0.05)', radius: 10 }} content={<CustomTooltip />} />
+                        <Bar dataKey="value" radius={[10, 10, 10, 10]}>
+                            {data.map((entry: any, index: number) => (
+                                <Cell
+                                    key={`cell-${index}`}
+                                    fill={index === 0 ? 'url(#modeGradient)' : '#a855f7'}
+                                    className="transition-all duration-500 hover:brightness-110"
+                                />
                             ))}
-                            <LabelList dataKey="value" position="top" className="fill-foreground font-bold text-sm" dy={-5} />
+                            <LabelList dataKey="value" position="top" className="fill-foreground font-black text-[10px]" dy={-10} />
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>
@@ -188,32 +247,37 @@ export function RecruitmentModeChart() {
 }
 
 // --- Final Decision Data ---
-const decisionData = [
+const defaultDecisionData = [
     { name: "Refus", value: 1, fill: "#ef4444" }, // Red
     { name: "En cours", value: 2, fill: "#f59e0b" }, // Amber
     { name: "Embauché", value: 1, fill: "#10b981" }, // Emerald
     { name: "Non embauché", value: 0, fill: "#64748b" }, // Slate
 ];
 
-export function FinalDecisionChart() {
+export function FinalDecisionChart({ data = defaultDecisionData }: { data?: any[] }) {
     return (
-        <div className="bg-card dark:bg-[#1e1e2e]/80 border border-slate-100 dark:border-white/5 p-6 rounded-2xl h-[300px] flex flex-col shadow-xl dark:shadow-2xl transition-all hover:border-primary/20">
-            <h3 className="text-lg font-bold text-foreground mb-6 text-center uppercase tracking-wider opacity-90">Decision Finale</h3>
+        <div className="glass-card p-6 rounded-3xl h-[320px] flex flex-col group relative overflow-hidden">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-sm font-black text-foreground uppercase tracking-widest opacity-80">Statut des Issues</h3>
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+
             <div className="flex-1 w-full min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
-                            data={decisionData}
+                            data={data}
                             cx="50%"
                             cy="50%"
-                            innerRadius={40}
-                            outerRadius={80}
-                            paddingAngle={3}
+                            innerRadius={50}
+                            outerRadius={85}
+                            paddingAngle={5}
                             dataKey="value"
-                            cornerRadius={5}
+                            cornerRadius={10}
+                            stroke="none"
                         >
-                            {decisionData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.fill} stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
+                            {data.map((entry: any, index: number) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} className="transition-all hover:scale-105" />
                             ))}
                         </Pie>
                         <Tooltip content={<CustomTooltip />} />
@@ -222,7 +286,7 @@ export function FinalDecisionChart() {
                             align="right"
                             layout="vertical"
                             iconType="circle"
-                            wrapperStyle={{ color: 'var(--muted-foreground)', fontSize: '11px' }}
+                            wrapperStyle={{ color: 'var(--muted-foreground)', fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', paddingLeft: '10px' }}
                         />
                     </PieChart>
                 </ResponsiveContainer>
@@ -232,7 +296,7 @@ export function FinalDecisionChart() {
 }
 
 // --- Monthly Applications Data ---
-const monthlyData = [
+const defaultMonthlyData = [
     { name: "Jan", value: 0 },
     { name: "Feb", value: 0 },
     { name: "Mar", value: 0 },
@@ -247,33 +311,43 @@ const monthlyData = [
     { name: "Dec", value: 0 },
 ];
 
-export function MonthlyApplicationsChart() {
-    const primaryColor = "hsl(230, 90%, 60%)"; // Match --primary
+export function MonthlyApplicationsChart({ data = defaultMonthlyData }: { data?: any[] }) {
+    const primaryColor = "hsl(var(--primary))";
 
     return (
-        <div className="bg-card dark:bg-[#1e1e2e]/80 border border-slate-100 dark:border-white/5 p-6 rounded-2xl h-[300px] flex flex-col shadow-xl dark:shadow-2xl transition-all hover:border-primary/20">
+        <div className="glass-card p-6 rounded-3xl h-[320px] flex flex-col group relative overflow-hidden">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-foreground uppercase tracking-wider opacity-90 w-full text-center">Demandes / Mois</h3>
+                <h3 className="text-sm font-black text-foreground uppercase tracking-widest opacity-80">Flux Temporel</h3>
+                <span className="text-[10px] font-black opacity-40">LAST 12 MONTHS</span>
             </div>
+
             <div className="flex-1 w-full min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={monthlyData}>
+                    <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <defs>
                             <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor={primaryColor} stopOpacity={0.6} />
+                                <stop offset="5%" stopColor={primaryColor} stopOpacity={0.4} />
                                 <stop offset="95%" stopColor={primaryColor} stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.3} />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} dy={10} interval={1} />
-                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--muted-foreground)', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                        <CartesianGrid strokeDasharray="6 6" vertical={false} stroke="var(--border)" opacity={0.3} />
+                        <XAxis
+                            dataKey="name"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 9, fill: 'var(--muted-foreground)', fontWeight: 800 }}
+                            dy={10}
+                        />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: 'var(--muted-foreground)' }} />
+                        <Tooltip content={<CustomTooltip />} />
                         <Area
                             type="monotone"
                             dataKey="value"
                             stroke={primaryColor}
-                            strokeWidth={3}
+                            strokeWidth={4}
                             fillOpacity={1}
                             fill="url(#colorApps)"
+                            animationDuration={1500}
                         />
                     </AreaChart>
                 </ResponsiveContainer>
@@ -283,45 +357,46 @@ export function MonthlyApplicationsChart() {
 }
 
 // --- Deadline Respect Data ---
-const deadlineData = [
+const defaultDeadlineData = [
     { name: "Respecté", value: 94, fill: "#eab308" }, // Yellow 500
     { name: "Non Respecté", value: 6, fill: "#334155" }, // Slate 700
 ];
 
-export function DeadlineRespectChart() {
+export function DeadlineRespectChart({ data = defaultDeadlineData }: { data?: any[] }) {
+    const rate = data.find(d => d.name === 'Respecté')?.value || 0;
+    const total = data.reduce((acc, d) => acc + d.value, 0);
+    const percentage = total > 0 ? ((rate / total) * 100).toFixed(0) : "0";
+
     return (
-        <div className="bg-card dark:bg-[#1e1e2e]/80 border border-slate-100 dark:border-white/5 p-6 rounded-2xl h-[300px] flex flex-col items-center justify-center relative overflow-hidden shadow-xl dark:shadow-2xl transition-all hover:border-primary/20">
-            {/* Background glow for effect */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl"></div>
-
-            <h3 className="text-lg font-bold text-foreground mb-6 text-center uppercase tracking-wider opacity-90 z-10">Delais Respectés</h3>
-
+        <div className="glass-card p-6 rounded-3xl h-[300px] flex flex-col items-center justify-center relative overflow-hidden group">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-yellow-500/10 rounded-full blur-[80px] group-hover:bg-yellow-500/20 transition-all duration-700" />
+            <h3 className="text-sm font-black text-foreground mb-6 text-center uppercase tracking-widest opacity-70 z-10">Delais Respectés</h3>
             <div className="flex-1 w-full min-h-0 flex items-center justify-center relative z-10">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
-                            data={deadlineData}
+                            data={data}
                             cx="50%"
                             cy="70%"
                             startAngle={180}
                             endAngle={0}
                             innerRadius={70}
                             outerRadius={100}
-                            paddingAngle={0}
+                            paddingAngle={2}
                             dataKey="value"
                             stroke="none"
-                            cornerRadius={8}
+                            cornerRadius={4}
                         >
-                            {deadlineData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                            {data.map((entry: any, index: number) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} className="transition-all duration-500 hover:brightness-110" />
                             ))}
                         </Pie>
                         <Tooltip content={<CustomTooltip />} />
                     </PieChart>
                 </ResponsiveContainer>
-                <div className="absolute top-[65%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-                    <span className="text-4xl font-black text-foreground drop-shadow-sm">94%</span>
-                    <span className="block text-xs text-yellow-500 font-medium uppercase mt-1">On Time</span>
+                <div className="absolute top-[65%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                    <span className="text-4xl font-black text-foreground tracking-tighter">{percentage}%</span>
+                    <span className="block text-[10px] text-yellow-500 font-black uppercase mt-1 tracking-widest">On Time</span>
                 </div>
             </div>
         </div>
@@ -329,14 +404,16 @@ export function DeadlineRespectChart() {
 }
 
 // --- Recruitment Rate Data ---
-const rateData = [
+const defaultRateData = [
     { name: "Recrutement", value: 14, fill: "#10b981" }, // Emerald 500
 ];
 
 
-export function RecruitmentRateChart() {
+export function RecruitmentRateChart({ data = defaultRateData }: { data?: any[] }) {
+    const value = data[0]?.value || 0;
+
     return (
-        <div className="bg-card dark:bg-[#1e1e2e]/80 border border-slate-100 dark:border-white/5 p-6 rounded-2xl h-[300px] flex flex-col items-center justify-center relative overflow-hidden shadow-xl dark:shadow-2xl transition-all hover:border-primary/20">
+        <div className="glass-card p-6 rounded-2xl h-[300px] flex flex-col items-center justify-center relative overflow-hidden shadow-xl transition-all hover:border-primary/20">
             {/* Background glow for effect */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
 
@@ -348,7 +425,7 @@ export function RecruitmentRateChart() {
                         innerRadius="70%"
                         outerRadius="100%"
                         barSize={20}
-                        data={rateData}
+                        data={data}
                         startAngle={180}
                         endAngle={0}
                     >
@@ -363,7 +440,7 @@ export function RecruitmentRateChart() {
                     </RadialBarChart>
                 </ResponsiveContainer>
                 <div className="absolute top-[60%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-                    <span className="text-4xl font-black text-foreground drop-shadow-sm">14%</span>
+                    <span className="text-4xl font-black text-foreground drop-shadow-sm">{value}%</span>
                     <span className="block text-xs text-emerald-500 font-medium uppercase mt-1">Conversion</span>
                 </div>
             </div>
@@ -449,7 +526,7 @@ export function DepartmentUserCountChart() {
                     return;
                 }
 
-                const chartData = depts.map((dept: Department) => ({
+                const chartData = depts.map((dept: any) => ({
                     name: dept.name,
                     value: dept.employeeCount || 0,
                     fill: colorMap[dept.colorCallback || ""] || "#94a3b8" // Default slate
@@ -470,53 +547,6 @@ export function DepartmentUserCountChart() {
     }, []);
 
     // Custom bar shape with hover animation
-    interface AnimatedBarProps {
-        fill: string;
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-        index: number;
-    }
-
-    const AnimatedBar = (props: unknown) => {
-        const { fill, x, y, width, height, index } = props as AnimatedBarProps;
-        const isHovered = hoveredIndex === index;
-
-        return (
-            <g>
-                {/* Glow effect on hover */}
-                {isHovered && (
-                    <rect
-                        x={x - 2}
-                        y={y - 2}
-                        width={width + 4}
-                        height={height + 4}
-                        fill={fill}
-                        opacity={0.3}
-                        rx={8}
-                        className="animate-pulse"
-                    />
-                )}
-                {/* Main bar with gradient */}
-                <rect
-                    x={x}
-                    y={y}
-                    width={width}
-                    height={height}
-                    fill={`url(#gradient-${index})`}
-                    rx={6}
-                    className="transition-all duration-300"
-                    style={{
-                        transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
-                        filter: isHovered ? 'brightness(1.2)' : 'brightness(1)',
-                    }}
-                    onMouseEnter={() => setHoveredIndex(index)}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                />
-            </g>
-        );
-    };
 
     return (
         <div className="glass-card p-6 rounded-2xl h-[400px] flex flex-col group relative overflow-hidden">
@@ -639,6 +669,120 @@ export function DepartmentUserCountChart() {
                     )}
                 </div>
             </div>
+        </div>
+    );
+}
+
+// --- Candidate Turnover Data ---
+const defaultTurnoverData = [
+    { name: "Jan", hires: 10, rejections: 5 },
+    { name: "Feb", hires: 15, rejections: 8 },
+    { name: "Mar", hires: 8, rejections: 12 },
+    { name: "Apr", hires: 12, rejections: 7 },
+    { name: "May", hires: 20, rejections: 10 },
+    { name: "Jun", hires: 18, rejections: 9 },
+];
+
+export function TurnoverChart({ data = defaultTurnoverData }: { data?: any[] }) {
+    return (
+        <div className="glass-card p-8 rounded-3xl h-[450px] flex flex-col group relative overflow-hidden">
+            <div className="flex justify-between items-start mb-8 relative z-10">
+                <div>
+                    <h3 className="text-xl font-black text-foreground uppercase tracking-tighter">Turnover Candidats</h3>
+                    <p className="text-xs text-muted-foreground font-medium mt-1">Comparatif mensuel Recrutements vs Rejets</p>
+                </div>
+                <div className="flex gap-4">
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Hires</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.4)]" />
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Rejections</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex-1 w-full min-h-0 relative z-10">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                            <linearGradient id="colorHires" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id="colorRejections" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="6 6" vertical={false} stroke="var(--border)" opacity={0.2} />
+                        <XAxis
+                            dataKey="name"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 10, fill: 'var(--muted-foreground)', fontWeight: 800 }}
+                            dy={10}
+                        />
+                        <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
+                        />
+                        <Tooltip
+                            content={({ active, payload, label }) => {
+                                if (active && payload && payload.length) {
+                                    return (
+                                        <div className="bg-background/90 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-2xl p-4 min-w-[160px] animate-in fade-in zoom-in duration-200">
+                                            <p className="font-black text-[10px] uppercase tracking-widest text-muted-foreground mb-3 border-b border-white/5 pb-2 text-center">{label}</p>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Hired</span>
+                                                    </div>
+                                                    <span className="text-xl font-black text-emerald-500">{payload[0].value}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-2 h-2 rounded-full bg-rose-500" />
+                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Rejected</span>
+                                                    </div>
+                                                    <span className="text-xl font-black text-rose-500">{payload[1].value}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            }}
+                        />
+                        <Area
+                            type="monotone"
+                            dataKey="hires"
+                            stroke="#10b981"
+                            strokeWidth={4}
+                            fillOpacity={1}
+                            fill="url(#colorHires)"
+                            animationDuration={2000}
+                        />
+                        <Area
+                            type="monotone"
+                            dataKey="rejections"
+                            stroke="#f43f5e"
+                            strokeWidth={4}
+                            fillOpacity={1}
+                            fill="url(#colorRejections)"
+                            animationDuration={2000}
+                            animationBegin={300}
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
+
+            {/* Background decorative blob */}
+            <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
+            <div className="absolute -right-20 -top-20 w-64 h-64 bg-rose-500/5 rounded-full blur-[100px] pointer-events-none" />
         </div>
     );
 }

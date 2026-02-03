@@ -4,7 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
 import {
     Plus, MoreVertical, FileText, XCircle, Search, Filter,
-    Calendar, Clock, User, ArrowRight, ArrowLeft, CheckCircle, Edit, Trash2
+    Calendar, Clock, User, ArrowRight, ArrowLeft, CheckCircle, Edit, Trash2, X
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { AnimatePresence, motion } from "framer-motion";
@@ -496,20 +496,21 @@ export default function CandidaturesPage() {
             {/* --- Details & Interview Modal --- */}
             {
                 selectedCandidature && (
-                    <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm">
-                        <div className="bg-card border border-border rounded-2xl w-full max-w-5xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-                            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-muted/30">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-foreground mb-1">
+                    <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+                        <div className="modal-card w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+                            <div className="px-6 py-6 gradient-premium flex justify-between items-center relative overflow-hidden">
+                                <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
+                                <div className="relative z-10">
+                                    <h2 className="text-2xl font-bold text-white mb-1 tracking-tight">
                                         {selectedCandidature.firstName} {selectedCandidature.lastName}
                                     </h2>
-                                    <p className="text-muted-foreground text-sm flex items-center gap-2">
-                                        <span className="px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-xs font-bold uppercase">{selectedCandidature.status}</span>
+                                    <p className="text-white/80 text-sm flex items-center gap-2 font-medium">
+                                        <span className="px-2 py-0.5 rounded bg-white/20 text-white border border-white/30 text-xs font-bold uppercase backdrop-blur-sm shadow-inner">{selectedCandidature.status}</span>
                                         • {selectedCandidature.positionAppliedFor} • {selectedCandidature.department}
                                     </p>
                                 </div>
-                                <button onClick={() => setSelectedCandidature(null)} className="text-muted-foreground hover:text-foreground transition-colors">
-                                    <XCircle size={28} />
+                                <button onClick={() => setSelectedCandidature(null)} className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-all relative z-10">
+                                    <X size={28} />
                                 </button>
                             </div>
 
@@ -673,16 +674,19 @@ export default function CandidaturesPage() {
             {
                 isFormOpen && (
 
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                        <div className="bg-card border border-border rounded-2xl w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-20 bg-black/60 backdrop-blur-sm">
+                        <div className="modal-card w-full max-w-4xl p-0 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
                             {/* Modal Header */}
-                            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-muted/30">
-                                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                                    <FileText className="text-primary" size={24} />
+                            <div className="px-6 py-6 gradient-premium flex justify-between items-center relative overflow-hidden">
+                                <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
+                                <h2 className="text-2xl font-bold text-white flex items-center gap-3 relative z-10 tracking-tight">
+                                    <div className="p-2 bg-white/20 rounded-xl shadow-inner">
+                                        <FileText className="text-white" size={24} />
+                                    </div>
                                     {t('common.newApplication')}
                                 </h2>
-                                <button onClick={() => setIsFormOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
-                                    <XCircle size={24} />
+                                <button onClick={() => setIsFormOpen(false)} className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-all relative z-10">
+                                    <X size={24} />
                                 </button>
                             </div>
 

@@ -17,6 +17,7 @@ const createDepartment = asyncHandler(async (req, res) => {
         const dept = await departmentService.createDepartment(req.body);
         res.status(201).json(dept);
     } catch (error) {
+        console.error("Error creating department:", error);
         res.status(400).json({ message: error.message });
     }
 });
@@ -29,6 +30,7 @@ const updateDepartment = asyncHandler(async (req, res) => {
         const dept = await departmentService.updateDepartment(req.params.id, req.body);
         res.json(dept);
     } catch (error) {
+        console.error("Error updating department:", error);
         res.status(400).json({ message: error.message });
     }
 });

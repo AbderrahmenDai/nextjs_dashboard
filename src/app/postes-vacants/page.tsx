@@ -4,7 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { Briefcase, Calendar, MapPin, Users, Clock, TrendingUp, Filter, Search, Eye, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Briefcase, Calendar, MapPin, Users, Clock, TrendingUp, Filter, Search, Eye, CheckCircle, XCircle, AlertCircle, X } from "lucide-react";
 
 interface HiringRequest {
     id: string;
@@ -264,11 +264,11 @@ export default function PostesVacantsPage() {
                     <p className="text-muted-foreground">Essayez de modifier vos filtres de recherche</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-gray-100">
                     {filteredPositions.map((position, index) => (
                         <div
                             key={position.id}
-                            className="glass-card p-6 rounded-2xl group hover:scale-105 transition-all duration-300 cursor-pointer relative overflow-hidden animate-in fade-in slide-in-from-bottom"
+                            className="glass-card p-6 rounded-2xl group hover:scale-105 transition-all duration-300 cursor-pointer relative overflow-hidden animate-in fade-in slide-in-from-bottom bg-gray-200"
                             style={{ animationDelay: `${index * 50}ms` }}
                             onClick={() => setSelectedPosition(position)}
                         >
@@ -337,25 +337,25 @@ export default function PostesVacantsPage() {
 
             {/* Detail Modal */}
             {selectedPosition && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setSelectedPosition(null)}>
-                    <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-white/10 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
-                        {/* Header */}
-                        <div className="bg-gradient-to-r from-slate-50 via-white to-slate-50 p-6 border-b border-slate-200">
-                            <div className="flex items-start justify-between">
+                <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+                    <div className="modal-card w-full max-w-2xl p-0 overflow-hidden flex flex-col max-h-[90vh] relative animate-in fade-in zoom-in duration-300">
+                        {/* Header with status gradient */}
+                        <div className={`px-6 py-6 bg-gradient-to-br ${getStatusColor(selectedPosition.status)} relative overflow-hidden`}>
+                            <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
+                            <div className="flex justify-between items-start relative z-10">
                                 <div>
-                                    <h2 className="text-2xl font-black text-slate-800 mb-2">{selectedPosition.title}</h2>
-                                    <div className="flex items-center gap-3">
-                                        <span className={`flex items-center gap-2 px-3 py-1 rounded-lg bg-gradient-to-r ${getStatusColor(selectedPosition.status)} text-white text-sm font-bold`}>
-                                            {getStatusIcon(selectedPosition.status)}
+                                    <h2 className="text-3xl font-bold text-white mb-2 uppercase tracking-tight">{selectedPosition.title}</h2>
+                                    <div className="flex gap-2">
+                                        <span className="px-3 py-1 bg-white/20 text-white rounded-xl text-xs font-bold backdrop-blur-md uppercase border border-white/30 shadow-inner">
                                             {selectedPosition.status}
                                         </span>
-                                        <span className="px-3 py-1 bg-slate-200 text-slate-700 rounded-lg text-sm font-bold">
+                                        <span className="px-3 py-1 bg-white/20 text-white rounded-xl text-xs font-bold backdrop-blur-md uppercase border border-white/30">
                                             {selectedPosition.category}
                                         </span>
                                     </div>
                                 </div>
-                                <button onClick={() => setSelectedPosition(null)} className="p-2 hover:bg-slate-200 rounded-lg transition-colors text-slate-600">
-                                    ✕
+                                <button onClick={() => setSelectedPosition(null)} className="p-2 hover:bg-white/10 text-white hover:text-white/80 rounded-xl transition-all">
+                                    <X size={24} />
                                 </button>
                             </div>
                         </div>

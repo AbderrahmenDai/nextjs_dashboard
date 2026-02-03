@@ -1,8 +1,8 @@
 "use client";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Plus, Search, Filter, FileText, Edit, Trash2, Eye, X, Printer } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Plus, Search, Filter, FileText, Edit, Trash2, Eye, X, Printer, Check, XCircle } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { clsx } from "clsx";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -74,7 +74,6 @@ function RequestModal({
     departments,
     sites,
     allRoles,
-    allCandidates,
     isViewOnly = false,
     onPrint
 }: {
@@ -85,11 +84,11 @@ function RequestModal({
     departments: Department[];
     sites: Site[];
     allRoles: Role[];
-    allCandidates: Candidate[];
     isViewOnly?: boolean;
     onPrint: (req: HiringRequest) => void;
 }) {
     const { t } = useLanguage();
+    const { user } = useAuth();
     const [formData, setFormData] = useState<Partial<HiringRequest>>({
         title: "",
         departmentId: "",
@@ -112,73 +111,30 @@ function RequestModal({
         selectedCandidates: []
     });
 
-    // Cascading Filter States
-    const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([]);
-    const [filteredRoles, setFilteredRoles] = useState<Role[]>([]);
-    const [filteredCandidates, setFilteredCandidates] = useState<Candidate[]>([]);
-
-    useEffect(() => {
-        // Filter Departments based on Site
+    // Cascading Filter States (Memoized)
+    const filteredDepartments = useMemo(() => {
         if (formData.site) {
             const selectedSiteObj = sites.find(s => s.name === formData.site);
             if (selectedSiteObj) {
-                setFilteredDepartments(departments.filter(d => (d as any).siteId === selectedSiteObj.id));
-            } else {
-                setFilteredDepartments(departments);
+                return departments.filter(d => (d as any).siteId === selectedSiteObj.id);
             }
-        } else {
-            setFilteredDepartments(departments);
         }
+        return departments;
     }, [formData.site, departments, sites]);
 
-    useEffect(() => {
-        // Filter Roles based on Department
+    const filteredRoles = useMemo(() => {
         if (formData.departmentId) {
-            setFilteredRoles(allRoles.filter(r => r.departmentId === formData.departmentId));
-
-            // Filter Candidates based on Department Name (since Candidate uses string dept name)
-            const selectedDept = departments.find(d => d.id === formData.departmentId);
-            if (selectedDept) {
-                setFilteredCandidates(allCandidates.filter(c => c.department === selectedDept.name));
-            } else {
-                setFilteredCandidates([]);
-            }
-        } else {
-            setFilteredRoles([]);
-            setFilteredCandidates([]);
+            return allRoles.filter(r => r.departmentId === formData.departmentId);
         }
-    }, [formData.departmentId, allRoles, allCandidates, departments]);
+        return [];
+    }, [formData.departmentId, allRoles]);
 
 
     useEffect(() => {
-        if (isOpen) {
-            if (request) {
-                setFormData(request);
-            } else {
-                setFormData({
-                    title: "",
-                    departmentId: departments.length > 0 ? departments[0].id : "",
-                    category: "Cadre",
-                    status: "Pending HR",
-                    contractType: "CDI",
-                    priority: "Medium",
-                    increaseType: "Budgeted",
-                    site: sites.length > 0 ? sites[0].name : "",
-                    businessUnit: "",
-                    replacementFor: "",
-                    replacementReason: "",
-                    increaseDateRange: "",
-                    description: "",
-                    reason: "",
-                    educationRequirements: "",
-                    skillsRequirements: "",
-                    rejectionReason: "",
-                    roleId: "",
-                    selectedCandidates: []
-                });
-            }
+        if (!isOpen) {
+            // Optional: reset if needed, but key handles it on mount
         }
-    }, [isOpen, request, departments, sites, allRoles]);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -188,26 +144,28 @@ function RequestModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 md:pt-24 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="glass-card w-full max-w-4xl p-0 overflow-hidden flex flex-col max-h-[90vh] relative group border border-primary/20 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+            <div className="modal-card w-full max-w-4xl p-0 overflow-hidden flex flex-col max-h-[90vh] relative group shadow-2xl">
                 {/* Visual effects ommitted for brevity, assume they exist */}
-                <div className="bg-muted/30 backdrop-blur-md p-6 flex justify-between items-center border-b border-border/50 relative overflow-hidden">
+                <div className="px-6 py-6 gradient-premium flex justify-between items-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
                     <div className="flex flex-col relative z-10">
-                        <h2 className="text-2xl font-black uppercase tracking-wide bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent flex items-center gap-3">
+                        <h2 className="text-2xl font-bold text-white tracking-tight uppercase">
                             Demande d&apos;Autorisation d&apos;Embauche
                         </h2>
+                        <p className="text-sm text-white/80 font-medium">Demande d&apos;Autorisation d&apos;Embauche</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 relative z-10">
                         {isViewOnly && request && (
                             <button
                                 onClick={() => onPrint(request)}
-                                className="p-2.5 hover:bg-primary/10 text-primary rounded-xl transition-all"
+                                className="p-2.5 hover:bg-white/10 text-white rounded-xl transition-all"
                                 title="Print Report"
                             >
                                 <Printer size={24} />
                             </button>
                         )}
-                        <button onClick={onClose} className="p-2.5 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all">
+                        <button onClick={onClose} className="p-2.5 hover:bg-white/10 text-white hover:text-white/80 rounded-xl transition-all">
                             <X size={24} />
                         </button>
                     </div>
@@ -215,9 +173,21 @@ function RequestModal({
 
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar bg-card/50 p-6 space-y-6">
                     {/* ... form content ... */}
-                    {/* Top Row */}
                     <div className="flex flex-wrap gap-4 items-center justify-between bg-card border border-border/50 p-4 rounded-xl shadow-sm">
-                        {/* ... */}
+                        <div className="flex items-center gap-4">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Cree par</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary border border-primary/20">
+                                        {request?.requesterName ? request.requesterName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '??'}
+                                    </div>
+                                    <span className="text-sm font-bold text-foreground">
+                                        {request?.requesterName || (isViewOnly ? "Système" : user?.name)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="flex gap-6">
                             {['Ouvrier', 'Etam', 'Cadre'].map((cat) => (
                                 <label key={cat} className="flex items-center gap-2 cursor-pointer">
@@ -274,19 +244,8 @@ function RequestModal({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="md:col-span-1">
-                                <label className="block text-xs font-bold text-primary uppercase mb-1.5 opacity-80">Libellé du Poste (Job Title)</label>
-                                <input
-                                    required
-                                    type="text"
-                                    disabled={isViewOnly}
-                                    value={formData.title || ""}
-                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    className="input-field"
-                                />
-                            </div>
-                            <div className="md:col-span-1">
+                        <div className="grid grid-cols-1 gap-4">
+                            <div>
                                 <label className="block text-xs font-bold text-primary uppercase mb-1.5 opacity-80">Date Souhaitée d&apos;Engagement</label>
                                 <input
                                     type="date"
@@ -299,9 +258,9 @@ function RequestModal({
                         </div>
                     </div>
 
-                    {/* Section 1.5: Role & Candidates Selection */}
+                    {/* Section 1.5: Role Selection */}
                     <div className="bg-primary/5 border border-primary/10 p-4 rounded-2xl space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-primary uppercase mb-1.5 opacity-80">Role</label>
                                 <select
@@ -314,39 +273,6 @@ function RequestModal({
                                     {filteredRoles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                 </select>
                                 {!formData.departmentId && <p className="text-[10px] text-muted-foreground mt-1">Select a department first.</p>}
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-primary uppercase mb-1.5 opacity-80">Candidates (Optional)</label>
-                                <div className="border border-border/50 rounded-xl bg-card/50 max-h-[150px] overflow-y-auto p-2">
-                                    {filteredCandidates.length > 0 ? (
-                                        <div className="space-y-1">
-                                            {filteredCandidates.map(cand => (
-                                                <label key={cand.id} className="flex items-center gap-2 p-1.5 hover:bg-secondary/50 rounded-lg cursor-pointer">
-                                                    <input
-                                                        type="checkbox"
-                                                        disabled={isViewOnly}
-                                                        checked={formData.selectedCandidates?.includes(cand.id) || false}
-                                                        onChange={(e) => {
-                                                            const currentIds = formData.selectedCandidates || [];
-                                                            if (e.target.checked) {
-                                                                setFormData({ ...formData, selectedCandidates: [...currentIds, cand.id] });
-                                                            } else {
-                                                                setFormData({ ...formData, selectedCandidates: currentIds.filter(id => id !== cand.id) });
-                                                            }
-                                                        }}
-                                                        className="rounded border-primary/30 text-primary focus:ring-primary/30"
-                                                    />
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-bold">{cand.firstName} {cand.lastName}</span>
-                                                        <span className="text-[10px] text-muted-foreground">{(cand as any).positionAppliedFor}</span>
-                                                    </div>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-xs text-muted-foreground text-center py-4">No candidates found in this department.</p>
-                                    )}
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -627,6 +553,64 @@ export default function HiringRequestsPage() {
         }
     };
 
+    // Quick Approve Function
+    const handleQuickApprove = async (request: HiringRequest) => {
+        if (!user?.id) return;
+
+        try {
+            let newStatus = '';
+
+            // Determine next status based on current status and user role
+            if (request.status === 'Pending HR' && user.role === 'HR_MANAGER') {
+                newStatus = 'Pending Director';
+            } else if (request.status === 'Pending Director' && user.role === 'PLANT_MANAGER') {
+                newStatus = 'Approved';
+            } else {
+                alert("Vous n'avez pas la permission d'approuver cette demande à cette étape.");
+                return;
+            }
+
+            const payload = {
+                status: newStatus,
+                approverId: user.id
+            };
+
+            await api.updateHiringRequest(request.id, payload);
+            loadData();
+            alert(`✅ Demande approuvée avec succès !`);
+        } catch (error) {
+            console.error("Failed to approve request:", error);
+            alert("Échec de l'approbation");
+        }
+    };
+
+    // Quick Reject Function
+    const handleQuickReject = async (request: HiringRequest) => {
+        if (!user?.id) return;
+
+        const reason = prompt("📝 Veuillez indiquer le motif du refus (obligatoire):");
+
+        if (!reason || reason.trim() === '') {
+            alert("❌ Le motif de refus est obligatoire");
+            return;
+        }
+
+        try {
+            const payload = {
+                status: 'Rejected',
+                rejectionReason: reason,
+                approverId: user.id
+            };
+
+            await api.updateHiringRequest(request.id, payload);
+            loadData();
+            alert(`❌ Demande rejetée`);
+        } catch (error) {
+            console.error("Failed to reject request:", error);
+            alert("Échec du rejet");
+        }
+    };
+
     const openCreateModal = () => {
         setSelectedRequest(null);
         setIsViewOnly(false);
@@ -808,10 +792,16 @@ export default function HiringRequestsPage() {
     // Helper for Status Colors
     const getStatusColor = (status: string) => {
         switch (status) {
-            case "Approved": return "bg-green-500/10 text-green-600 dark:text-green-500 border-green-500/20";
-            case "Rejected": return "bg-red-500/10 text-red-600 dark:text-red-500 border-red-500/20";
-            case "Pending Director": return "bg-orange-500/10 text-orange-600 dark:text-orange-500 border-orange-500/20";
-            default: return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border-yellow-500/20";
+            case "Pending HR":
+                return "bg-blue-500/10 text-blue-600 dark:text-blue-500 border-blue-500/20";
+            case "Pending Director":
+                return "bg-orange-500/10 text-orange-600 dark:text-orange-500 border-orange-500/20";
+            case "Approved":
+                return "bg-green-500/10 text-green-600 dark:text-green-500 border-green-500/20";
+            case "Rejected":
+                return "bg-red-500/10 text-red-600 dark:text-red-500 border-red-500/20";
+            default:
+                return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border-yellow-500/20";
         }
     };
 
@@ -819,6 +809,7 @@ export default function HiringRequestsPage() {
         <DashboardLayout>
             <div className="flex flex-col h-full relative">
                 <RequestModal
+                    key={selectedRequest?.id || (isModalOpen ? 'new' : 'closed')}
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     onSave={selectedRequest ? handleUpdate : handleCreate}
@@ -826,7 +817,6 @@ export default function HiringRequestsPage() {
                     departments={departments}
                     sites={sites}
                     allRoles={allRoles}
-                    allCandidates={allCandidates}
                     isViewOnly={isViewOnly}
                     onPrint={handlePrint}
                 />
@@ -903,7 +893,14 @@ export default function HiringRequestsPage() {
                                                 {req.priority || 'Medium'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-muted-foreground">{req.requesterName || "N/A"}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold text-muted-foreground border border-border/50">
+                                                    {req.requesterName ? req.requesterName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '??'}
+                                                </div>
+                                                <span className="text-muted-foreground font-medium">{req.requesterName || "N/A"}</span>
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-4 text-muted-foreground">{new Date(req.createdAt).toLocaleDateString()}</td>
                                         <td className="px-6 py-4">
                                             <span className={clsx("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border", getStatusColor(req.status))}>
@@ -912,6 +909,30 @@ export default function HiringRequestsPage() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                                                {/* Quick Approve Button - Only for HR_MANAGER on Pending HR or PLANT_MANAGER on Pending Director */}
+                                                {((req.status === 'Pending HR' && user?.role === 'HR_MANAGER') ||
+                                                    (req.status === 'Pending Director' && user?.role === 'PLANT_MANAGER')) && (
+                                                        <button
+                                                            onClick={() => handleQuickApprove(req)}
+                                                            className="p-2 hover:bg-green-500/10 rounded-lg text-green-600 dark:text-green-500 hover:text-green-700 transition-colors"
+                                                            title="Approuver rapidement"
+                                                        >
+                                                            <Check size={18} />
+                                                        </button>
+                                                    )}
+
+                                                {/* Quick Reject Button - Only for HR_MANAGER on Pending HR or PLANT_MANAGER on Pending Director */}
+                                                {((req.status === 'Pending HR' && user?.role === 'HR_MANAGER') ||
+                                                    (req.status === 'Pending Director' && user?.role === 'PLANT_MANAGER')) && (
+                                                        <button
+                                                            onClick={() => handleQuickReject(req)}
+                                                            className="p-2 hover:bg-red-500/10 rounded-lg text-red-600 dark:text-red-500 hover:text-red-700 transition-colors"
+                                                            title="Rejeter"
+                                                        >
+                                                            <XCircle size={18} />
+                                                        </button>
+                                                    )}
+
                                                 <button
                                                     onClick={() => openViewModal(req)}
                                                     className="p-2 hover:bg-secondary rounded-lg text-blue-500 dark:text-blue-400 hover:text-blue-600 transition-colors"

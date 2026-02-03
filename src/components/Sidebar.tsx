@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
@@ -67,7 +67,7 @@ export function Sidebar() {
             {/* Sidebar Container */}
             <aside
                 className={clsx(
-                    "fixed inset-y-0 left-0 z-40 w-72 bg-card/50 backdrop-blur-xl border-r border-border/50 transition-transform duration-300 md:translate-x-0",
+                    "fixed inset-y-0 left-0 z-40 w-72 bg-white/40 backdrop-blur-xl border-r border-white/20 transition-transform duration-300 md:translate-x-0",
                     isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
                 )}
             >
@@ -86,7 +86,22 @@ export function Sidebar() {
 
                     {/* Navigation */}
                     <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto custom-scrollbar">
-                        {navItems.map((item) => {
+                        {navItems.filter(item => {
+                            // If no user, show nothing (or all? sidebar usually requires auth)
+                            if (!user) return false;
+
+                            // DEMANDEUR or PLANT_MANAGER Filter
+                            if (['DEMANDEUR', 'PLANT_MANAGER'].includes(user.role)) {
+                                return ['/hiring-requests', '/notifications', '/settings'].includes(item.href);
+                            }
+
+                            // Optional: Restrict Users/Roles to ADMIN only
+                            if (['/users', '/roles'].includes(item.href)) {
+                                return ['ADMIN'].includes(user.role);
+                            }
+
+                            return true;
+                        }).map((item) => {
                             const isActive = pathname === item.href;
                             return (
                                 <Link
@@ -97,7 +112,7 @@ export function Sidebar() {
                                     {isActive && (
                                         <motion.div
                                             layoutId="active-nav"
-                                            className="absolute inset-0 bg-primary/10 rounded-xl border border-primary/20"
+                                            className="absolute inset-0 bg-blue-200 shadow-[0_0_15px_rgba(191,219,254,0.5)] dark:bg-blue-500/20 rounded-xl border border-blue-300 dark:border-blue-400/30"
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
@@ -106,7 +121,7 @@ export function Sidebar() {
                                     )}
                                     <div className={clsx(
                                         "relative flex items-center gap-3.5 px-4 py-3.5 rounded-xl transition-all duration-200 z-10",
-                                        isActive ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                        isActive ? "text-blue-700 dark:text-blue-300 font-bold" : "text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-muted/50"
                                     )}>
                                         <item.icon
                                             size={22}

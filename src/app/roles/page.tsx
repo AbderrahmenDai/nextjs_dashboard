@@ -64,77 +64,84 @@ function RoleFormModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="glass-card w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
-                <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
-                    <h2 className="text-xl font-bold flex items-center gap-2">
-                        <Shield className="w-5 h-5 text-primary" />
-                        {role ? "Edit Role" : "Add Role"}
-                    </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-secondary rounded-lg transition-colors">
+        <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 transition-all">
+            <div className="modal-card w-full max-w-md p-0 animate-in zoom-in-95 duration-300">
+                <div className="px-6 py-6 gradient-premium flex justify-between items-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
+                    <div className="flex items-center gap-3 relative z-10">
+                        <div className="p-2.5 bg-white/20 rounded-xl text-white shadow-inner">
+                            <Shield className="w-5 h-5" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white tracking-tight">
+                            {role ? "Edit Role" : "Add Role"}
+                        </h2>
+                    </div>
+                    <button onClick={onClose} className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-all relative z-10">
                         <X size={20} />
                     </button>
                 </div>
 
-                {error && (
-                    <div className="mb-4 p-3 bg-red-500/10 text-red-500 rounded-lg text-sm font-medium border border-red-500/20">
-                        {error}
-                    </div>
-                )}
+                <div className="p-6">
+                    {error && (
+                        <div className="mb-4 p-3 bg-red-500/10 text-red-500 rounded-lg text-sm font-medium border border-red-500/20">
+                            {error}
+                        </div>
+                    )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Role Name</label>
-                        <input
-                            required
-                            type="text"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="input-field"
-                            placeholder="e.g. MANAGER"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Department</label>
-                        <select
-                            value={formData.departmentId || ""}
-                            onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
-                            className="input-field"
-                        >
-                            <option value="">Select Department (Optional)</option>
-                            {departments.map((dept) => (
-                                <option key={dept.id} value={dept.id}>{dept.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Description</label>
-                        <textarea
-                            value={formData.description || ""}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            className="input-field min-h-[100px]"
-                            placeholder="Describe the role's responsibilities..."
-                        />
-                    </div>
-                    <div className="flex justify-end gap-3 pt-4 border-t border-border">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-muted-foreground hover:bg-secondary rounded-lg transition-colors font-medium text-sm"
-                            disabled={isLoading}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium shadow-lg transition-all flex items-center gap-2 text-sm"
-                        >
-                            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                            {role ? "Save Changes" : "Create Role"}
-                        </button>
-                    </div>
-                </form>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Role Name</label>
+                            <input
+                                required
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                className="input-field"
+                                placeholder="e.g. MANAGER"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Department</label>
+                            <select
+                                value={formData.departmentId || ""}
+                                onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+                                className="input-field"
+                            >
+                                <option value="">Select Department (Optional)</option>
+                                {departments.map((dept) => (
+                                    <option key={dept.id} value={dept.id}>{dept.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Description</label>
+                            <textarea
+                                value={formData.description || ""}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                className="input-field min-h-[100px]"
+                                placeholder="Describe the role's responsibilities..."
+                            />
+                        </div>
+                        <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-4 py-2 text-muted-foreground hover:bg-secondary rounded-lg transition-colors font-medium text-sm"
+                                disabled={isLoading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium shadow-lg transition-all flex items-center gap-2 text-sm"
+                            >
+                                {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {role ? "Save Changes" : "Create Role"}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );

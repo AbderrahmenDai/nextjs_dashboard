@@ -31,7 +31,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         animate={{
                             scale: [1, 1.3, 1],
                             x: [0, 50, 0],
-                            opacity: [0.2, 0.4, 0.2],
+                            opacity: [0.1, 0.2, 0.1],
                         }}
                         transition={{
                             duration: 25,
@@ -39,7 +39,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                             repeatType: "reverse",
                             ease: "easeInOut"
                         }}
-                        className="absolute bottom-[-20%] left-[-10%] w-[700px] h-[700px] rounded-full bg-blue-600/20 blur-[140px]"
+                        className="absolute bottom-[-10%] left-[-10%] w-[800px] h-[800px] rounded-full bg-primary/10 blur-[160px]"
                     />
                 </div>
 

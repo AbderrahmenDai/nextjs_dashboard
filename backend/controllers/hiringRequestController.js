@@ -53,32 +53,31 @@ const createHiringRequest = asyncHandler(async (req, res) => {
     // Let's set status to "PENDING_ADMIN" or just "PENDING" and notify all.
     
     // We'll trust the body payload but force status
-    const requestData = { ...req.body, status: 'PENDING_APPROVAL' };
+    // Set initial status to 'Pending HR' - First step in approval chain
+    const requestData = { ...req.body, status: 'Pending HR' };
     const newItem = await hiringRequestService.createHiringRequest(requestData);
     
-    // 3. Notify ADMIN, HR_MANAGER (and Direction? User said so)
+    // SEQUENTIAL WORKFLOW: Step 1 - Notify ONLY HR_MANAGER
     try {
-        // Fetch target users
-        const [recipients] = await db.query(
-            `SELECT User.id FROM User 
+        const [hrManagers] = await db.query(
+            `SELECT User.id, User.name FROM User 
              JOIN Role ON User.roleId = Role.id 
-             WHERE Role.name IN ('ADMIN', 'HR_MANAGER', 'Direction')`
+             WHERE Role.name = 'HR_MANAGER'`
         );
         
-        for (const recipient of recipients) {
-            // Create notification with ACTIONS
+        for (const hrManager of hrManagers) {
             const notification = await notificationService.createNotification({
                 senderId: requesterId, 
-                receiverId: recipient.id,
-                message: `New Hiring Request from ${requester[0].name}: ${newItem.title}`,
+                receiverId: hrManager.id,
+                message: `📋 Nouvelle demande d'embauche de ${requester[0].name}: "${newItem.title}" - En attente de votre validation`,
                 type: 'ACTION_REQUIRED',
                 entityType: 'HIRING_REQUEST',
                 entityId: newItem.id,
                 actions: ['APPROVE', 'REJECT']
             });
             
-            // Send real-time update
-            socketService.sendNotificationToUser(recipient.id, notification);
+            socketService.sendNotificationToUser(hrManager.id, notification);
+            console.log(`✅ Notification sent to HR Manager: ${hrManager.name}`);
         }
     } catch (error) {
         console.error('Failed to send notifications for new hiring request:', error);
@@ -89,7 +88,7 @@ const createHiringRequest = asyncHandler(async (req, res) => {
 
 const updateHiringRequest = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { status, approverId } = req.body; // approverId acts as the actor
+    const { status, approverId, rejectionReason } = req.body;
 
     // Fetch current request state
     const currentRequest = await hiringRequestService.getHiringRequestById(id);
@@ -116,43 +115,31 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
         }
     }
 
+    // VALIDATION: If rejecting, require a reason
+    if (status === 'Rejected' && !rejectionReason) {
+        res.status(400);
+        throw new Error('Un motif de rejet est obligatoire');
+    }
+
     // Perform Update
     const updated = await hiringRequestService.updateHiringRequest(id, req.body);
     
-    // NOTIFICATION LOGIC based on Status Changes
+    // SEQUENTIAL APPROVAL WORKFLOW LOGIC
     if (status && status !== currentRequest.status) {
         try {
-            // Scenario 1: ADMIN approves -> DONE (Notify Requester)
-            if (status === 'APPROVED' && (actorRole === 'ADMIN' || actorRole === 'Direction')) {
-               // Notify Requester
-               await sendNotification(
-                   approverId, 
-                   currentRequest.requesterId, 
-                   `Your hiring request "${currentRequest.title}" has been APPROVED by ${actorName}.`
-               );
-               
-               // Resolve outstanding Action Notifications
-               await notificationService.resolveActions(
-                   id, 
-                   'HIRING_REQUEST', 
-                   `Hiring Request "${currentRequest.title}" was APPROVED by ${actorName}.`
-               );
-            }
-
-            // Scenario 2: HR_MANAGER approves -> Notify DIRECTION
-            if (status === 'HR_APPROVED' && actorRole === 'HR_MANAGER') {
-                // Fetch Direction users
-                const [result] = await db.query(`
-                    SELECT User.id FROM User 
+            // ========== STEP 1: HR_MANAGER APPROVES → Notify PLANT_MANAGER (Direction) ==========
+            if (status === 'Pending Director' && actorRole === 'HR_MANAGER') {
+                const [directors] = await db.query(`
+                    SELECT User.id, User.name FROM User 
                     JOIN Role ON User.roleId = Role.id 
-                    WHERE Role.name = 'Direction'
+                    WHERE Role.name = 'PLANT_MANAGER'
                 `);
                 
-                for (const dir of result) {
+                for (const director of directors) {
                     await sendNotification(
                         approverId,
-                        dir.id,
-                        `Hiring Request "${currentRequest.title}" approved by HR (${actorName}). Awaiting your final approval.`,
+                        director.id,
+                        `✅ Demande d'embauche "${currentRequest.title}" validée par RH (${actorName}). En attente de votre validation.`,
                         'ACTION_REQUIRED',
                         'HIRING_REQUEST',
                         currentRequest.id,
@@ -160,30 +147,72 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
                     );
                 }
                 
-                // Resolve outstanding Action Notifications for HR (if any existed, e.g. parallel approvals)
-                // For sequential, the previous "Pending HR" notification (if ACTION_REQUIRED) should be resolved.
+                // Resolve HR notifications
                 await notificationService.resolveActions(
-                   id, 
-                   'HIRING_REQUEST', 
-                   `Hiring Request "${currentRequest.title}" was approved by HR (${actorName}).`
-               );
+                    id, 
+                    'HIRING_REQUEST', 
+                    `Validée par RH (${actorName})`
+                );
+                
+                console.log(`✅ HR approved, notified Direction`);
             }
 
-            // Scenario 3: Rejected -> Notify Requester
-            if (status === 'REJECTED') {
-                 const reasonText = req.body.rejectionReason ? ` Reason: ${req.body.rejectionReason}` : '';
-                 await sendNotification(
-                   approverId, 
-                   currentRequest.requesterId, 
-                   `Your hiring request "${currentRequest.title}" has been REJECTED by ${actorName}.${reasonText}`
-               );
-               
-               // Resolve outstanding Action Notifications
-               await notificationService.resolveActions(
-                   id, 
-                   'HIRING_REQUEST', 
-                   `Hiring Request "${currentRequest.title}" was REJECTED by ${actorName}.`
-               );
+            // ========== STEP 2: PLANT_MANAGER APPROVES → Notify RECRUITMENT_MANAGER ==========
+            if (status === 'Approved' && actorRole === 'PLANT_MANAGER') {
+                const [recruiters] = await db.query(`
+                    SELECT User.id, User.name FROM User 
+                    JOIN Role ON User.roleId = Role.id 
+                    WHERE Role.name = 'RECRUITMENT_MANAGER'
+                `);
+                
+                for (const recruiter of recruiters) {
+                    await sendNotification(
+                        approverId,
+                        recruiter.id,
+                        `✅ Demande d'embauche "${currentRequest.title}" validée par la Direction (${actorName}). Vous pouvez maintenant procéder au recrutement.`,
+                        'INFO',
+                        'HIRING_REQUEST',
+                        currentRequest.id,
+                        null
+                    );
+                }
+                
+                // Notify Requester of final approval
+                await sendNotification(
+                    approverId, 
+                    currentRequest.requesterId, 
+                    `🎉 Votre demande d'embauche "${currentRequest.title}" a été APPROUVÉE par la Direction (${actorName}).`
+                );
+                
+                // Resolve all outstanding notifications
+                await notificationService.resolveActions(
+                    id, 
+                    'HIRING_REQUEST', 
+                    `Approuvée par la Direction (${actorName})`
+                );
+                
+                console.log(`✅ Direction approved, notified Recruitment Manager and Requester`);
+            }
+
+            // ========== REJECTION HANDLING ==========
+            if (status === 'Rejected') {
+                const reasonText = rejectionReason ? `\n\n📝 Motif: ${rejectionReason}` : '';
+                
+                // Notify Requester
+                await sendNotification(
+                    approverId, 
+                    currentRequest.requesterId, 
+                    `❌ Votre demande d'embauche "${currentRequest.title}" a été REFUSÉE par ${actorName}.${reasonText}`
+                );
+                
+                // Resolve all outstanding notifications
+                await notificationService.resolveActions(
+                    id, 
+                    'HIRING_REQUEST', 
+                    `Refusée par ${actorName}`
+                );
+                
+                console.log(`❌ Request rejected by ${actorName}`);
             }
 
         } catch (error) {

@@ -4,6 +4,8 @@ import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useMemo, useState } from 'react';
+import { Clock, X } from 'lucide-react';
+import { clsx } from 'clsx';
 
 // Setup the localizer by providing the moment (or globalize) instance
 // to the localizer accessor.
@@ -316,68 +318,94 @@ export function InterviewCalendar({ interviews }: InterviewCalendarProps) {
 
             {/* Detail Modal */}
             {selectedInterview && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedInterview(null)}>
-                    <div className="bg-[#1e1e1e] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-                            <h3 className="text-lg font-bold text-white">Interview Details</h3>
-                            <button onClick={() => setSelectedInterview(null)} className="text-gray-400 hover:text-white transition-colors">✕</button>
+                <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-20 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setSelectedInterview(null)}>
+                    <div className="modal-card w-full max-w-md p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+                        <div className="px-6 py-6 gradient-premium flex justify-between items-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
+                            <div className="flex items-center gap-3 relative z-10">
+                                <div className="p-2.5 bg-white/20 rounded-xl text-white shadow-inner">
+                                    <Clock className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-2xl font-bold text-white tracking-tight">
+                                    Interview Details
+                                </h2>
+                            </div>
+                            <button onClick={() => setSelectedInterview(null)} className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-all relative z-10">
+                                <X size={20} />
+                            </button>
                         </div>
-                        <div className="p-6 space-y-4">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-lg">
+
+                        <div className="p-6">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xl ring-1 ring-primary/20 shadow-inner">
                                     {selectedInterview.candidateFirstName?.[0]}{selectedInterview.candidateLastName?.[0]}
                                 </div>
                                 <div>
-                                    <h4 className="text-xl font-bold text-white">{selectedInterview.candidateFirstName} {selectedInterview.candidateLastName}</h4>
-                                    <p className="text-sm text-gray-400">{selectedInterview.appliedPosition || 'No Position'}</p>
+                                    <h4 className="text-xl font-bold text-foreground">{selectedInterview.candidateFirstName} {selectedInterview.candidateLastName}</h4>
+                                    <p className="text-sm text-muted-foreground font-medium">{selectedInterview.appliedPosition || 'No Position'}</p>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4 text-sm mt-4">
-                                <div className="bg-white/5 p-3 rounded-lg border border-white/5">
-                                    <span className="block text-xs uppercase text-gray-500 font-bold mb-1">Interviewer</span>
-                                    <span className="text-white font-medium">{selectedInterview.interviewerName || 'Unassigned'}</span>
+                                <div className="bg-secondary/30 p-3 rounded-xl border border-white/5">
+                                    <span className="block text-[10px] uppercase text-muted-foreground font-bold mb-1 tracking-wider">Interviewer</span>
+                                    <span className="text-foreground font-bold">{selectedInterview.interviewerName || 'Unassigned'}</span>
                                 </div>
-                                <div className="bg-white/5 p-3 rounded-lg border border-white/5">
-                                    <span className="block text-xs uppercase text-gray-500 font-bold mb-1">Type</span>
-                                    <span className="text-white font-medium">{selectedInterview.type}</span>
+                                <div className="bg-secondary/30 p-3 rounded-xl border border-white/5">
+                                    <span className="block text-[10px] uppercase text-muted-foreground font-bold mb-1 tracking-wider">Type</span>
+                                    <span className="text-foreground font-bold">{selectedInterview.type}</span>
                                 </div>
-                                <div className="bg-white/5 p-3 rounded-lg border border-white/5">
-                                    <span className="block text-xs uppercase text-gray-500 font-bold mb-1">Date</span>
-                                    <span className="text-white font-medium">{new Date(selectedInterview.date).toLocaleDateString()}</span>
+                                <div className="bg-secondary/30 p-3 rounded-xl border border-white/5">
+                                    <span className="block text-[10px] uppercase text-muted-foreground font-bold mb-1 tracking-wider">Date</span>
+                                    <span className="text-foreground font-bold">{new Date(selectedInterview.date).toLocaleDateString()}</span>
                                 </div>
-                                <div className="bg-white/5 p-3 rounded-lg border border-white/5">
-                                    <span className="block text-xs uppercase text-gray-500 font-bold mb-1">Time</span>
-                                    <span className="text-white font-medium">{new Date(selectedInterview.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                <div className="bg-secondary/30 p-3 rounded-xl border border-white/5">
+                                    <span className="block text-[10px] uppercase text-muted-foreground font-bold mb-1 tracking-wider">Time</span>
+                                    <span className="text-foreground font-bold">{new Date(selectedInterview.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                 </div>
                             </div>
 
-                            <div className="space-y-2 pt-2">
-                                <div className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
-                                    <span className="text-sm font-medium text-gray-300">Status</span>
-                                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${selectedInterview.status === 'Completed' ? 'bg-green-500/20 text-green-400' :
-                                        selectedInterview.status === 'Cancelled' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'
-                                        }`}>{selectedInterview.status}</span>
+                            <div className="space-y-3 pt-4 mt-2">
+                                <div className="flex justify-between items-center bg-secondary/20 p-3 rounded-xl border border-white/5">
+                                    <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Status</span>
+                                    <span className={clsx("px-3 py-1 rounded-full text-xs font-bold border shadow-sm",
+                                        selectedInterview.status === 'Completed' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' :
+                                            selectedInterview.status === 'Cancelled' ? 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400' :
+                                                'bg-primary/10 border-primary/20 text-primary'
+                                    )}>
+                                        {selectedInterview.status}
+                                    </span>
                                 </div>
                                 {selectedInterview.result !== 'Pending' && (
-                                    <div className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
-                                        <span className="text-sm font-medium text-gray-300">Result</span>
-                                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${selectedInterview.result === 'Passed' ? 'text-green-400' :
-                                            selectedInterview.result === 'Failed' ? 'text-red-400' : 'text-yellow-400'
-                                            }`}>{selectedInterview.result}</span>
+                                    <div className="flex justify-between items-center bg-secondary/20 p-3 rounded-xl border border-white/5">
+                                        <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Result</span>
+                                        <span className={clsx("px-3 py-1 rounded-full text-xs font-bold border shadow-sm",
+                                            selectedInterview.result === 'Passed' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' :
+                                                selectedInterview.result === 'Failed' ? 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400' :
+                                                    'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
+                                        )}>{selectedInterview.result}</span>
                                     </div>
                                 )}
                             </div>
 
                             {selectedInterview.notes && (
-                                <div className="mt-4">
-                                    <span className="block text-xs uppercase text-gray-500 font-bold mb-1">Notes</span>
-                                    <p className="text-sm text-gray-300 bg-white/5 p-3 rounded-lg border border-white/5 italic">"{selectedInterview.notes}"</p>
+                                <div className="mt-6 p-4 bg-muted/30 rounded-2xl border border-border/50 relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-2 opacity-10">
+                                        <Clock size={40} />
+                                    </div>
+                                    <span className="block text-[10px] uppercase text-muted-foreground font-bold mb-2 tracking-wider">Interviewer Notes</span>
+                                    <p className="text-sm text-foreground/80 leading-relaxed italic relative z-10 font-medium">"{selectedInterview.notes}"</p>
                                 </div>
                             )}
-                        </div>
-                        <div className="p-4 bg-white/5 border-t border-white/10 flex justify-end">
-                            <button onClick={() => setSelectedInterview(null)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors">Close</button>
+
+                            <div className="pt-6 flex justify-end">
+                                <button
+                                    onClick={() => setSelectedInterview(null)}
+                                    className="px-6 py-2.5 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-xl transition-all font-bold text-sm shadow-sm active:scale-95 border border-border/50"
+                                >
+                                    Close
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
