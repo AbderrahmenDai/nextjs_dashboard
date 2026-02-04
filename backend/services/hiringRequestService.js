@@ -7,10 +7,12 @@ const getAllHiringRequests = async () => {
         SELECT 
             hr.*, 
             d.name as departmentName, 
-            u.name as requesterName 
+            u.name as requesterName,
+            app.name as approverName
         FROM HiringRequest hr
         LEFT JOIN Department d ON hr.departmentId = d.id
         LEFT JOIN User u ON hr.requesterId = u.id
+        LEFT JOIN User app ON hr.approverId = app.id
         ORDER BY hr.createdAt DESC
     `;
     const [rows] = await db.query(sql);
@@ -22,10 +24,12 @@ const getHiringRequestById = async (id) => {
         SELECT 
             hr.*, 
             d.name as departmentName, 
-            u.name as requesterName 
+            u.name as requesterName,
+            app.name as approverName
         FROM HiringRequest hr
         LEFT JOIN Department d ON hr.departmentId = d.id
         LEFT JOIN User u ON hr.requesterId = u.id
+        LEFT JOIN User app ON hr.approverId = app.id
         WHERE hr.id = ?
     `;
     const [rows] = await db.query(sql, [id]);
@@ -82,13 +86,13 @@ const updateHiringRequest = async (id, data) => {
         'title', 'departmentId', 'category', 'status', 'description', 'budget', 'contractType', 'reason',
         'site', 'businessUnit', 'desiredStartDate', 'replacementFor', 'replacementReason', 
         'increaseType', 'increaseDateRange', 'educationRequirements', 'skillsRequirements',
-        'rejectionReason'
+        'rejectionReason', 'approverId', 'approvedAt'
     ];
 
     for (const key of Object.keys(data)) {
         if (updateableColumns.includes(key)) {
             fields.push(`${key} = ?`);
-            if (key === 'desiredStartDate' && data[key]) {
+            if ((key === 'desiredStartDate' || key === 'approvedAt') && data[key]) {
                 values.push(new Date(data[key]));
             } else {
                 values.push(data[key]);

@@ -6,6 +6,9 @@ import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { clsx } from "clsx";
+import { createPortal } from "react-dom";
+import { HiringRequestPaper } from "@/components/HiringRequestPaper";
+import { HiringRequest } from "@/types";
 
 interface Notification {
     id: string;
@@ -29,6 +32,11 @@ export default function NotificationsPage() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Rejection Modal State
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
@@ -81,14 +89,14 @@ export default function NotificationsPage() {
                 setIsRejectModalOpen(true);
                 return;
             } else if (action === 'APPROVE') {
-                // Determine status based on User Role (Simple logic for now)
-                // If HR -> HR_APPROVED
-                // If Direction or Admin -> APPROVED
-                const role = user.role?.toUpperCase();
-                if (role === 'HR_MANAGER' || role === 'RH MANAGER') {
-                    newStatus = 'HR_APPROVED';
-                } else if (role === 'DIRECTION' || role === 'ADMIN') {
-                    newStatus = 'APPROVED';
+                // Determine status based on User Role
+                const role = user.role; // Assuming role name matches DB role name exactly or close enough logic needed
+                // Roles from DB: HR_MANAGER, PLANT_MANAGER
+
+                if (role === 'HR_MANAGER' || role === 'RESPONSABLE_RH') {
+                    newStatus = 'Pending Director';
+                } else if (role === 'PLANT_MANAGER' || role === 'DIRECTION' || role === 'ADMIN') {
+                    newStatus = 'Approved';
                 } else {
                     alert("You do not have permission to approve.");
                     return;
@@ -186,7 +194,7 @@ export default function NotificationsPage() {
             }
 
             await api.updateHiringRequest(notificationToReject.entityId, {
-                status: 'REJECTED',
+                status: 'Rejected',
                 rejectionReason: rejectionReason,
                 approverId: user.id
             });
@@ -204,9 +212,28 @@ export default function NotificationsPage() {
         }
     };
 
+    // View Request Details State
+    const [viewingRequest, setViewingRequest] = useState<HiringRequest | null>(null);
+    const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+
+    const handleNotificationClick = async (notification: Notification) => {
+        // Only handle click for Hiring Requests with ID
+        if (notification.entityType === 'HIRING_REQUEST' && notification.entityId) {
+            try {
+                setIsFetchingDetails(true);
+                const request = await api.getHiringRequestById(notification.entityId);
+                setViewingRequest(request);
+            } catch (error) {
+                console.error("Failed to fetch request details:", error);
+            } finally {
+                setIsFetchingDetails(false);
+            }
+        }
+    };
+
     return (
         <DashboardLayout>
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full relative">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
@@ -220,7 +247,7 @@ export default function NotificationsPage() {
                     </div>
                     {unreadCount > 0 && (
                         <button
-                            onClick={handleMarkAllAsRead}
+                            onClick={(e) => { e.stopPropagation(); handleMarkAllAsRead(); }}
                             className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-colors font-medium border border-primary/20"
                         >
                             <CheckCheck size={18} />
@@ -246,12 +273,13 @@ export default function NotificationsPage() {
                         <p className="text-muted-foreground">You're all caught up! Check back later for updates.</p>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-3 pb-8">
                         {notifications.map((notification) => (
                             <div
                                 key={notification.id}
+                                onClick={() => handleNotificationClick(notification)}
                                 className={clsx(
-                                    "glass-card p-4 rounded-xl border transition-all duration-200",
+                                    "glass-card p-4 rounded-xl border transition-all duration-200 cursor-pointer hover:bg-secondary/40 relative overflow-hidden",
                                     notification.isRead
                                         ? "border-border/50 bg-card/50"
                                         : "border-primary/30 bg-primary/5 shadow-lg shadow-primary/5"
@@ -394,6 +422,31 @@ export default function NotificationsPage() {
                         </div>
                     </div>
                 </div>
+            )}
+            {/* View Request Details Modal - Portal */}
+            {viewingRequest && mounted && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-hidden animate-in fade-in duration-200">
+                    <div className="w-full h-full flex items-center justify-center p-1 md:p-4">
+                        <div className="w-full max-h-full overflow-y-auto flex justify-center custom-scrollbar p-2">
+                            <HiringRequestPaper
+                                request={viewingRequest}
+                                onClose={() => setViewingRequest(null)}
+                            />
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Loading Overlay - Portal */}
+            {isFetchingDetails && mounted && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/20 backdrop-blur-[1px] cursor-wait">
+                    <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-xl flex items-center gap-3">
+                        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <span className="text-sm font-medium">Chargement...</span>
+                    </div>
+                </div>,
+                document.body
             )}
         </DashboardLayout>
     );

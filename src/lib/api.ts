@@ -219,6 +219,12 @@ export const api = {
         return response.json();
     },
 
+    getHiringRequestById: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/hiring-requests/${id}`);
+        if (!response.ok) throw new Error('Failed to fetch hiring request');
+        return response.json();
+    },
+
     createHiringRequest: async (request: any) => {
         const response = await fetch(`${API_BASE_URL}/hiring-requests`, {
             method: 'POST',

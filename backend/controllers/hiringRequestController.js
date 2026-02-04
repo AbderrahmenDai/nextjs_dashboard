@@ -129,6 +129,14 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
         try {
             // ========== STEP 1: HR_MANAGER APPROVES → Notify PLANT_MANAGER (Direction) ==========
             if (status === 'Pending Director' && actorRole === 'HR_MANAGER') {
+                // Resolve HR notifications FIRST before creating new actionable ones
+                // Otherwise we risk resolving the newly created director notification immediately
+                await notificationService.resolveActions(
+                    id, 
+                    'HIRING_REQUEST', 
+                    `Validée par RH (${actorName})`
+                );
+
                 const [directors] = await db.query(`
                     SELECT User.id, User.name FROM User 
                     JOIN Role ON User.roleId = Role.id 
@@ -146,13 +154,6 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
                         ['APPROVE', 'REJECT']
                     );
                 }
-                
-                // Resolve HR notifications
-                await notificationService.resolveActions(
-                    id, 
-                    'HIRING_REQUEST', 
-                    `Validée par RH (${actorName})`
-                );
                 
                 console.log(`✅ HR approved, notified Direction`);
             }

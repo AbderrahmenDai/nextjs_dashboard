@@ -3,6 +3,7 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Plus, Search, Filter, FileText, Edit, Trash2, Eye, X, Printer, Check, XCircle } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { clsx } from "clsx";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -89,26 +90,43 @@ function RequestModal({
 }) {
     const { t } = useLanguage();
     const { user } = useAuth();
-    const [formData, setFormData] = useState<Partial<HiringRequest>>({
-        title: "",
-        departmentId: "",
-        category: "Cadre",
-        status: "Pending HR",
-        contractType: "CDI",
-        priority: "Medium",
-        increaseType: "Budgeted",
-        site: "",
-        businessUnit: "",
-        replacementReason: "",
-        replacementFor: "",
-        increaseDateRange: "",
-        description: "",
-        reason: "", // Justification
-        educationRequirements: "",
-        skillsRequirements: "",
-        rejectionReason: "",
-        roleId: "",
-        selectedCandidates: []
+    const [formData, setFormData] = useState<Partial<HiringRequest>>(() => {
+        const defaults = {
+            title: "",
+            departmentId: "",
+            category: "Cadre",
+            status: "Pending HR",
+            contractType: "CDI",
+            priority: "Medium",
+            increaseType: "Budgeted",
+            site: "",
+            businessUnit: "",
+            replacementReason: "",
+            replacementFor: "",
+            increaseDateRange: "",
+            description: "",
+            reason: "",
+            educationRequirements: "",
+            skillsRequirements: "",
+            rejectionReason: "",
+            roleId: "",
+            selectedCandidates: []
+        };
+        // Merge request data if available, ensuring nulls become empty strings for inputs
+        if (request) {
+            return {
+                ...defaults,
+                ...request,
+                // Handle specific nullables that crash value inputs
+                replacementFor: request.replacementFor || "",
+                replacementReason: request.replacementReason || "",
+                description: request.description || "",
+                reason: request.reason || "",
+                educationRequirements: request.educationRequirements || "",
+                skillsRequirements: request.skillsRequirements || "",
+            };
+        }
+        return defaults;
     });
 
     // Cascading Filter States (Memoized)
@@ -172,7 +190,17 @@ function RequestModal({
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar bg-card/50 p-6 space-y-6">
-                    {/* ... form content ... */}
+                    {formData.status === 'Rejected' && formData.rejectionReason && (
+                        <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-start gap-3">
+                            <XCircle className="w-5 h-5 text-red-600 dark:text-red-500 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <h4 className="text-sm font-bold text-red-600 dark:text-red-500 uppercase tracking-wide mb-1">Demande Refusée</h4>
+                                <p className="text-sm text-foreground/80">{formData.rejectionReason}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Section 1: Header Info */}
                     <div className="flex flex-wrap gap-4 items-center justify-between bg-card border border-border/50 p-4 rounded-xl shadow-sm">
                         <div className="flex items-center gap-4">
                             <div className="flex flex-col">
@@ -472,6 +500,7 @@ function RequestModal({
 
 export default function HiringRequestsPage() {
     const { t } = useLanguage();
+    const searchParams = useSearchParams();
     const [requests, setRequests] = useState<HiringRequest[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
     const [sites, setSites] = useState<Site[]>([]);
@@ -483,6 +512,19 @@ export default function HiringRequestsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<HiringRequest | null>(null);
     const [isViewOnly, setIsViewOnly] = useState(false);
+
+    // Filter by View ID if present in URL
+    useEffect(() => {
+        const viewId = searchParams.get('view');
+        if (viewId && requests.length > 0) {
+            const req = requests.find(r => r.id === viewId);
+            if (req) {
+                setSelectedRequest(req);
+                setIsViewOnly(true);
+                setIsModalOpen(true);
+            }
+        }
+    }, [searchParams, requests]);
 
     const loadData = async () => {
         try {
