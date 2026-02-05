@@ -221,7 +221,10 @@ export const api = {
 
     getHiringRequestById: async (id: string) => {
         const response = await fetch(`${API_BASE_URL}/hiring-requests/${id}`);
-        if (!response.ok) throw new Error('Failed to fetch hiring request');
+        if (!response.ok) {
+            console.error(`Failed to fetch hiring request: ${response.status} ${response.statusText} for ID: ${id}`);
+            throw new Error(`Failed to fetch hiring request: ${response.status}`);
+        }
         return response.json();
     },
 

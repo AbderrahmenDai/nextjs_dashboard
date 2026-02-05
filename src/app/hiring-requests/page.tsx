@@ -1,13 +1,15 @@
 "use client";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Plus, Search, Filter, FileText, Edit, Trash2, Eye, X, Printer, Check, XCircle } from "lucide-react";
+import { Plus, Search, Filter, FileText, Edit, Trash2, Eye, X, Printer, Check, XCircle, UserPlus } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { clsx } from "clsx";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { HiringRequestPaper } from "@/components/HiringRequestPaper";
 
 // --- Types ---
 interface HiringRequest {
@@ -38,6 +40,8 @@ interface HiringRequest {
     rejectionReason?: string;
     roleId?: string;
     selectedCandidates?: string[]; // IDs of selected candidates
+    approverName?: string;
+    approvedAt?: string;
 }
 
 interface Site {
@@ -90,6 +94,13 @@ function RequestModal({
 }) {
     const { t } = useLanguage();
     const { user } = useAuth();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        return () => setMounted(false);
+    }, []);
+
     const [formData, setFormData] = useState<Partial<HiringRequest>>(() => {
         const defaults = {
             title: "",
@@ -154,16 +165,27 @@ function RequestModal({
         }
     }, [isOpen]);
 
-    if (!isOpen) return null;
+    if (!isOpen || !mounted) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSave(formData);
     };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
-            <div className="modal-card w-full max-w-4xl p-0 overflow-hidden flex flex-col max-h-[90vh] relative group shadow-2xl">
+    if (isViewOnly && request) {
+        return createPortal(
+            <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm p-4 md:p-8">
+                <div className="min-h-full flex items-center justify-center">
+                    <HiringRequestPaper request={request} onClose={onClose} />
+                </div>
+            </div>,
+            document.body
+        );
+    }
+
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="modal-card w-full max-w-4xl p-0 overflow-hidden flex flex-col max-h-[90vh] bg-background border border-border rounded-xl shadow-2xl relative">
                 {/* Visual effects ommitted for brevity, assume they exist */}
                 <div className="px-6 py-6 gradient-premium flex justify-between items-center relative overflow-hidden">
                     <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
@@ -233,6 +255,33 @@ function RequestModal({
                         </div>
                     </div>
 
+                    {/* Meta Info */}
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground bg-muted/30 p-3 rounded-lg border border-border/50 mb-4">
+                        <div className="flex items-center gap-1.5">
+                            <span className="font-bold uppercase opacity-70">Créé par:</span>
+                            <span className="font-semibold text-foreground">{formData.requesterName || "Inconnu"}</span>
+                        </div>
+                        <div className="w-px h-3 bg-border hidden sm:block"></div>
+                        <div className="flex items-center gap-1.5">
+                            <span className="font-bold uppercase opacity-70">Le:</span>
+                            <span className="font-semibold text-foreground">{formData.createdAt ? new Date(formData.createdAt).toLocaleDateString('fr-FR') : "N/A"}</span>
+                        </div>
+                    </div>
+
+                    {/* Section 0: Title */}
+                    <div className="bg-card border border-border/50 p-4 rounded-xl shadow-sm">
+                        <label className="block text-xs font-bold text-primary uppercase mb-1.5 opacity-80">Titre du Poste</label>
+                        <input
+                            type="text"
+                            required
+                            disabled={isViewOnly}
+                            value={formData.title || ""}
+                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            className="input-field font-bold text-lg"
+                            placeholder="Ex: Ingénieur DevOps"
+                        />
+                    </div>
+
                     <div className="bg-primary/5 border border-primary/10 p-4 rounded-2xl space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
@@ -271,8 +320,7 @@ function RequestModal({
                                 />
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-primary uppercase mb-1.5 opacity-80">Date Souhaitée d&apos;Engagement</label>
                                 <input
@@ -282,6 +330,35 @@ function RequestModal({
                                     onChange={(e) => setFormData({ ...formData, desiredStartDate: e.target.value })}
                                     className="input-field"
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-primary uppercase mb-1.5 opacity-80">Priorité</label>
+                                <select
+                                    disabled={isViewOnly}
+                                    value={formData.priority || "Medium"}
+                                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                                    className="input-field"
+                                >
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                    <option value="Critical">Critical</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-primary uppercase mb-1.5 opacity-80">Type de Contrat</label>
+                                <select
+                                    disabled={isViewOnly}
+                                    value={formData.contractType || "CDI"}
+                                    onChange={(e) => setFormData({ ...formData, contractType: e.target.value })}
+                                    className="input-field"
+                                >
+                                    <option value="CDI">CDI</option>
+                                    <option value="CDD">CDD</option>
+                                    <option value="SIVP">SIVP</option>
+                                    <option value="Stage">Stage</option>
+                                    <option value="Alternance">Alternance</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -357,26 +434,10 @@ function RequestModal({
                                     className="input-field"
                                 />
                             </div>
-                            <div className="flex gap-4 min-w-[150px]">
-                                {['CDI', 'CDD'].map(type => (
-                                    <label key={type} className="flex items-center gap-1 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="contractType"
-                                            value={type}
-                                            checked={formData.contractType === type}
-                                            onChange={() => setFormData({ ...formData, contractType: type })}
-                                            disabled={isViewOnly}
-                                            className="w-4 h-4 text-primary"
-                                        />
-                                        <span className="text-xs font-bold text-foreground">{type}</span>
-                                    </label>
-                                ))}
-                            </div>
                         </div>
 
                         {/* Non-Budgeted */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 pt-4 border-t border-primary/10">
                             <label className="flex items-center gap-2 min-w-[180px] cursor-pointer">
                                 <input
                                     type="radio"
@@ -402,10 +463,10 @@ function RequestModal({
                             onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                             className="input-field min-h-[80px]"
                         />
-                    </div>
+                    </div >
 
                     {/* Section 4: Process Characteristics (Description) */}
-                    <div className="space-y-2">
+                    < div className="space-y-2" >
                         <label className="block text-sm font-bold text-foreground uppercase bg-secondary px-3 py-1.5 rounded-lg border border-border/50 w-fit">Caractéristiques du Poste à Pourvoir (Missions) :</label>
                         <textarea
                             rows={3}
@@ -414,10 +475,10 @@ function RequestModal({
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             className="input-field min-h-[80px]"
                         />
-                    </div>
+                    </div >
 
                     {/* Section 5: Candidate Requirements */}
-                    <div className="space-y-4">
+                    < div className="space-y-4" >
                         <label className="block text-sm font-bold text-foreground uppercase bg-secondary px-3 py-1.5 rounded-lg border border-border/50 w-fit">Caractéristiques requises du Candidat :</label>
 
                         <div>
@@ -441,7 +502,7 @@ function RequestModal({
                                 className="input-field min-h-[60px]"
                             />
                         </div>
-                    </div>
+                    </div >
 
                     {/* Hidden/Extra fields that still technically exist but aren't on the form, keep hidden or minimal UI if strictly needed, else rely on defaults */}
                     {/* Status is usually managed by workflow actions, but we might want an admin override */}
@@ -492,14 +553,16 @@ function RequestModal({
                             </div>
                         </div>
                     )}
-                </form>
-            </div>
-        </div>
+                </form >
+            </div >
+        </div >,
+        document.body
     );
 }
 
 export default function HiringRequestsPage() {
     const { t } = useLanguage();
+    const router = useRouter();
     const searchParams = useSearchParams();
     const [requests, setRequests] = useState<HiringRequest[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
@@ -513,10 +576,16 @@ export default function HiringRequestsPage() {
     const [selectedRequest, setSelectedRequest] = useState<HiringRequest | null>(null);
     const [isViewOnly, setIsViewOnly] = useState(false);
 
-    // Filter by View ID if present in URL
+    // Handle URL actions and filters
     useEffect(() => {
         const viewId = searchParams.get('view');
-        if (viewId && requests.length > 0) {
+        const action = searchParams.get('action');
+
+        if (action === 'create') {
+            setSelectedRequest(null);
+            setIsViewOnly(false);
+            setIsModalOpen(true);
+        } else if (viewId && requests.length > 0) {
             const req = requests.find(r => r.id === viewId);
             if (req) {
                 setSelectedRequest(req);
@@ -945,9 +1014,17 @@ export default function HiringRequestsPage() {
                                         </td>
                                         <td className="px-6 py-4 text-muted-foreground">{new Date(req.createdAt).toLocaleDateString()}</td>
                                         <td className="px-6 py-4">
-                                            <span className={clsx("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border", getStatusColor(req.status))}>
-                                                {req.status}
-                                            </span>
+                                            <div className="flex flex-col gap-1.5 items-start">
+                                                <span className={clsx("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border", getStatusColor(req.status))}>
+                                                    {req.status}
+                                                </span>
+                                                {req.approverName && (req.status === 'Approved' || req.status === 'Rejected') && (
+                                                    <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                                                        {req.status === 'Rejected' ? <XCircle size={10} className="text-red-500" /> : <Check size={10} className="text-green-500" />}
+                                                        par {req.approverName.split(' ')[0]}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
@@ -1003,6 +1080,17 @@ export default function HiringRequestsPage() {
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
+
+                                                {/* Add Candidate Button - Only for Recruitment Managers on Approved Requests */}
+                                                {(user?.role === 'RECRUITMENT_MANAGER' || user?.role === 'HR_MANAGER' || user?.role === 'Recruitment Manager' || user?.role === 'RECRUITER' || user?.role === 'Responsable Recrutement') && req.status === 'Approved' && (
+                                                    <button
+                                                        onClick={() => router.push(`/candidatures?newForRequestId=${req.id}`)}
+                                                        className="p-2 hover:bg-purple-500/10 rounded-lg text-purple-600 hover:text-purple-700 transition-colors"
+                                                        title="Ajouter Candidat"
+                                                    >
+                                                        <UserPlus size={18} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

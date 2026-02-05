@@ -4,7 +4,9 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { Briefcase, Calendar, MapPin, Users, Clock, TrendingUp, Filter, Search, Eye, CheckCircle, XCircle, AlertCircle, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Briefcase, Calendar, MapPin, Users, Clock, TrendingUp, Filter, Search, Eye, CheckCircle, XCircle, AlertCircle, X, Plus } from "lucide-react";
+import { CreateVacancyModal } from "@/components/CreateVacancyModal";
 
 interface HiringRequest {
     id: string;
@@ -31,6 +33,12 @@ export default function PostesVacantsPage() {
     const [filterStatus, setFilterStatus] = useState<string>("all");
     const [selectedPosition, setSelectedPosition] = useState<HiringRequest | null>(null);
     const { user } = useAuth();
+    const router = useRouter();
+
+    // New state for modal
+    const [departments, setDepartments] = useState<any[]>([]);
+    const [sites, setSites] = useState<string[]>([]);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     // Helper to check if user can act on the request
     const canAct = (status: string) => {
@@ -42,7 +50,20 @@ export default function PostesVacantsPage() {
     };
 
     useEffect(() => {
-        loadPositions();
+        const init = async () => {
+            try {
+                const [deptData, siteData] = await Promise.all([
+                    api.getDepartments(),
+                    api.getSites()
+                ]);
+                setDepartments(deptData || []);
+                setSites(siteData || []);
+            } catch (e) {
+                console.error("Failed to load metadata", e);
+            }
+            loadPositions();
+        };
+        init();
     }, []);
 
     const loadPositions = async () => {
@@ -155,8 +176,8 @@ export default function PostesVacantsPage() {
     return (
         <DashboardLayout>
             {/* Header */}
-            <div className="mb-8 animate-in slide-in-from-top duration-500">
-                <div className="flex items-center gap-4 mb-2">
+            <div className="mb-8 animate-in slide-in-from-top duration-500 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex items-center gap-4">
                     <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl shadow-lg">
                         <Briefcase className="w-8 h-8 text-white" />
                     </div>
@@ -167,6 +188,13 @@ export default function PostesVacantsPage() {
                         <p className="text-muted-foreground mt-1">Toutes les demandes d'embauche en cours</p>
                     </div>
                 </div>
+                <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-primary/25 active:scale-95"
+                >
+                    <Plus size={18} strokeWidth={2.5} />
+                    Nouveau Poste
+                </button>
             </div>
 
             {/* Stats Cards */}
@@ -459,6 +487,13 @@ export default function PostesVacantsPage() {
                     </div>
                 </div>
             )}
+            <CreateVacancyModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onSuccess={loadPositions}
+                sites={sites}
+                departments={departments}
+            />
         </DashboardLayout>
     );
 }

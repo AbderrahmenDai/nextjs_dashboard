@@ -53,22 +53,36 @@ const createHiringRequest = asyncHandler(async (req, res) => {
     // Let's set status to "PENDING_ADMIN" or just "PENDING" and notify all.
     
     // We'll trust the body payload but force status
-    // Set initial status to 'Pending HR' - First step in approval chain
-    const requestData = { ...req.body, status: 'Pending HR' };
-    const newItem = await hiringRequestService.createHiringRequest(requestData);
-    
-    // SEQUENTIAL WORKFLOW: Step 1 - Notify ONLY HR_MANAGER
-    try {
+    // Determine Workflow based on Site
+    let initialStatus = 'Pending HR';
+    let targetApprovers = [];
+    const { site } = req.body;
+
+    if (site === 'TTG') {
+        // TTG Workflow: Direct to Plant Manager (Aymen Baccouche)
+        initialStatus = 'Pending Director';
+        const [users] = await db.query("SELECT id, name FROM User WHERE email LIKE '%baccouche%'");
+        targetApprovers = users;
+        console.log(`TTG Workflow detected. Target approver: ${users.length > 0 ? users[0].name : 'None found'}`);
+    } else {
+        // Standard Workflow (TT): Step 1 - Notify HR_MANAGER
         const [hrManagers] = await db.query(
             `SELECT User.id, User.name FROM User 
              JOIN Role ON User.roleId = Role.id 
              WHERE Role.name = 'HR_MANAGER'`
         );
-        
-        for (const hrManager of hrManagers) {
+        targetApprovers = hrManagers;
+    }
+
+    const requestData = { ...req.body, status: initialStatus };
+    const newItem = await hiringRequestService.createHiringRequest(requestData);
+    
+    // Send Notifications
+    try {
+        for (const approver of targetApprovers) {
             const notification = await notificationService.createNotification({
                 senderId: requesterId, 
-                receiverId: hrManager.id,
+                receiverId: approver.id,
                 message: `📋 Nouvelle demande d'embauche de ${requester[0].name}: "${newItem.title}" - En attente de votre validation`,
                 type: 'ACTION_REQUIRED',
                 entityType: 'HIRING_REQUEST',
@@ -76,8 +90,8 @@ const createHiringRequest = asyncHandler(async (req, res) => {
                 actions: ['APPROVE', 'REJECT']
             });
             
-            socketService.sendNotificationToUser(hrManager.id, notification);
-            console.log(`✅ Notification sent to HR Manager: ${hrManager.name}`);
+            socketService.sendNotificationToUser(approver.id, notification);
+            console.log(`✅ Notification sent to approver: ${approver.name}`);
         }
     } catch (error) {
         console.error('Failed to send notifications for new hiring request:', error);
@@ -205,6 +219,28 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
                     currentRequest.requesterId, 
                     `❌ Votre demande d'embauche "${currentRequest.title}" a été REFUSÉE par ${actorName}.${reasonText}`
                 );
+
+                // Notify Recruitment Manager (Required: Notify on refusal by HR or Direction)
+                const [recruiters] = await db.query(`
+                    SELECT User.id, User.name FROM User 
+                    JOIN Role ON User.roleId = Role.id 
+                    WHERE Role.name = 'RECRUITMENT_MANAGER'
+                `);
+                
+                for (const recruiter of recruiters) {
+                    await sendNotification(
+                        approverId,
+                        recruiter.id,
+                        `❌ Demande d'embauche "${currentRequest.title}" REFUSÉE par ${actorName}.${reasonText}`,
+                        'INFO',
+                        'HIRING_REQUEST',
+                        currentRequest.id
+                    );
+                }
+                
+
+
+                
                 
                 // Resolve all outstanding notifications
                 await notificationService.resolveActions(

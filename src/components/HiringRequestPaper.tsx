@@ -1,6 +1,8 @@
 import React from 'react';
 import { HiringRequest } from "@/types";
-import { X, Printer, Calendar, MapPin, Building, Briefcase, GraduationCap, FileText, User } from "lucide-react";
+import { X, Printer, Calendar, MapPin, Building, Briefcase, GraduationCap, FileText, User, UserPlus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface HiringRequestPaperProps {
     request: HiringRequest;
@@ -8,6 +10,9 @@ interface HiringRequestPaperProps {
 }
 
 export function HiringRequestPaper({ request, onClose }: HiringRequestPaperProps) {
+    const router = useRouter();
+    const { user } = useAuth();
+
     // Helper to format date
     const formatDate = (dateStr?: string) => {
         if (!dateStr) return "N/A";
@@ -23,6 +28,15 @@ export function HiringRequestPaper({ request, onClose }: HiringRequestPaperProps
                     <p className="opacity-80 text-sm mt-1">{request.title}</p>
                 </div>
                 <div className="flex gap-2">
+                    {request.status === 'Approved' && (user?.role === 'RECRUITMENT_MANAGER' || user?.role === 'HR_MANAGER' || user?.role === 'Recruitment Manager' || user?.role === 'RECRUITER' || user?.role === 'Responsable Recrutement') && (
+                        <button
+                            onClick={() => router.push(`/candidatures?newForRequestId=${request.id}`)}
+                            className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                            title="Ajouter Candidat"
+                        >
+                            <UserPlus size={20} />
+                        </button>
+                    )}
                     <button onClick={() => window.print()} className="p-2 hover:bg-white/20 rounded-full transition-colors" title="Imprimer">
                         <Printer size={20} />
                     </button>
@@ -32,7 +46,7 @@ export function HiringRequestPaper({ request, onClose }: HiringRequestPaperProps
                 </div>
             </div>
 
-            <div className="p-8 space-y-8 overflow-y-auto max-h-[80vh] custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50">
+            <div className="p-8 space-y-8 bg-slate-50/50 dark:bg-slate-900/50">
 
                 {/* Status Banner if Rejected */}
                 {request.status === 'Rejected' && (
@@ -145,11 +159,93 @@ export function HiringRequestPaper({ request, onClose }: HiringRequestPaperProps
                     </div>
                 </section>
 
-                {/* Footer Info */}
-                <div className="pt-6 border-t border-gray-200 dark:border-gray-800 flex justify-between text-xs text-gray-400">
-                    <p>Demandé par <span className="font-medium text-gray-600 dark:text-gray-300">{request.requesterName || "Inconnu"}</span> le {formatDate(request.createdAt)}</p>
-                    <p className="font-mono opacity-50">Ref: {request.id.slice(0, 8)}</p>
-                </div>
+                {/* Circuit de Validation - Signature Style */}
+                <section className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+                    <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-6 text-center">Circuit de Validation</h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* 1. Demandeur */}
+                        <div className="bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col items-center justify-between min-h-[140px] shadow-sm relative">
+                            <div className="w-full text-center border-b border-dashed border-gray-200 dark:border-gray-700 pb-2 mb-2">
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Demandeur</span>
+                            </div>
+                            <div className="text-center my-auto">
+                                <div className="font-serif italic text-lg text-gray-800 dark:text-gray-200 mb-1">{request.requesterName || "Inconnu"}</div>
+                                <div className="text-[10px] text-gray-400">Créé le {formatDate(request.createdAt)}</div>
+                            </div>
+                            <div className="mt-2 w-full flex justify-center">
+                                <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded text-[10px] font-bold border border-green-100 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Soumis
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* 2. Avis RH */}
+                        <div className="bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col items-center justify-between min-h-[140px] shadow-sm">
+                            <div className="w-full text-center border-b border-dashed border-gray-200 dark:border-gray-700 pb-2 mb-2">
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Ressources Humaines</span>
+                            </div>
+
+                            <div className="my-auto w-full flex justify-center">
+                                {request.status === 'Pending HR' && (
+                                    <div className="text-center px-4 py-2 bg-yellow-50 border border-yellow-100 rounded-lg">
+                                        <span className="text-sm font-bold text-yellow-700 block">En Attente</span>
+                                        <span className="text-[10px] text-yellow-600">de validation RH</span>
+                                    </div>
+                                )}
+
+                                {['Pending Director', 'Approved'].includes(request.status) && (
+                                    <div className="text-center px-4 py-2 bg-green-50 border border-green-100 rounded-lg transform -rotate-2">
+                                        <span className="text-sm font-bold text-green-700 block uppercase tracking-wide border-2 border-green-600 px-2 py-1 rounded">Avis Favorable</span>
+                                    </div>
+                                )}
+
+                                {request.status === 'Rejected' && (
+                                    <div className="text-center px-4 py-2 bg-red-50 border border-red-100 rounded-lg transform rotate-2">
+                                        <span className="text-sm font-bold text-red-700 block uppercase tracking-wide border-2 border-red-600 px-2 py-1 rounded">Refusé</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="mt-2 text-[10px] text-gray-400"> Signature</div>
+                        </div>
+
+                        {/* 3. Direction Générale */}
+                        <div className="bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col items-center justify-between min-h-[140px] shadow-sm">
+                            <div className="w-full text-center border-b border-dashed border-gray-200 dark:border-gray-700 pb-2 mb-2">
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Direction Générale</span>
+                            </div>
+
+                            <div className="my-auto w-full flex justify-center">
+                                {request.status === 'Pending HR' && (
+                                    <span className="text-gray-300 text-xs italic">En attente RH</span>
+                                )}
+
+                                {request.status === 'Pending Director' && (
+                                    <div className="text-center px-4 py-2 bg-yellow-50 border border-yellow-100 rounded-lg">
+                                        <span className="text-sm font-bold text-yellow-700 block">En Attente</span>
+                                        <span className="text-[10px] text-yellow-600">de validation DG</span>
+                                    </div>
+                                )}
+
+                                {request.status === 'Approved' && (
+                                    <div className="flex flex-col items-center">
+                                        <div className="text-center px-4 py-2 bg-green-50 border border-green-100 rounded-lg transform -rotate-2 mb-2">
+                                            <span className="text-sm font-bold text-green-700 block uppercase tracking-wide border-2 border-green-600 px-2 py-1 rounded">Accordé</span>
+                                        </div>
+                                        {request.approverName && <span className="font-serif italic text-xs text-gray-600">{request.approverName}</span>}
+                                    </div>
+                                )}
+
+                                {request.status === 'Rejected' && (
+                                    <span className="text-gray-300 text-xs">-</span>
+                                )}
+                            </div>
+
+                            <div className="mt-2 text-[10px] text-gray-400">Décision </div>
+                        </div>
+                    </div>
+                </section>
 
             </div>
         </div>

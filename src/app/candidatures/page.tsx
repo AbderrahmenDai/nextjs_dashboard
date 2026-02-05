@@ -7,8 +7,10 @@ import {
     Calendar, Clock, User, ArrowRight, ArrowLeft, CheckCircle, Edit, Trash2, X
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
+
+import { useSearchParams } from "next/navigation";
 
 interface Candidature {
     id?: string;
@@ -31,7 +33,7 @@ interface Candidature {
 
     // Application Info
     source: "WEBSITE" | "LINKEDIN" | "REFERRAL" | "OTHER";
-    hiringRequestId?: number | null;
+    hiringRequestId?: string | null;
     recruiterComments: string;
 
     // Extended Info
@@ -97,6 +99,8 @@ export default function CandidaturesPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
 
+    const searchParams = useSearchParams();
+
     const [selectedCandidature, setSelectedCandidature] = useState<Candidature | null>(null);
     const [potentialInterviewers, setPotentialInterviewers] = useState<any[]>([]);
     const [interviewForm, setInterviewForm] = useState({
@@ -118,6 +122,14 @@ export default function CandidaturesPage() {
             console.error("Failed to load data:", error);
         }
     };
+
+    useEffect(() => {
+        const newForRequestId = searchParams.get('newForRequestId');
+        if (newForRequestId) {
+            setFormData(prev => ({ ...prev, hiringRequestId: newForRequestId }));
+            setIsFormOpen(true);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         loadData();
