@@ -3,6 +3,7 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Plus, Search, Filter, FileText, Edit, Trash2, Eye, X, Printer, Check, XCircle, UserPlus } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { clsx } from "clsx";
@@ -10,6 +11,7 @@ import { api } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { HiringRequestPaper } from "@/components/HiringRequestPaper";
+import { AssignCandidateModal } from "@/components/AssignCandidateModal";
 
 // --- Types ---
 interface HiringRequest {
@@ -574,6 +576,8 @@ export default function HiringRequestsPage() {
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<HiringRequest | null>(null);
+    const [requestToAssign, setRequestToAssign] = useState<HiringRequest | null>(null);
+    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [isViewOnly, setIsViewOnly] = useState(false);
 
     // Handle URL actions and filters
@@ -932,6 +936,16 @@ export default function HiringRequestsPage() {
                     onPrint={handlePrint}
                 />
 
+                <AssignCandidateModal
+                    isOpen={isAssignModalOpen}
+                    onClose={() => setIsAssignModalOpen(false)}
+                    hiringRequest={requestToAssign}
+                    onSuccess={() => {
+                        // Optional: reload data or show toast
+                        // loadData(); // If we want to reflect assignment count if added
+                    }}
+                />
+
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
@@ -965,147 +979,179 @@ export default function HiringRequestsPage() {
                     </button>
                 </div>
 
-                {/* List */}
-                <div className="glass-card rounded-2xl overflow-hidden shadow-sm">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead>
-                                <tr className="border-b border-border bg-secondary/30">
-                                    <th className="px-6 py-4 font-bold text-foreground">{t('hiringRequest.title')}</th>
-                                    <th className="px-6 py-4 font-bold text-foreground">{t('hiringRequest.department')}</th>
-                                    <th className="px-6 py-4 font-bold text-foreground">{t('hiringRequest.category')}</th>
-                                    <th className="px-6 py-4 font-bold text-foreground">{t('hiringRequest.priority')}</th>
-                                    <th className="px-6 py-4 font-bold text-foreground">{t('hiringRequest.requester')}</th>
-                                    <th className="px-6 py-4 font-bold text-foreground">{t('hiringRequest.date')}</th>
-                                    <th className="px-6 py-4 font-bold text-foreground">{t('hiringRequest.status')}</th>
-                                    <th className="px-6 py-4 font-bold text-foreground text-right">{t('common.actions')}</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                                {requests.filter(r => r.title.toLowerCase().includes(searchTerm.toLowerCase())).map((req) => (
-                                    <tr key={req.id} className="hover:bg-secondary/20 transition-colors group">
-                                        <td className="px-6 py-4 font-medium text-foreground">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 dark:text-blue-400 ring-1 ring-blue-500/20">
-                                                    <FileText size={16} />
-                                                </div>
-                                                {req.title}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-muted-foreground">{req.departmentName || req.departmentId}</td>
-                                        <td className="px-6 py-4 text-muted-foreground">{req.category}</td>
-                                        <td className="px-6 py-4">
-                                            <span className={clsx(
-                                                "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border",
-                                                req.priority === 'High' ? 'bg-red-500/10 text-red-600 dark:text-red-500 border-red-500/20' :
-                                                    req.priority === 'Medium' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20' :
-                                                        'bg-blue-500/10 text-blue-600 dark:text-blue-500 border-blue-500/20'
-                                            )}>
-                                                {req.priority || 'Medium'}
+                {/* Card Grid View */}
+                <motion.div layout className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <AnimatePresence mode="popLayout">
+                        {requests.filter(r => r.title.toLowerCase().includes(searchTerm.toLowerCase())).map((req) => (
+                            <motion.div
+                                layout
+                                key={req.id}
+                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                                whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+                                className="group bg-card hover:bg-card/80 border border-border/50 hover:border-primary/20 rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden flex flex-col"
+                            >
+                                {/* Animated Motion Background (Video-like effect) */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" style={{ backgroundSize: '200% 200%', animation: 'moveGradient 3s ease infinite' }} />
+
+                                {/* Glow Effect */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+
+                                {/* Header: Icon, Title, Priority */}
+                                <div className="flex justify-between items-start mb-4 relative z-10">
+                                    <div className="flex gap-3 items-start">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 dark:text-blue-400 ring-1 ring-blue-500/20 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                                            <FileText size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-lg text-foreground leading-tight line-clamp-1" title={req.title}>{req.title}</h3>
+                                            <p className="text-xs font-medium text-muted-foreground mt-1 flex items-center gap-1.5">
+                                                {req.departmentName || req.departmentId}
+                                                <span className="w-1 h-1 rounded-full bg-border"></span>
+                                                {req.category}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span className={clsx(
+                                        "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm",
+                                        req.priority === 'High' ? 'bg-red-500/10 text-red-600 dark:text-red-500 border-red-500/20' :
+                                            req.priority === 'Medium' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20' :
+                                                'bg-blue-500/10 text-blue-600 dark:text-blue-500 border-blue-500/20'
+                                    )}>
+                                        {req.priority || 'Medium'}
+                                    </span>
+                                </div>
+
+                                {/* Status & Contract */}
+                                <div className="flex items-center justify-between mb-5 relative z-10">
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className={clsx("w-fit px-3 py-1 rounded-full text-[11px] font-bold uppercase border shadow-sm animate-in fade-in", getStatusColor(req.status))}>
+                                            {req.status}
+                                        </span>
+                                        {req.approverName && (req.status === 'Approved' || req.status === 'Rejected') && (
+                                            <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1 ml-1">
+                                                {req.status === 'Rejected' ? <XCircle size={10} className="text-red-500" /> : <Check size={10} className="text-green-500" />}
+                                                par {req.approverName.split(' ')[0]}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold text-muted-foreground border border-border/50">
-                                                    {req.requesterName ? req.requesterName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '??'}
-                                                </div>
-                                                <span className="text-muted-foreground font-medium">{req.requesterName || "N/A"}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-muted-foreground">{new Date(req.createdAt).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-col gap-1.5 items-start">
-                                                <span className={clsx("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border", getStatusColor(req.status))}>
-                                                    {req.status}
-                                                </span>
-                                                {req.approverName && (req.status === 'Approved' || req.status === 'Rejected') && (
-                                                    <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-                                                        {req.status === 'Rejected' ? <XCircle size={10} className="text-red-500" /> : <Check size={10} className="text-green-500" />}
-                                                        par {req.approverName.split(' ')[0]}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-                                                {/* Quick Approve Button - Only for HR_MANAGER on Pending HR or PLANT_MANAGER on Pending Director */}
-                                                {((req.status === 'Pending HR' && user?.role === 'HR_MANAGER') ||
-                                                    (req.status === 'Pending Director' && user?.role === 'PLANT_MANAGER')) && (
-                                                        <button
-                                                            onClick={() => handleQuickApprove(req)}
-                                                            className="p-2 hover:bg-green-500/10 rounded-lg text-green-600 dark:text-green-500 hover:text-green-700 transition-colors"
-                                                            title="Approuver rapidement"
-                                                        >
-                                                            <Check size={18} />
-                                                        </button>
-                                                    )}
+                                        )}
+                                    </div>
+                                    <span className="text-xs font-semibold text-foreground/70 bg-secondary/50 px-2 py-1 rounded border border-border/50">
+                                        {req.contractType}
+                                    </span>
+                                </div>
 
-                                                {/* Quick Reject Button - Only for HR_MANAGER on Pending HR or PLANT_MANAGER on Pending Director */}
-                                                {((req.status === 'Pending HR' && user?.role === 'HR_MANAGER') ||
-                                                    (req.status === 'Pending Director' && user?.role === 'PLANT_MANAGER')) && (
-                                                        <button
-                                                            onClick={() => handleQuickReject(req)}
-                                                            className="p-2 hover:bg-red-500/10 rounded-lg text-red-600 dark:text-red-500 hover:text-red-700 transition-colors"
-                                                            title="Rejeter"
-                                                        >
-                                                            <XCircle size={18} />
-                                                        </button>
-                                                    )}
+                                {/* Requester & Meta */}
+                                <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-xl border border-border/30 mb-5 relative z-10 transition-colors group-hover:bg-secondary/50">
+                                    <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center text-[10px] font-bold text-muted-foreground border border-border/50 shadow-sm">
+                                        {req.requesterName ? req.requesterName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '??'}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-foreground truncate">{req.requesterName || "Inconnu"}</p>
+                                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                            <span>{new Date(req.createdAt).toLocaleDateString()}</span>
+                                            {req.site && (
+                                                <>
+                                                    <span className="w-1 h-1 rounded-full bg-border"></span>
+                                                    <span>{req.site}</span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
 
-                                                <button
-                                                    onClick={() => openViewModal(req)}
-                                                    className="p-2 hover:bg-secondary rounded-lg text-blue-500 dark:text-blue-400 hover:text-blue-600 transition-colors"
-                                                    title={t('hiringRequest.viewDetails')}
-                                                >
-                                                    <Eye size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handlePrint(req)}
-                                                    className="p-2 hover:bg-secondary rounded-lg text-primary hover:text-primary/80 transition-colors"
-                                                    title="Print Report"
-                                                >
-                                                    <Printer size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => openEditModal(req)}
-                                                    className="p-2 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                                                    title={t('hiringRequest.editRequest')}
-                                                >
-                                                    <Edit size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(req.id)}
-                                                    className="p-2 hover:bg-red-500/10 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"
-                                                    title={t('common.delete')}
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
+                                {/* Spacer to push footer down */}
+                                <div className="flex-1"></div>
 
-                                                {/* Add Candidate Button - Only for Recruitment Managers on Approved Requests */}
-                                                {(user?.role === 'RECRUITMENT_MANAGER' || user?.role === 'HR_MANAGER' || user?.role === 'Recruitment Manager' || user?.role === 'RECRUITER' || user?.role === 'Responsable Recrutement') && req.status === 'Approved' && (
-                                                    <button
-                                                        onClick={() => router.push(`/candidatures?newForRequestId=${req.id}`)}
-                                                        className="p-2 hover:bg-purple-500/10 rounded-lg text-purple-600 hover:text-purple-700 transition-colors"
-                                                        title="Ajouter Candidat"
-                                                    >
-                                                        <UserPlus size={18} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {requests.length === 0 && (
-                                    <tr>
-                                        <td colSpan={8} className="px-6 py-12 text-center text-muted-foreground bg-secondary/5">
-                                            {searchTerm ? "No requests found matching your search." : "No hiring requests created yet."}
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                                {/* Actions Footer */}
+                                <div className="flex items-center justify-end gap-2 pt-4 border-t border-border/50 relative z-10 opacity-80 group-hover:opacity-100 transition-opacity">
+                                    {/* Quick Approve - HR/Plant Manager */}
+                                    {((req.status === 'Pending HR' && user?.role === 'HR_MANAGER') ||
+                                        (req.status === 'Pending Director' && user?.role === 'PLANT_MANAGER')) && (
+                                            <>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleQuickReject(req); }}
+                                                    className="p-2 hover:bg-red-500/10 rounded-lg text-red-600 dark:text-red-500 transition-colors"
+                                                    title="Rejeter"
+                                                >
+                                                    <XCircle size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleQuickApprove(req); }}
+                                                    className="p-2 hover:bg-green-500/10 rounded-lg text-green-600 dark:text-green-500 transition-colors"
+                                                    title="Approuver"
+                                                >
+                                                    <Check size={18} />
+                                                </button>
+                                                <div className="w-px h-4 bg-border mx-1"></div>
+                                            </>
+                                        )}
+
+                                    {/* View */}
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); openViewModal(req); }}
+                                        className="p-2 hover:bg-blue-500/10 rounded-lg text-blue-500 dark:text-blue-400 transition-colors"
+                                        title={t('hiringRequest.viewDetails')}
+                                    >
+                                        <Eye size={18} />
+                                    </button>
+
+                                    {/* Print */}
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handlePrint(req); }}
+                                        className="p-2 hover:bg-secondary rounded-lg text-foreground/70 hover:text-foreground transition-colors"
+                                        title="Print Report"
+                                    >
+                                        <Printer size={18} />
+                                    </button>
+
+                                    {/* Edit */}
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); openEditModal(req); }}
+                                        className="p-2 hover:bg-secondary rounded-lg text-foreground/70 hover:text-foreground transition-colors"
+                                        title={t('hiringRequest.editRequest')}
+                                    >
+                                        <Edit size={18} />
+                                    </button>
+
+                                    {/* Add Candidate (Recruiter) - Opens Modal to Assign from List */}
+                                    {(user?.role === 'RECRUITMENT_MANAGER' || user?.role === 'HR_MANAGER' || user?.role === 'Recruitment Manager' || user?.role === 'RECRUITER' || user?.role === 'Responsable Recrutement') && req.status === 'Approved' && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setRequestToAssign(req);
+                                                setIsAssignModalOpen(true);
+                                            }}
+                                            className="p-2 hover:bg-purple-500/10 rounded-lg text-purple-600 hover:text-purple-700 transition-colors"
+                                            title="Assigner un Candidat"
+                                        >
+                                            <UserPlus size={18} />
+                                        </button>
+                                    )}
+
+                                    {/* Delete */}
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(req.id); }}
+                                        className="p-2 hover:bg-red-500/10 rounded-lg text-muted-foreground hover:text-red-500 transition-colors ml-auto"
+                                        title={t('common.delete')}
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+
+                    {/* Empty State */}
+                    {requests.length === 0 && (
+                        <div className="col-span-full py-12 text-center text-muted-foreground bg-secondary/5 rounded-2xl border border-dashed border-border">
+                            <p className="text-lg font-medium">{searchTerm ? "No requests found matching your search." : "No hiring requests created yet."}</p>
+                            <button onClick={openCreateModal} className="mt-4 text-primary font-bold hover:underline">
+                                {t('hiringRequest.newRequest')}
+                            </button>
+                        </div>
+                    )}
+                </motion.div>
             </div>
         </DashboardLayout>
     );

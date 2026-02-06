@@ -159,7 +159,10 @@ export const api = {
             headers: isFormData ? {} : { 'Content-Type': 'application/json' },
             body: isFormData ? candidature : JSON.stringify(candidature),
         });
-        if (!response.ok) throw new Error('Failed to update candidature');
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: 'Failed to update candidature' }));
+            throw new Error(error.message || 'Failed to update candidature');
+        }
         return response.json();
     },
 

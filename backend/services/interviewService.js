@@ -55,6 +55,21 @@ const createInterview = async (data) => {
     // Auto-update candidature status if it's 'New'
     await db.query(`UPDATE Candidature SET status = 'In Progress' WHERE id = ? AND status = 'New'`, [data.candidatureId]);
 
+    // Fetch Interviewer Email and Name FIRST to include in Candidate Email
+    let interviewerName = "Un membre de l'équipe RH"; // Default if not found
+    
+    if (data.interviewerId) {
+        const [interviewers] = await db.query('SELECT name, email FROM User WHERE id = ?', [data.interviewerId]);
+        if (interviewers.length > 0) {
+            const interviewer = interviewers[0];
+            interviewerName = interviewer.name;
+            
+            // We will send the interviewer email later, but we have the data now.
+            // Let's store it to use after candidate email.
+            data.interviewerData = interviewer; 
+        }
+    }
+
     // Fetch Candidate Email and Name
     const [candidates] = await db.query('SELECT firstName, lastName, email FROM Candidature WHERE id = ?', [data.candidatureId]);
     let candidateName = "Candidate";
@@ -66,6 +81,7 @@ const createInterview = async (data) => {
             await emailService.sendInterviewEmail(
                 candidate.email, 
                 candidateName, 
+                interviewerName, // Pass Interviewer Name
                 data.date, 
                 data.mode || 'Face-to-Face', 
                 data.type || 'RH', 
@@ -78,25 +94,19 @@ const createInterview = async (data) => {
         console.warn(`Candidature ID ${data.candidatureId} not found when sending email.`);
     }
 
-    // Fetch Interviewer Email and Name
-    if (data.interviewerId) {
-        const [interviewers] = await db.query('SELECT name, email FROM User WHERE id = ?', [data.interviewerId]);
-        if (interviewers.length > 0) {
-            const interviewer = interviewers[0];
-            if (interviewer.email) {
-                await emailService.sendInterviewerEmail(
-                    interviewer.email,
-                    interviewer.name,
-                    candidateName,
-                    data.date,
-                    data.mode || 'Face-to-Face',
-                    data.type || 'RH',
-                    data.notes
-                );
-            } else {
-                console.warn(`Interviewer ${interviewer.name} (ID: ${data.interviewerId}) has no email. Email not sent.`);
-            }
-        }
+    // Send Email to Interviewer (if exists)
+    if (data.interviewerData && data.interviewerData.email) {
+        await emailService.sendInterviewerEmail(
+            data.interviewerData.email,
+            data.interviewerData.name,
+            candidateName,
+            data.date,
+            data.mode || 'Face-to-Face',
+            data.type || 'RH',
+            data.notes
+        );
+    } else if (data.interviewerData) {
+        console.warn(`Interviewer ${data.interviewerData.name} (ID: ${data.interviewerId}) has no email. Email not sent.`);
     }
 
     return getInterviewById(id);

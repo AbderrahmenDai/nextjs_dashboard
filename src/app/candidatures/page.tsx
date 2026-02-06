@@ -508,9 +508,9 @@ export default function CandidaturesPage() {
             {/* --- Details & Interview Modal --- */}
             {
                 selectedCandidature && (
-                    <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
-                        <div className="modal-card w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
-                            <div className="px-6 py-6 gradient-premium flex justify-between items-center relative overflow-hidden">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+                        <div className="modal-card w-full max-w-4xl shadow-2xl max-h-[80vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+                            <div className="px-6 py-5 gradient-premium flex justify-between items-center relative overflow-hidden">
                                 <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
                                 <div className="relative z-10">
                                     <h2 className="text-2xl font-bold text-white mb-1 tracking-tight">
@@ -526,7 +526,7 @@ export default function CandidaturesPage() {
                                 </button>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 lg:grid-cols-3 gap-6 custom-scrollbar">
                                 {/* Left Column: Details */}
                                 <div className="lg:col-span-2 space-y-6">
                                     <section className="space-y-3">
@@ -546,15 +546,15 @@ export default function CandidaturesPage() {
                                         <div className="grid grid-cols-3 gap-4 text-sm">
                                             <div className="bg-secondary/30 p-3 rounded-lg border border-border/50">
                                                 <span className="text-muted-foreground block mb-1 text-xs uppercase font-bold">{t('candidature.currentSalary')}</span>
-                                                <span className="text-xl font-bold text-foreground">{selectedCandidature.currentSalary?.toLocaleString()} €</span>
+                                                <span className="text-xl font-bold text-foreground">{selectedCandidature.currentSalary?.toLocaleString()} TND</span>
                                             </div>
                                             <div className="bg-secondary/30 p-3 rounded-lg border border-border/50">
                                                 <span className="text-muted-foreground block mb-1 text-xs uppercase font-bold">{t('candidature.expectedSalary')}</span>
-                                                <span className="text-xl font-bold text-blue-500">{selectedCandidature.salaryExpectation?.toLocaleString()} €</span>
+                                                <span className="text-xl font-bold text-blue-500">{selectedCandidature.salaryExpectation?.toLocaleString()} TND</span>
                                             </div>
                                             <div className="bg-secondary/30 p-3 rounded-lg border border-border/50">
                                                 <span className="text-muted-foreground block mb-1 text-xs uppercase font-bold">{t('candidature.proposedSalary')}</span>
-                                                <span className="text-xl font-bold text-green-500">{selectedCandidature.proposedSalary?.toLocaleString()} €</span>
+                                                <span className="text-xl font-bold text-green-500">{selectedCandidature.proposedSalary?.toLocaleString()} TND</span>
                                             </div>
                                         </div>
                                     </section>
@@ -648,12 +648,48 @@ export default function CandidaturesPage() {
                                         <h3 className="text-sm font-bold text-muted-foreground uppercase mb-3">{t('candidature.quickActions')}</h3>
                                         <div className="space-y-2">
                                             <button className="w-full py-2 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/20 text-sm font-medium transition-colors">{t('candidature.markHired')}</button>
-                                            <button className="w-full py-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 text-sm font-medium transition-colors">{t('candidature.reject')}</button>
+                                            <button
+                                                onClick={async () => {
+                                                    if (!selectedCandidature?.id) return;
+                                                    if (!confirm("Voulez-vous vraiment rejeter ce candidat ? Un email sera envoyé.")) return;
+                                                    try {
+                                                        await api.updateCandidature(selectedCandidature.id, { status: 'Refus du candidat' });
+                                                        // Update local state and reload
+                                                        setSelectedCandidature(prev => prev ? ({ ...prev, status: 'Refus du candidat' }) : null);
+                                                        loadData();
+                                                        alert("Candidat rejeté et email envoyé.");
+                                                    } catch (err) {
+                                                        console.error(err);
+                                                        alert("Erreur lors du rejet.");
+                                                    }
+                                                }}
+                                                className="w-full py-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 text-sm font-medium transition-colors"
+                                            >
+                                                {t('candidature.reject')}
+                                            </button>
                                             <button
                                                 onClick={() => {
                                                     if (selectedCandidature?.cvPath) {
-                                                        const url = `http://localhost:3001/${selectedCandidature.cvPath}`;
-                                                        window.open(url, '_blank');
+                                                        const cleanPath = selectedCandidature.cvPath.replace(/\\/g, '/');
+                                                        const url = `http://localhost:8080/${cleanPath}`;
+
+                                                        // Helper to force download
+                                                        fetch(url)
+                                                            .then(response => response.blob())
+                                                            .then(blob => {
+                                                                const link = document.createElement('a');
+                                                                link.href = window.URL.createObjectURL(blob);
+                                                                // Infer filename from path
+                                                                const filename = cleanPath.split('/').pop() || 'cv.pdf';
+                                                                link.download = filename;
+                                                                document.body.appendChild(link);
+                                                                link.click();
+                                                                document.body.removeChild(link);
+                                                            })
+                                                            .catch(err => {
+                                                                console.error("Download failed, fallback to open", err);
+                                                                window.open(url, '_blank');
+                                                            });
                                                     } else {
                                                         alert("No CV available");
                                                     }
@@ -777,8 +813,8 @@ export default function CandidaturesPage() {
                                                     <label className="text-sm font-semibold text-foreground/80">{t('common.gender')}</label>
                                                     <div className="relative">
                                                         <select name="gender" value={formData.gender} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
-                                                            <option value="MALE">Male</option>
-                                                            <option value="FEMALE">Female</option>
+                                                            <option value="MALE">Homme</option>
+                                                            <option value="FEMALE">Femme</option>
                                                         </select>
                                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                                                             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -786,8 +822,17 @@ export default function CandidaturesPage() {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="text-sm font-semibold text-foreground/80">Family Situation</label>
-                                                    <input name="familySituation" value={formData.familySituation} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                    <label className="text-sm font-semibold text-foreground/80">Situation familiale</label>
+                                                    <div className="relative">
+                                                        <select name="familySituation" value={formData.familySituation} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
+                                                            <option value="">Sélectionner</option>
+                                                            <option value="Célibataire">Célibataire</option>
+                                                            <option value="Marié">Marié</option>
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <div className="col-span-1 md:col-span-2 space-y-1.5">
                                                     <label className="text-sm font-semibold text-foreground/80">{t('common.address')}</label>
@@ -820,41 +865,12 @@ export default function CandidaturesPage() {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="text-sm font-semibold text-foreground/80">Work Site</label>
-                                                    <input name="workSite" value={formData.workSite} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-sm font-semibold text-foreground/80">Specialty</label>
-                                                    <input name="specialty" value={formData.specialty} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-sm font-semibold text-foreground/80">Level</label>
-                                                    <input name="level" value={formData.level} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.experience')}</label>
-                                                    <input type="number" name="yearsOfExperience" value={formData.yearsOfExperience} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.education')}</label>
-                                                    <input name="educationLevel" value={formData.educationLevel} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-sm font-semibold text-foreground/80">Study Specialty</label>
-                                                    <input name="studySpecialty" value={formData.studySpecialty} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-sm font-semibold text-foreground/80">Languages</label>
-                                                    <input name="language" value={formData.language} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.source')}</label>
+                                                    <label className="text-sm font-semibold text-foreground/80">Site de travail</label>
                                                     <div className="relative">
-                                                        <select name="source" value={formData.source} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
-                                                            <option value="WEBSITE">Website</option>
-                                                            <option value="LINKEDIN">LinkedIn</option>
-                                                            <option value="REFERRAL">Referral</option>
-                                                            <option value="OTHER">Other</option>
+                                                        <select name="workSite" value={formData.workSite} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
+                                                            <option value="">Sélectionner</option>
+                                                            <option value="TT">TT</option>
+                                                            <option value="TTG">TTG</option>
                                                         </select>
                                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                                                             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -862,11 +878,50 @@ export default function CandidaturesPage() {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="text-sm font-semibold text-foreground/80">Recruitment Mode</label>
+                                                    <label className="text-sm font-semibold text-foreground/80">Spécialité</label>
+                                                    <input name="specialty" value={formData.specialty} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.experience')}</label>
+                                                    <input type="number" name="yearsOfExperience" value={formData.yearsOfExperience} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">Niveau d&apos;études</label>
+                                                    <div className="relative">
+                                                        <select name="educationLevel" value={formData.educationLevel} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
+                                                            <option value="">Sélectionner</option>
+                                                            <option value="Bac/ BTP">Bac/ BTP</option>
+                                                            <option value="Bac+2 / BTS">Bac+2 / BTS</option>
+                                                            <option value="Bac+3">Bac+3</option>
+                                                            <option value="Bac+4">Bac+4</option>
+                                                            <option value="Bac+5 / Ingénieur">Bac+5 / Ingénieur</option>
+                                                            <option value="Doctorat">Doctorat</option>
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">{t('candidature.source')}</label>
+                                                    <div className="relative">
+                                                        <select name="source" value={formData.source} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
+                                                            <option value="WEBSITE">Site Web</option>
+                                                            <option value="LINKEDIN">LinkedIn</option>
+                                                            <option value="REFERRAL">Cooptation</option>
+                                                            <option value="OTHER">Autre</option>
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-semibold text-foreground/80">Mode de recrutement</label>
                                                     <div className="relative">
                                                         <select name="recruitmentMode" value={formData.recruitmentMode} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
-                                                            <option value="EXTERNAL">External</option>
-                                                            <option value="INTERNAL">Internal</option>
+                                                            <option value="EXTERNAL">Externe</option>
+                                                            <option value="INTERNAL">Interne</option>
                                                         </select>
                                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                                                             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -885,25 +940,25 @@ export default function CandidaturesPage() {
                                                     <label className="text-sm font-semibold text-foreground/80">{t('candidature.currentSalary')}</label>
                                                     <div className="relative">
                                                         <input type="number" name="currentSalary" value={formData.currentSalary} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none pr-8" />
-                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">€</span>
+                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">TND</span>
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-sm font-semibold text-foreground/80">{t('candidature.expectedSalary')}</label>
                                                     <div className="relative">
                                                         <input type="number" name="salaryExpectation" value={formData.salaryExpectation} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none pr-8" />
-                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">€</span>
+                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">TND</span>
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-sm font-semibold text-foreground/80">{t('candidature.proposedSalary')}</label>
                                                     <div className="relative">
                                                         <input type="number" name="proposedSalary" value={formData.proposedSalary} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none pr-8" />
-                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">€</span>
+                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">TND</span>
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="text-sm font-semibold text-foreground/80">Notice Period</label>
+                                                    <label className="text-sm font-semibold text-foreground/80">Préavis</label>
                                                     <input name="noticePeriod" value={formData.noticePeriod} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none" />
                                                 </div>
                                             </div>
@@ -913,9 +968,9 @@ export default function CandidaturesPage() {
                                                     <label className="text-sm font-semibold text-foreground/80">{t('candidature.recruiterComments')}</label>
                                                     <div className="relative">
                                                         <select name="recruiterComments" value={formData.recruiterComments} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
-                                                            <option value="">Select Opinion</option>
+                                                            <option value="">Sélectionner</option>
                                                             <option value="Favorable">Favorable</option>
-                                                            <option value="Defavorable">Defavorable</option>
+                                                            <option value="Defavorable">Défavorable</option>
                                                             <option value="Prioritaire">Prioritaire</option>
                                                             <option value="Passable">Passable</option>
                                                         </select>
@@ -928,9 +983,9 @@ export default function CandidaturesPage() {
                                                     <label className="text-sm font-semibold text-foreground/80">{t('candidature.hrOpinion')}</label>
                                                     <div className="relative">
                                                         <select name="hrOpinion" value={formData.hrOpinion} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
-                                                            <option value="">Select Opinion</option>
+                                                            <option value="">Sélectionner</option>
                                                             <option value="Favorable">Favorable</option>
-                                                            <option value="Defavorable">Defavorable</option>
+                                                            <option value="Defavorable">Défavorable</option>
                                                             <option value="Prioritaire">Prioritaire</option>
                                                             <option value="Passable">Passable</option>
                                                         </select>
@@ -943,9 +998,9 @@ export default function CandidaturesPage() {
                                                     <label className="text-sm font-semibold text-foreground/80">{t('candidature.managerOpinion')}</label>
                                                     <div className="relative">
                                                         <select name="managerOpinion" value={formData.managerOpinion} onChange={handleInputChange} className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary/30 transition-all outline-none appearance-none">
-                                                            <option value="">Select Opinion</option>
+                                                            <option value="">Sélectionner</option>
                                                             <option value="Favorable">Favorable</option>
-                                                            <option value="Defavorable">Defavorable</option>
+                                                            <option value="Defavorable">Défavorable</option>
                                                             <option value="Prioritaire">Prioritaire</option>
                                                             <option value="Passable">Passable</option>
                                                         </select>
@@ -958,28 +1013,45 @@ export default function CandidaturesPage() {
 
                                             {/* CV Upload Section */}
                                             <div className="mt-6 border-t border-border pt-4">
-                                                <h3 className="text-sm font-semibold text-primary mb-3">CV / Resume</h3>
+                                                <h3 className="text-sm font-semibold text-primary mb-3">CV</h3>
                                                 <div className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors group cursor-pointer relative">
                                                     <div className="p-3 rounded-full bg-primary/10 text-primary group-hover:scale-110 transition-transform">
                                                         <FileText size={24} />
                                                     </div>
                                                     <div className="flex-1">
                                                         <p className="text-sm font-semibold text-foreground">
-                                                            {cvFile ? cvFile.name : (formData.cvPath ? `Current: ${formData.cvPath.split(/[/\\]/).pop()} (Click to replace)` : "Click to upload or drag and drop")}
+                                                            {cvFile ? cvFile.name : (formData.cvPath ? `CV actuel : ${formData.cvPath.split(/[/\\]/).pop()} (Cliquer pour remplacer)` : "Cliquez pour télécharger ou glissez et déposez")}
                                                         </p>
                                                         <p className="text-xs text-muted-foreground mt-0.5">
                                                             {formData.cvPath && !cvFile && (
                                                                 <a
-                                                                    href={`http://localhost:8080/${formData.cvPath}`}
+                                                                    href={`http://localhost:8080/${formData.cvPath.replace(/\\/g, '/')}`}
                                                                     target="_blank"
                                                                     rel="noreferrer"
-                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        e.preventDefault();
+                                                                        // Force download logic
+                                                                        const url = `http://localhost:8080/${formData.cvPath.replace(/\\/g, '/')}`;
+                                                                        fetch(url)
+                                                                            .then(response => response.blob())
+                                                                            .then(blob => {
+                                                                                const link = document.createElement('a');
+                                                                                link.href = window.URL.createObjectURL(blob);
+                                                                                const filename = formData.cvPath.split(/[/\\]/).pop() || 'cv.pdf';
+                                                                                link.download = filename;
+                                                                                document.body.appendChild(link);
+                                                                                link.click();
+                                                                                document.body.removeChild(link);
+                                                                            })
+                                                                            .catch(() => window.open(url, '_blank'));
+                                                                    }}
                                                                     className="text-primary hover:underline mr-2 relative z-20"
                                                                 >
-                                                                    View Current CV
+                                                                    Voir CV actuel
                                                                 </a>
                                                             )}
-                                                            PDF, DOC, DOCX up to 10MB
+                                                            PDF, DOC, DOCX jusqu&apos;à 10MB
                                                         </p>
                                                         <input
                                                             type="file"
@@ -997,7 +1069,7 @@ export default function CandidaturesPage() {
                                                                 setCvFile(null);
                                                             }}
                                                             className="p-1 hover:bg-destructive/10 text-destructive rounded-full relative z-20"
-                                                            title={cvFile ? "Remove selected file" : "Keep current file"}
+                                                            title={cvFile ? "Supprimer le fichier sélectionné" : "Garder le fichier actuel"}
                                                         >
                                                             {cvFile ? <XCircle size={18} /> : null}
                                                         </button>

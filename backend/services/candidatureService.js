@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
+const emailService = require('./emailService');
 
 const getAllCandidatures = async () => {
     const [rows] = await db.query('SELECT * FROM Candidature ORDER BY createdAt DESC');
@@ -35,24 +36,54 @@ const createCandidature = async (data) => {
 };
 
 const updateCandidature = async (id, data) => {
-    // Basic dynamic update helper could be better, but explicit for now or simple
-    // Providing a full update for simplicity in this turn
-    await db.query(`
-        UPDATE Candidature SET 
-        firstName=?, lastName=?, email=?, phone=?, address=?, 
-        positionAppliedFor=?, department=?, specialty=?, level=?, status=?,
-        recruiterComments=?, hrOpinion=?, managerOpinion=?, proposedSalary=?, cvPath=COALESCE(?, cvPath)
-        WHERE id=?
-    `, [
-        data.firstName, data.lastName, data.email, data.phone, data.address,
-        data.positionAppliedFor, data.department, data.specialty, data.level, data.status,
-        data.recruiterComments, data.hrOpinion, data.managerOpinion, data.proposedSalary,
-        data.cvPath || null,
-        id
-    ]);
+    const fields = [];
+    const values = [];
+    
+    // Whitelist columns to prevent SQL injection or invalid updates
+    const updateableColumns = [
+        'firstName', 'lastName', 'email', 'phone', 'birthDate', 'gender', 'address',
+        'positionAppliedFor', 'department', 'specialty', 'level', 'yearsOfExperience', 'language',
+        'source', 'hiringRequestId', 'recruiterComments',
+        'educationLevel', 'familySituation', 'studySpecialty', 'currentSalary', 'salaryExpectation',
+        'proposedSalary', 'noticePeriod', 'hrOpinion', 'managerOpinion', 'recruitmentMode', 'workSite',
+        'status', 'cvPath'
+    ];
+
+    for (const key of Object.keys(data)) {
+        if (updateableColumns.includes(key)) {
+            fields.push(`${key} = ?`);
+            if ((key === 'birthDate') && data[key]) {
+                values.push(new Date(data[key]));
+            } else {
+                values.push(data[key]);
+            }
+        }
+    }
+
+    console.log(`Updating Candidature ${id} with data:`, data);
+    console.log(`Fields to update:`, fields);
+
+    if (fields.length === 0) {
+        // Just return existing
+        const [existing] = await db.query('SELECT * FROM Candidature WHERE id = ?', [id]);
+        return existing[0];
+    }
+
+    values.push(id);
+    const sql = `UPDATE Candidature SET ${fields.join(', ')} WHERE id = ?`;
+    
+    await db.query(sql, values);
     
     const [updated] = await db.query('SELECT * FROM Candidature WHERE id = ?', [id]);
-    return updated[0];
+    const updatedCandidate = updated[0];
+
+    // Check if status changed to Rejected
+    if ((data.status === 'Refus du candidat' || data.status === 'Rejected') && updatedCandidate.email) {
+        const candidateName = `${updatedCandidate.firstName} ${updatedCandidate.lastName}`;
+        await emailService.sendRejectionEmail(updatedCandidate.email, candidateName, updatedCandidate.positionAppliedFor || 'Poste');
+    }
+
+    return updatedCandidate;
 };
 
 const deleteCandidature = async (id) => {
