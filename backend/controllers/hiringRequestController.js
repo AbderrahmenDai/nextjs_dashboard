@@ -26,7 +26,7 @@ const createHiringRequest = asyncHandler(async (req, res) => {
         throw new Error('Requester ID is required');
     }
 
-    // 1. Verify Requester Role (MUST be DEMANDEUR)
+    // 1. Verify Requester Role
     const [requester] = await db.query(`
         SELECT User.id, User.name, Role.name as roleName 
         FROM User 
@@ -40,38 +40,47 @@ const createHiringRequest = asyncHandler(async (req, res) => {
     }
 
     const userRole = requester[0].roleName;
-    if (userRole !== 'DEMANDEUR') {
+    
+    // Allow DEMANDEUR and Responsable RH
+    const allowedRoles = ['DEMANDEUR', 'Responsable RH'];
+    if (!allowedRoles.includes(userRole)) {
         res.status(403);
-        throw new Error('Only users with role "DEMANDEUR" can create hiring requests');
+        throw new Error('Only users with role "DEMANDEUR" or "Responsable RH" can create hiring requests');
     }
 
-    // 2. Create Request (Initial Status: Pending Admin)
-    // Note: User request says: "when created... ADMIN, Direction, HR_MANAGER receive notification" 
-    // And "if admin accepts it's done".
-    // "but if HR_MANAGER accepts then Direction get notification..."
-    // This implies parallel or fallback flows. 
-    // Let's set status to "PENDING_ADMIN" or just "PENDING" and notify all.
-    
-    // We'll trust the body payload but force status
-    // Determine Workflow based on Site
+    // 2. Determine Workflow
     let initialStatus = 'Pending HR';
     let targetApprovers = [];
     const { site } = req.body;
 
-    if (site === 'TTG') {
-        // TTG Workflow: Direct to Plant Manager (Aymen Baccouche)
-        initialStatus = 'Pending Director';
-        const [users] = await db.query("SELECT id, name FROM User WHERE email LIKE '%baccouche%'");
-        targetApprovers = users;
-        console.log(`TTG Workflow detected. Target approver: ${users.length > 0 ? users[0].name : 'None found'}`);
-    } else {
-        // Standard Workflow (TT): Step 1 - Notify HR_MANAGER
-        const [hrManagers] = await db.query(
+    if (userRole === 'Responsable RH') {
+        // --- Responsable RH Workflow ---
+        // Step 1: Notify "Directeur RH" -> Status: "Pending HR Director"
+        initialStatus = 'Pending HR Director';
+        const [hrDirectors] = await db.query(
             `SELECT User.id, User.name FROM User 
              JOIN Role ON User.roleId = Role.id 
-             WHERE Role.name = 'HR_MANAGER'`
+             WHERE Role.name = 'Directeur RH'`
         );
-        targetApprovers = hrManagers;
+        targetApprovers = hrDirectors;
+
+    } else {
+        // --- Standard Workflow (DEMANDEUR) ---
+        if (site === 'TTG') {
+            // TTG Workflow: Direct to Plant Manager (Aymen Baccouche)
+            initialStatus = 'Pending Director';
+            const [users] = await db.query("SELECT id, name FROM User WHERE email LIKE '%baccouche%'");
+            targetApprovers = users;
+            console.log(`TTG Workflow detected. Target approver: ${users.length > 0 ? users[0].name : 'None found'}`);
+        } else {
+            // Standard Workflow (TT): Step 1 - Notify HR_MANAGER (or Responsable RH if that's the intention, keeping HR_MANAGER for now as per code)
+            const [hrManagers] = await db.query(
+                `SELECT User.id, User.name FROM User 
+                 JOIN Role ON User.roleId = Role.id 
+                 WHERE Role.name = 'HR_MANAGER'` // Or should this be 'Responsable RH'? Keeping existing logical role for now.
+            );
+            targetApprovers = hrManagers;
+        }
     }
 
     const requestData = { ...req.body, status: initialStatus };
@@ -141,6 +150,34 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
     // SEQUENTIAL APPROVAL WORKFLOW LOGIC
     if (status && status !== currentRequest.status) {
         try {
+            // ========== STEP 0: HR DIRECTOR APPROVES → Notify PLANT_MANAGER (Direction) ==========
+            if (status === 'Pending Director' && actorRole === 'Directeur RH') {
+                await notificationService.resolveActions(
+                    id, 
+                    'HIRING_REQUEST', 
+                    `Validée par Directeur RH (${actorName})`
+                );
+
+                const [targetDirectors] = await db.query(`
+                    SELECT User.id, User.name FROM User 
+                    JOIN Role ON User.roleId = Role.id 
+                    WHERE Role.name = 'Plant Manager' OR Role.name = 'PLANT_MANAGER' OR Role.name = 'Direction'
+                `);
+                
+                for (const director of targetDirectors) {
+                    await sendNotification(
+                        approverId,
+                        director.id,
+                        `✅ Demande d'embauche "${currentRequest.title}" validée par Directeur RH (${actorName}). En attente de votre validation.`,
+                        'ACTION_REQUIRED',
+                        'HIRING_REQUEST',
+                        currentRequest.id,
+                        ['APPROVE', 'REJECT']
+                    );
+                }
+                console.log(`✅ HR Director approved, notified Direction`);
+            }
+
             // ========== STEP 1: HR_MANAGER APPROVES → Notify PLANT_MANAGER (Direction) ==========
             if (status === 'Pending Director' && actorRole === 'HR_MANAGER') {
                 // Resolve HR notifications FIRST before creating new actionable ones
@@ -151,10 +188,11 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
                     `Validée par RH (${actorName})`
                 );
 
+                // Use the same robust query for Plant Manager
                 const [directors] = await db.query(`
                     SELECT User.id, User.name FROM User 
                     JOIN Role ON User.roleId = Role.id 
-                    WHERE Role.name = 'PLANT_MANAGER'
+                    WHERE Role.name = 'Plant Manager' OR Role.name = 'PLANT_MANAGER' OR Role.name = 'Direction'
                 `);
                 
                 for (const director of directors) {
@@ -173,11 +211,11 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
             }
 
             // ========== STEP 2: PLANT_MANAGER APPROVES → Notify RECRUITMENT_MANAGER ==========
-            if (status === 'Approved' && actorRole === 'PLANT_MANAGER') {
+            if (status === 'Approved' && (actorRole === 'PLANT_MANAGER' || actorRole === 'Plant Manager' || actorRole === 'Direction')) {
                 const [recruiters] = await db.query(`
                     SELECT User.id, User.name FROM User 
                     JOIN Role ON User.roleId = Role.id 
-                    WHERE Role.name = 'RECRUITMENT_MANAGER'
+                    WHERE Role.name = 'RECRUITMENT_MANAGER' OR Role.name = 'RESPONSABLE_RECRUTEMENT'
                 `);
                 
                 for (const recruiter of recruiters) {
@@ -224,7 +262,7 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
                 const [recruiters] = await db.query(`
                     SELECT User.id, User.name FROM User 
                     JOIN Role ON User.roleId = Role.id 
-                    WHERE Role.name = 'RECRUITMENT_MANAGER'
+                    WHERE Role.name = 'RECRUITMENT_MANAGER' OR Role.name = 'RESPONSABLE_RECRUTEMENT'
                 `);
                 
                 for (const recruiter of recruiters) {
@@ -237,10 +275,6 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
                         currentRequest.id
                     );
                 }
-                
-
-
-                
                 
                 // Resolve all outstanding notifications
                 await notificationService.resolveActions(
