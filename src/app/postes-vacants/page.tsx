@@ -2,6 +2,7 @@
 
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
@@ -39,6 +40,11 @@ export default function PostesVacantsPage() {
     const [departments, setDepartments] = useState<any[]>([]);
     const [sites, setSites] = useState<string[]>([]);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Helper to check if user can act on the request
     const canAct = (status: string) => {
@@ -177,16 +183,14 @@ export default function PostesVacantsPage() {
         <DashboardLayout>
             {/* Header */}
             <div className="mb-8 animate-in slide-in-from-top duration-500 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl shadow-lg">
-                        <Briefcase className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                        <h1 className="text-4xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            Postes Vacants
-                        </h1>
-                        <p className="text-muted-foreground mt-1">Toutes les demandes d'embauche en cours</p>
-                    </div>
+                <div className="pl-1">
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 shadow-sm">
+                            <Briefcase className="w-6 h-6 text-primary" />
+                        </div>
+                        Postes Vacants
+                    </h1>
+                    <p className="text-muted-foreground mt-2 ml-14 font-medium">Toutes les demandes d'embauche en cours.</p>
                 </div>
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
@@ -364,9 +368,12 @@ export default function PostesVacantsPage() {
             )}
 
             {/* Detail Modal */}
-            {selectedPosition && (
-                <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
-                    <div className="modal-card w-full max-w-2xl p-0 overflow-hidden flex flex-col max-h-[90vh] relative animate-in fade-in zoom-in duration-300">
+            {selectedPosition && mounted && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+                    <div
+                        className="modal-card w-full max-w-2xl p-0 overflow-hidden flex flex-col max-h-[90vh] relative animate-in fade-in zoom-in duration-300 shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         {/* Header with status gradient */}
                         <div className={`px-6 py-6 bg-gradient-to-br ${getStatusColor(selectedPosition.status)} relative overflow-hidden`}>
                             <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
@@ -389,67 +396,67 @@ export default function PostesVacantsPage() {
                         </div>
 
                         {/* Content */}
-                        <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                        <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 text-gray-900">
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                    <div className="flex items-center gap-2 text-blue-400 mb-2">
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <div className="flex items-center gap-2 text-blue-600 mb-2">
                                         <Users className="w-5 h-5" />
-                                        <span className="text-xs uppercase font-bold text-gray-400">Département</span>
+                                        <span className="text-xs uppercase font-bold text-gray-500">Département</span>
                                     </div>
-                                    <p className="text-white font-semibold">{selectedPosition.departmentName || 'Non assigné'}</p>
+                                    <p className="text-gray-900 font-semibold">{selectedPosition.departmentName || 'Non assigné'}</p>
                                 </div>
 
-                                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                    <div className="flex items-center gap-2 text-purple-400 mb-2">
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <div className="flex items-center gap-2 text-purple-600 mb-2">
                                         <Briefcase className="w-5 h-5" />
-                                        <span className="text-xs uppercase font-bold text-gray-400">Type de contrat</span>
+                                        <span className="text-xs uppercase font-bold text-gray-500">Type de contrat</span>
                                     </div>
-                                    <p className="text-white font-semibold">{selectedPosition.contractType || 'Non spécifié'}</p>
+                                    <p className="text-gray-900 font-semibold">{selectedPosition.contractType || 'Non spécifié'}</p>
                                 </div>
 
-                                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                    <div className="flex items-center gap-2 text-green-400 mb-2">
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <div className="flex items-center gap-2 text-green-600 mb-2">
                                         <MapPin className="w-5 h-5" />
-                                        <span className="text-xs uppercase font-bold text-gray-400">Site</span>
+                                        <span className="text-xs uppercase font-bold text-gray-500">Site</span>
                                     </div>
-                                    <p className="text-white font-semibold">{selectedPosition.site || 'Non spécifié'}</p>
+                                    <p className="text-gray-900 font-semibold">{selectedPosition.site || 'Non spécifié'}</p>
                                 </div>
 
-                                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                    <div className="flex items-center gap-2 text-yellow-400 mb-2">
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <div className="flex items-center gap-2 text-yellow-600 mb-2">
                                         <Calendar className="w-5 h-5" />
-                                        <span className="text-xs uppercase font-bold text-gray-400">Date souhaitée</span>
+                                        <span className="text-xs uppercase font-bold text-gray-500">Date souhaitée</span>
                                     </div>
-                                    <p className="text-white font-semibold">
+                                    <p className="text-gray-900 font-semibold">
                                         {selectedPosition.desiredStartDate ? new Date(selectedPosition.desiredStartDate).toLocaleDateString() : 'Non spécifiée'}
                                     </p>
                                 </div>
                             </div>
 
                             {selectedPosition.description && (
-                                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                    <h4 className="text-sm uppercase font-bold text-gray-400 mb-2">Description</h4>
-                                    <p className="text-gray-300 text-sm leading-relaxed">{selectedPosition.description}</p>
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <h4 className="text-sm uppercase font-bold text-gray-500 mb-2">Description</h4>
+                                    <p className="text-gray-700 text-sm leading-relaxed">{selectedPosition.description}</p>
                                 </div>
                             )}
 
                             {selectedPosition.educationRequirements && (
-                                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                    <h4 className="text-sm uppercase font-bold text-gray-400 mb-2">Formation requise</h4>
-                                    <p className="text-gray-300 text-sm leading-relaxed">{selectedPosition.educationRequirements}</p>
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <h4 className="text-sm uppercase font-bold text-gray-500 mb-2">Formation requise</h4>
+                                    <p className="text-gray-700 text-sm leading-relaxed">{selectedPosition.educationRequirements}</p>
                                 </div>
                             )}
 
                             {selectedPosition.skillsRequirements && (
-                                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                    <h4 className="text-sm uppercase font-bold text-gray-400 mb-2">Compétences requises</h4>
-                                    <p className="text-gray-300 text-sm leading-relaxed">{selectedPosition.skillsRequirements}</p>
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <h4 className="text-sm uppercase font-bold text-gray-500 mb-2">Compétences requises</h4>
+                                    <p className="text-gray-700 text-sm leading-relaxed">{selectedPosition.skillsRequirements}</p>
                                 </div>
                             )}
                         </div>
 
                         {/* Footer with Action Buttons */}
-                        <div className="p-4 bg-white/5 border-t border-white/10">
+                        <div className="p-4 bg-gray-50 border-t border-gray-100">
                             {((selectedPosition.status === 'Pending HR' || selectedPosition.status === 'Pending Manager') && canAct(selectedPosition.status)) ? (
                                 <div className="flex gap-3 justify-end">
                                     <button
@@ -485,7 +492,8 @@ export default function PostesVacantsPage() {
                             )}
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
             <CreateVacancyModal
                 isOpen={isCreateModalOpen}

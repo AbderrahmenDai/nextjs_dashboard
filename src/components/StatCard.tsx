@@ -66,62 +66,52 @@ const colorStyles = {
 export function StatCard({ title, value, change, trend, icon: Icon, color }: StatCardProps) {
     const style = colorStyles[color] || colorStyles.blue;
 
+    // Custom color overrides based on the target design
+    const iconColors = {
+        blue: "text-blue-600 bg-blue-50",
+        indigo: "text-indigo-600 bg-indigo-50",
+        emerald: "text-emerald-600 bg-emerald-50",
+        pink: "text-rose-600 bg-rose-50",
+        purple: "text-purple-600 bg-purple-50",
+        orange: "text-orange-600 bg-orange-50",
+        green: "text-green-600 bg-green-50",
+    };
+
+    const iconColorClass = iconColors[color] || iconColors.blue;
+
     return (
         <motion.div
-            whileHover={{ y: -8, scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className={clsx(
-                "glass-card p-7 rounded-[2.5rem] relative overflow-hidden group transition-all duration-700",
-                style.border
-            )}
+            whileHover={{ y: -5 }}
+            className="bg-card text-card-foreground p-6 rounded-[1.5rem] relative overflow-hidden shadow-sm border border-border/50 group"
         >
-            <div className="relative z-10">
-                <div className="flex justify-between items-center mb-6">
-                    <div className={clsx(
-                        "p-3 rounded-2xl shadow-lg transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110",
-                        style.icon
-                    )}>
-                        <Icon size={24} />
-                    </div>
-                    <div className={clsx(
-                        "flex items-center gap-1 text-[11px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-full backdrop-blur-md",
-                        trend === "up" ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" :
-                            trend === "down" ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" :
-                                "bg-slate-500/15 text-slate-600 dark:text-slate-400"
-                    )}>
-                        {trend === "up" ? <ArrowUpRight size={14} strokeWidth={3} /> :
-                            trend === "down" ? <ArrowDownRight size={14} strokeWidth={3} /> :
-                                <Minus size={14} strokeWidth={3} />}
-                        {change}
-                    </div>
-                </div>
-
+            <div className="flex justify-between items-start mb-4">
                 <div className="space-y-1">
-                    <h3 className="text-muted-foreground font-bold text-[10px] uppercase tracking-[0.2em] opacity-70 group-hover:opacity-100 transition-opacity">
-                        {title}
+                    <h3 className="text-3xl font-bold tracking-tight text-foreground">
+                        {value}
                     </h3>
-                    <div className="flex items-baseline gap-2">
-                        <p className="text-3xl font-black text-foreground tracking-tighter transition-all duration-300 group-hover:tracking-tight ring-offset-background">
-                            {value}
-                        </p>
-                        <div className={clsx("w-1.5 h-1.5 rounded-full animate-pulse", style.bg.replace('/10', ''))} />
-                    </div>
+                </div>
+                <div className={clsx(
+                    "p-3 rounded-xl transition-colors",
+                    iconColorClass
+                )}>
+                    <Icon size={28} strokeWidth={2} />
                 </div>
             </div>
 
-            {/* Premium Decorative elements */}
-            <div className={clsx(
-                "absolute -right-16 -bottom-16 w-64 h-64 rounded-full blur-[100px] opacity-[0.08] group-hover:opacity-25 transition-opacity duration-1000 bg-gradient-to-br",
-                style.glow
-            )} />
-
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
-                <Icon size={80} strokeWidth={0.5} />
-            </div>
-
-            {/* Shine effect */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-700">
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+            <div className="flex items-center justify-between mt-4">
+                <div className={clsx(
+                    "flex items-center gap-1.5 text-xs font-bold",
+                    trend === "up" ? "text-emerald-600" :
+                        trend === "down" ? "text-rose-600" :
+                            "text-muted-foreground"
+                )}>
+                    {trend === "up" ? <ArrowUpRight size={16} /> :
+                        trend === "down" ? <ArrowDownRight size={16} /> :
+                            <Minus size={16} />}
+                    <span>{change}</span>
+                </div>
+                {/* Title moved to bottom right or kept distinct */}
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{title}</p>
             </div>
         </motion.div>
     );

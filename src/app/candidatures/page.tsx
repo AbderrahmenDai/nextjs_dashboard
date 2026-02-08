@@ -4,7 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
 import {
     Plus, MoreVertical, FileText, XCircle, Search, Filter,
-    Calendar, Clock, User, ArrowRight, ArrowLeft, CheckCircle, Edit, Trash2, X
+    Calendar, Clock, User, ArrowRight, ArrowLeft, CheckCircle, Edit, Trash2, X, Download
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { motion } from "framer-motion";
@@ -54,6 +54,21 @@ interface Candidature {
     createdAt?: string;
 }
 
+interface Department {
+    id: string;
+    name: string;
+}
+
+interface User {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+    dept?: string;
+    department?: string; // Handle potential naming variations
+}
+
 const initialFormState: Candidature = {
     firstName: "",
     lastName: "",
@@ -88,7 +103,7 @@ const initialFormState: Candidature = {
 export default function CandidaturesPage() {
     const { t } = useLanguage();
     const [candidatures, setCandidatures] = useState<Candidature[]>([]);
-    const [departments, setDepartments] = useState<any[]>([]); // To populate dropdown
+    const [departments, setDepartments] = useState<Department[]>([]); // To populate dropdown
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState<Candidature>(initialFormState);
@@ -102,7 +117,7 @@ export default function CandidaturesPage() {
     const searchParams = useSearchParams();
 
     const [selectedCandidature, setSelectedCandidature] = useState<Candidature | null>(null);
-    const [potentialInterviewers, setPotentialInterviewers] = useState<any[]>([]);
+    const [potentialInterviewers, setPotentialInterviewers] = useState<User[]>([]);
     const [interviewForm, setInterviewForm] = useState({
         date: '',
         time: '',
@@ -133,7 +148,6 @@ export default function CandidaturesPage() {
 
     useEffect(() => {
         loadData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleSave = async (e: React.FormEvent) => {
@@ -142,7 +156,7 @@ export default function CandidaturesPage() {
             const data = new FormData();
             // Append all fields
             Object.keys(formData).forEach(key => {
-                const value = (formData as any)[key];
+                const value = formData[key as keyof Candidature];
                 if (value !== null && value !== undefined) {
                     data.append(key, value.toString());
                 }
@@ -237,7 +251,7 @@ export default function CandidaturesPage() {
             // since we don't have a specific endpoint for it yet, or we can assume getAllUsers returns everyone.
             const users = await api.getUsers();
             console.log(users);
-            const deptUsers = users.filter((u: any) => u.dept === cand.department || u.role === 'Direction' || u.role === 'Responsable RH' || u.role === "HR_MANAGER" || u.role === "RECRUITER" || u.role === "DIRECTOR");
+            const deptUsers = users.filter((u: User) => u.dept === cand.department || u.role === 'Direction' || u.role === 'Responsable RH' || u.role === "HR_MANAGER" || u.role === "RECRUITER" || u.role === "DIRECTOR");
             console.log(deptUsers);
             setPotentialInterviewers(deptUsers);
         } catch (error) {
@@ -284,73 +298,190 @@ export default function CandidaturesPage() {
         currentPage * itemsPerPage
     );
 
+    const handleExport = () => {
+        // Headers matching the requested Excel model
+        const headers = [
+            "DEPARTEMENT",
+            "EMPLOI DEMANDE",
+            "RECRUTEUR",
+            "Niveau d'etude",
+            "NOMS _CANDITAT",
+            "Sexe",
+            "SOURCE",
+            "DATE_DEMAND",
+            "DECISION",
+            "Avis RH",
+            "Avis N+1"
+        ];
+
+        const rows = candidatures.map(c => {
+            // Mock Recruiter logic based on Department pattern in screenshot
+            let recruteur = "M. AYMEN BACOUCHE";
+            if (['RH', 'Finance', 'HSE', 'Qualité'].includes(c.department)) {
+                recruteur = "SAADANI HIBA";
+            }
+
+            // Map Source
+            const sourceMap: Record<string, string> = {
+                'LINKEDIN': 'LinkedIn',
+                'WEBSITE': 'Site officiel',
+                'REFERRAL': 'Référence interne',
+                'OTHER': 'Cabinet de recrutement'
+            };
+
+            // Map Gender
+            const gender = c.gender === 'MALE' ? 'Homme' : 'Femme';
+
+            // Format Date DD/MM/YYYY
+            const date = c.createdAt ? new Date(c.createdAt).toLocaleDateString('fr-FR') : '';
+
+            return [
+                c.department,
+                c.positionAppliedFor,
+                recruteur,
+                c.educationLevel || '',
+                `${c.firstName} ${c.lastName}`,
+                gender,
+                sourceMap[c.source] || c.source,
+                date,
+                c.status,
+                c.hrOpinion || '',
+                c.managerOpinion || ''
+            ];
+        });
+
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(","))
+        ].join("\n");
+
+        // Add BOM for Excel UTF-8 compatibility
+        const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `export_candidats_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <DashboardLayout>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <div>
-                    <h1 className="text-3xl font-bold text-foreground tracking-tight">{t('candidature.title')}</h1>
-                    <p className="text-muted-foreground mt-1">{t('candidature.subtitle')}</p>
+                <div className="pl-1">
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 shadow-sm">
+                            <User className="w-6 h-6 text-primary" />
+                        </div>
+                        Candidatures
+                    </h1>
+                    <p className="text-muted-foreground mt-2 ml-14 font-medium">Gérez les candidatures et les candidats.</p>
                 </div>
-                <button
-                    onClick={() => {
-                        setFormData(initialFormState);
-                        setCurrentStep(1);
-                        setIsFormOpen(true);
-                    }}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl flex items-center gap-2 transition-colors font-medium shadow-lg shadow-primary/20"
-                >
-                    <Plus size={20} />
-                    {t('common.newApplication')}
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleExport}
+                        className="bg-card hover:bg-muted text-foreground border border-border px-4 py-2 rounded-xl flex items-center gap-2 transition-colors font-medium shadow-sm cursor-pointer"
+                    >
+                        <Download size={20} />
+                        Export
+                    </button>
+                    <button
+                        onClick={() => {
+                            setFormData(initialFormState);
+                            setCurrentStep(1);
+                            setIsFormOpen(true);
+                        }}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl flex items-center gap-2 transition-colors font-medium shadow-lg shadow-primary/20"
+                    >
+                        <Plus size={20} />
+                        {t('common.newApplication')}
+                    </button>
+                </div>
             </div>
 
             {/* --- Filters & Search --- */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="relative col-span-1 md:col-span-2">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                    <input
-                        type="text"
-                        placeholder={t('common.search')}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-card/50 border border-border rounded-xl pl-10 pr-4 py-2 text-foreground focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-sm"
-                    />
-                </div>
-                <div className="relative">
-                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                    <div className="relative col-span-1 md:col-span-1">
+            <div className="space-y-4 mb-8">
+                {/* Top Row: Search & Dropdowns */}
+                <div className="flex flex-col md:flex-row gap-4">
+                    {/* Search */}
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={18} />
+                        <input
+                            type="text"
+                            placeholder={t('common.search')}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-card border border-border rounded-xl pl-10 pr-4 py-3 text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none"
+                        />
+                    </div>
+
+                    {/* Department Filter */}
+                    <div className="relative md:w-64">
+                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={18} />
                         <select
                             value={departmentFilter}
                             onChange={(e) => setDepartmentFilter(e.target.value)}
-                            className="w-full bg-card/50 border border-border rounded-xl px-4 py-2 text-foreground appearance-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-sm"
+                            className="w-full bg-card border border-border rounded-xl pl-10 pr-10 py-3 text-foreground appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none cursor-pointer hover:bg-muted/50"
                         >
                             <option value="">{t('candidature.filters.allDepartments')}</option>
                             {['RH', 'Production', 'Méthode & Indus', 'Finance', 'Splay chaine', 'Maintenance', 'HSE', 'Qualité', 'Achat'].map((dept) => (
                                 <option key={dept} value={dept}>{dept}</option>
                             ))}
-                            {departments.map((dept: any) => (
+                            {departments.map((dept: Department) => (
                                 !['RH', 'Production', 'Méthode & Indus', 'Finance', 'Splay chaine', 'Maintenance', 'HSE', 'Qualité', 'Achat'].includes(dept.name) && (
                                     <option key={dept.id} value={dept.name}>{dept.name}</option>
                                 )
                             ))}
                         </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                        </div>
                     </div>
-                    <div className="relative">
+
+                    {/* Status Filter Dropdown (Optional if using pills, but keeping for specific selection) */}
+                    <div className="relative md:w-48">
+                        <CheckCircle className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={18} />
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full bg-card/50 border border-border rounded-xl px-4 py-2 text-foreground appearance-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-sm"
+                            className="w-full bg-card border border-border rounded-xl pl-10 pr-10 py-3 text-foreground appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none cursor-pointer hover:bg-muted/50"
                         >
-                            <option value="">{t('candidature.filters.allStatuses')}</option>
                             <option value="">{t('candidature.filters.allStatuses')}</option>
                             <option value="En cours">En cours</option>
                             <option value="Embauché">Embauché</option>
-                            <option value="Refus du candidat">Refus du candidat</option>
+                            <option value="Refus du candidat">Refus</option>
                             <option value="Non embauché">Non embauché</option>
                             <option value="Prioritaire">Prioritaire</option>
                             <option value="En attente">En attente</option>
                         </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                        </div>
                     </div>
+                </div>
+
+                {/* Quick Filters (Pills) */}
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                    {[
+                        { label: 'Tous', value: '' },
+                        { label: 'En cours', value: 'En cours', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
+                        { label: 'Embauché', value: 'Embauché', color: 'bg-green-500/10 text-green-600 border-green-500/20' },
+                        { label: 'Prioritaire', value: 'Prioritaire', color: 'bg-orange-500/10 text-orange-600 border-orange-500/20' },
+                        { label: 'En attente', value: 'En attente', color: 'bg-gray-500/10 text-gray-600 border-gray-500/20' },
+                        { label: 'Refus', value: 'Refus du candidat', color: 'bg-red-500/10 text-red-600 border-red-500/20' }
+                    ].map(pill => (
+                        <button
+                            key={pill.value}
+                            onClick={() => setStatusFilter(pill.value)}
+                            className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all whitespace-nowrap ${statusFilter === pill.value
+                                ? (pill.color ? pill.color.replace('/10', '/20').replace('border-', 'border-2 border-') : 'bg-primary text-primary-foreground border-primary')
+                                : 'bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                                }`}
+                        >
+                            {pill.label}
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -468,38 +599,74 @@ export default function CandidaturesPage() {
             </div>
 
             {/* --- Pagination --- */}
-            <div className="px-6 py-4 border-t border-border/50 flex justify-between items-center bg-muted/20">
+            <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4 px-2">
                 <div className="text-sm text-muted-foreground">
-                    {t('candidature.showing')} <span className="text-foreground font-medium">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredCandidatures.length)}</span> {t('candidature.to')} <span className="text-foreground font-medium">{Math.min(currentPage * itemsPerPage, filteredCandidatures.length)}</span> {t('candidature.of')} <span className="text-foreground font-medium">{filteredCandidatures.length}</span> {t('candidature.results')}
+                    Affichage de <span className="font-medium text-foreground">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredCandidatures.length)}</span> à <span className="font-medium text-foreground">{Math.min(currentPage * itemsPerPage, filteredCandidatures.length)}</span> sur <span className="font-medium text-foreground">{filteredCandidatures.length}</span> résultats
                 </div>
-                <div className="flex items-center gap-2">
+
+                <div className="flex items-center gap-1 bg-card border border-border/50 p-1.5 rounded-full shadow-sm">
                     <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="px-3 py-1 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                        className="w-9 h-9 flex items-center justify-center rounded-full text-foreground hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                        title="Previous Page"
                     >
-                        Previous
+                        <ArrowLeft size={16} />
                     </button>
-                    <div className="flex gap-1">
-                        {Array.from({ length: totalPages }).map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={() => setCurrentPage(i + 1)}
-                                className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${currentPage === i + 1
-                                    ? 'bg-primary text-primary-foreground shadow-md'
-                                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                                    }`}
-                            >
-                                {i + 1}
-                            </button>
-                        ))}
+
+                    <div className="flex items-center gap-1 px-2">
+                        {(() => {
+                            const pages = [];
+                            const maxVisible = 5;
+
+                            if (totalPages <= 7) {
+                                for (let i = 1; i <= totalPages; i++) pages.push(i);
+                            } else {
+                                if (currentPage <= 4) {
+                                    for (let i = 1; i <= 5; i++) pages.push(i);
+                                    pages.push('...');
+                                    pages.push(totalPages);
+                                } else if (currentPage >= totalPages - 3) {
+                                    pages.push(1);
+                                    pages.push('...');
+                                    for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+                                } else {
+                                    pages.push(1);
+                                    pages.push('...');
+                                    pages.push(currentPage - 1);
+                                    pages.push(currentPage);
+                                    pages.push(currentPage + 1);
+                                    pages.push('...');
+                                    pages.push(totalPages);
+                                }
+                            }
+
+                            return pages.map((page, idx) => (
+                                page === '...' ? (
+                                    <span key={`ellipsis-${idx}`} className="text-muted-foreground px-1 select-none">...</span>
+                                ) : (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(Number(page))}
+                                        className={`w-9 h-9 rounded-full text-sm font-medium transition-all ${currentPage === page
+                                            ? 'bg-primary text-primary-foreground shadow-md scale-105'
+                                            : 'text-foreground hover:bg-muted hover:scale-105'
+                                            }`}
+                                    >
+                                        {page}
+                                    </button>
+                                )
+                            ));
+                        })()}
                     </div>
+
                     <button
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
-                        className="px-3 py-1 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                        className="w-9 h-9 flex items-center justify-center rounded-full text-foreground hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                        title="Next Page"
                     >
-                        Next
+                        <ArrowRight size={16} />
                     </button>
                 </div>
             </div>

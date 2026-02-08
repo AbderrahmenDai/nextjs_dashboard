@@ -19,23 +19,29 @@ interface Department {
     siteId?: string;
 }
 
-function RoleFormModal({
-    isOpen,
-    onClose,
-    onSave,
-    role
-}: {
+interface RoleFormModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSave: (role: Partial<Role>) => Promise<void>;
     role: Role | null;
-}) {
+    departments: Department[];
+    sites: { id: string; name: string }[];
+}
+
+function RoleFormModal({
+    isOpen,
+    onClose,
+    onSave,
+    role,
+    departments,
+    sites
+}: RoleFormModalProps) {
     const [formData, setFormData] = useState<Partial<Role>>({
         name: "",
         description: "",
         departmentId: ""
     });
-    const [departments, setDepartments] = useState<Department[]>([]);
+    const [selectedSiteId, setSelectedSiteId] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -43,10 +49,24 @@ function RoleFormModal({
         if (isOpen) {
             setFormData(role || { name: "", description: "", departmentId: "" });
             setError("");
-            // Fetch depts
-            api.getDepartments().then(setDepartments).catch(console.error);
+
+            // Set initial site if department is selected
+            if (role?.departmentId) {
+                const dept = departments.find(d => d.id === role.departmentId);
+                if (dept?.siteId) {
+                    setSelectedSiteId(dept.siteId);
+                } else {
+                    setSelectedSiteId("");
+                }
+            } else {
+                setSelectedSiteId("");
+            }
         }
-    }, [isOpen, role]);
+    }, [isOpen, role, departments]);
+
+    const filteredDepartments = departments.filter(d =>
+        !selectedSiteId || d.siteId === selectedSiteId
+    );
 
     if (!isOpen) return null;
 
@@ -101,6 +121,25 @@ function RoleFormModal({
                                 placeholder="ex: Technicien Qualité"
                             />
                         </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Site</label>
+                            <select
+                                value={selectedSiteId}
+                                onChange={(e) => {
+                                    setSelectedSiteId(e.target.value);
+                                    // Clear department if not in new site
+                                    setFormData(prev => ({ ...prev, departmentId: "" }));
+                                }}
+                                className="input-field"
+                            >
+                                <option value="">Tous les sites</option>
+                                {sites.map((site) => (
+                                    <option key={site.id} value={site.id}>{site.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
                         <div>
                             <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Département</label>
                             <select
@@ -109,7 +148,7 @@ function RoleFormModal({
                                 className="input-field"
                             >
                                 <option value="">Sélectionner un département (Optionnel)</option>
-                                {departments.map((dept) => (
+                                {filteredDepartments.map((dept) => (
                                     <option key={dept.id} value={dept.id}>{dept.name}</option>
                                 ))}
                             </select>
@@ -236,17 +275,22 @@ export default function RolesPage() {
                     onClose={() => setIsModalOpen(false)}
                     onSave={handleSave}
                     role={editingRole}
+                    departments={departments}
+                    sites={sites}
                 />
 
                 <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-3xl font-bold tracking-tight">Gestion des Postes</h1>
-                            <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-black rounded-full border border-primary/20">
+                    <div className="pl-1">
+                        <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 shadow-sm">
+                                <Shield className="w-6 h-6 text-primary" />
+                            </div>
+                            Gestion des Postes
+                            <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-black rounded-full border border-primary/20 ml-2">
                                 {filteredRoles.length}
                             </span>
-                        </div>
-                        <p className="text-muted-foreground mt-1">Gérez les postes et positions de votre organisation.</p>
+                        </h1>
+                        <p className="text-muted-foreground mt-2 ml-14 font-medium">Gérez les postes et positions de votre organisation.</p>
                     </div>
                     <button
                         onClick={() => { setEditingRole(null); setIsModalOpen(true); }}

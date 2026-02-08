@@ -295,7 +295,7 @@ function RequestModal({
                                     onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
                                     className="input-field"
                                 >
-                                    <option value="">Select...</option>
+                                    <option value="">Sélectionner...</option>
                                     {filteredDepartments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                 </select>
                             </div>
@@ -307,7 +307,7 @@ function RequestModal({
                                     onChange={(e) => setFormData({ ...formData, site: e.target.value })}
                                     className="input-field"
                                 >
-                                    <option value="">Select...</option>
+                                    <option value="">Sélectionner...</option>
                                     {sites.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                                 </select>
                             </div>
@@ -330,7 +330,7 @@ function RequestModal({
                                     disabled={isViewOnly}
                                     value={formData.desiredStartDate ? new Date(formData.desiredStartDate).toISOString().split('T')[0] : ""}
                                     onChange={(e) => setFormData({ ...formData, desiredStartDate: e.target.value })}
-                                    className="input-field"
+                                    className="input-field [color-scheme:light]"
                                 />
                             </div>
                             <div>
@@ -341,10 +341,10 @@ function RequestModal({
                                     onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
                                     className="input-field"
                                 >
-                                    <option value="Low">Low</option>
-                                    <option value="Medium">Medium</option>
-                                    <option value="High">High</option>
-                                    <option value="Critical">Critical</option>
+                                    <option value="Low">Faible</option>
+                                    <option value="Medium">Moyenne</option>
+                                    <option value="High">Haute</option>
+                                    <option value="Critical">Critique</option>
                                 </select>
                             </div>
                             <div>
@@ -369,17 +369,17 @@ function RequestModal({
                     <div className="bg-primary/5 border border-primary/10 p-4 rounded-2xl space-y-4">
                         <div className="grid grid-cols-1 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-primary uppercase mb-1.5 opacity-80">Role</label>
+                                <label className="block text-xs font-bold text-primary uppercase mb-1.5 opacity-80">Poste</label>
                                 <select
                                     disabled={isViewOnly || !formData.departmentId}
                                     value={formData.roleId || ""}
                                     onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
                                     className="input-field"
                                 >
-                                    <option value="">Select Role...</option>
+                                    <option value="">Sélectionner un poste...</option>
                                     {filteredRoles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                 </select>
-                                {!formData.departmentId && <p className="text-[10px] text-muted-foreground mt-1">Select a department first.</p>}
+                                {!formData.departmentId && <p className="text-[10px] text-muted-foreground mt-1">Sélectionner d&apos;abord un département.</p>}
                             </div>
                         </div>
                     </div>
@@ -398,7 +398,7 @@ function RequestModal({
                                 disabled={isViewOnly}
                                 value={formData.replacementFor || ""}
                                 onChange={(e) => setFormData({ ...formData, replacementFor: e.target.value })}
-                                className="input-field"
+                                className="input-field flex-1"
                             />
                             <div className="flex items-center gap-2 flex-1 w-full">
                                 <span className="text-sm font-bold text-foreground whitespace-nowrap">Motif de Départ :</span>
@@ -407,7 +407,7 @@ function RequestModal({
                                     disabled={isViewOnly}
                                     value={formData.replacementReason || ""}
                                     onChange={(e) => setFormData({ ...formData, replacementReason: e.target.value })}
-                                    className="input-field"
+                                    className="input-field flex-1"
                                 />
                             </div>
                         </div>
@@ -433,7 +433,7 @@ function RequestModal({
                                     disabled={isViewOnly}
                                     value={formData.increaseDateRange || ""}
                                     onChange={(e) => setFormData({ ...formData, increaseDateRange: e.target.value })}
-                                    className="input-field"
+                                    className="input-field flex-1"
                                 />
                             </div>
                         </div>
@@ -948,9 +948,14 @@ export default function HiringRequestsPage() {
 
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-foreground tracking-tight">{t('common.hiringRequests')}</h1>
-                        <p className="text-muted-foreground mt-1">{t('hiringRequest.description')}</p>
+                    <div className="pl-1">
+                        <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 shadow-sm">
+                                <FileText className="w-6 h-6 text-primary" />
+                            </div>
+                            Demandes de Recrutement
+                        </h1>
+                        <p className="text-muted-foreground mt-2 ml-14 font-medium">Gérez le processus d&apos;approbation des recrutements.</p>
                     </div>
                     <button
                         onClick={openCreateModal}

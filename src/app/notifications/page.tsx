@@ -236,13 +236,15 @@ export default function NotificationsPage() {
             <div className="flex flex-col h-full relative">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                    <div>
+                    <div className="pl-1">
                         <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
-                            <Bell className="w-8 h-8 text-primary" />
+                            <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 shadow-sm">
+                                <Bell className="w-6 h-6 text-primary" />
+                            </div>
                             Notifications
                         </h1>
-                        <p className="text-muted-foreground mt-1">
-                            {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}
+                        <p className="text-muted-foreground mt-2 ml-14 font-medium">
+                            {unreadCount > 0 ? `${unreadCount} notification${unreadCount > 1 ? 's' : ''} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour !'}
                         </p>
                     </div>
                     {unreadCount > 0 && (

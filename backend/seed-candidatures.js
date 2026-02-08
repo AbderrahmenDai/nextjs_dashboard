@@ -5,26 +5,33 @@ async function seedCandidatures() {
     console.log('🌱 Seeding Candidatures from image data...');
 
     const rawData = [
-        { dept: 'RH', pos: 'Chargé de Recrutement', name: 'Amine Ben Salem', gender: 'MALE', source: 'OTHER', date: '2025-01-05', status: 'In Progress', hr: 'Passable', manager: 'Passable', salary: 0, mode: 'EXTERNAL' },
-        { dept: 'RH', pos: 'Chargé de Recrutement', name: 'Sarah Mansour', gender: 'FEMALE', source: 'REFERRAL', date: '2025-02-06', status: 'Hired', hr: 'Favorable', manager: 'Favorable', salary: 2400, mode: 'INTERNAL' },
-        { dept: 'Production', pos: 'Chef d\'équipe', name: 'Omar Dridi', gender: 'MALE', source: 'REFERRAL', date: '2025-03-02', status: 'Hired', hr: 'Favorable', manager: 'Prioritaire', salary: 2400, mode: 'INTERNAL' },
-        { dept: 'Production', pos: 'Chef d\'équipe', name: 'Fatma Mejri', gender: 'FEMALE', source: 'OTHER', date: '2025-03-03', status: 'Rejected', hr: 'Defavorable', manager: 'Defavorable', salary: 0, mode: 'EXTERNAL' },
-        { dept: 'Finance', pos: 'Comptable', name: 'Yassine Ghorbel', gender: 'MALE', source: 'OTHER', date: '2025-04-04', status: 'Shortlisted', hr: 'Prioritaire', manager: 'Favorable', salary: 0, mode: 'EXTERNAL' },
-        { dept: 'Logistique', pos: 'Responsable Logistique', name: 'Mariem Toumi', gender: 'FEMALE', source: 'OTHER', date: '2025-05-01', status: 'Pending', hr: 'Passable', manager: 'Favorable', salary: 0, mode: 'EXTERNAL' },
-        { dept: 'Finance', pos: 'Comptable', name: 'Sonia Kasraoui', gender: 'FEMALE', source: 'REFERRAL', date: '2025-06-05', status: 'Hired', hr: 'Favorable', manager: 'Favorable', salary: 2000, mode: 'INTERNAL' },
-        { dept: 'Maintenance', pos: 'Technicien', name: 'Walid Jendoubi', gender: 'MALE', source: 'REFERRAL', date: '2025-04-07', status: 'Hired', hr: 'Favorable', manager: 'Prioritaire', salary: 2100, mode: 'INTERNAL' },
-        { dept: 'Qualité', pos: 'Ingénieur Qualité', name: 'Ines Ben Amor', gender: 'FEMALE', source: 'LINKEDIN', date: '2025-07-03', status: 'Rejected', hr: 'Defavorable', manager: 'Defavorable', salary: 0, mode: 'EXTERNAL' },
-        { dept: 'Production', pos: 'Chef d\'équipe', name: 'Sami Kallel', gender: 'MALE', source: 'LINKEDIN', date: '2025-05-04', status: 'Hired', hr: 'Favorable', manager: 'Prioritaire', salary: 1800, mode: 'EXTERNAL' },
-        { dept: 'HSE', pos: 'Responsable HSE', name: 'Mourad Nefzi', gender: 'MALE', source: 'OTHER', date: '2025-08-02', status: 'Shortlisted', hr: 'Prioritaire', manager: 'Favorable', salary: 0, mode: 'EXTERNAL' },
-        { dept: 'RH', pos: 'Chargé de Recrutement', name: 'Leila Ayari', gender: 'FEMALE', source: 'LINKEDIN', date: '2025-09-06', status: 'Shortlisted', hr: 'Prioritaire', manager: 'Favorable', salary: 0, mode: 'EXTERNAL' },
-        { dept: 'Logistique', pos: 'Responsable Logistique', name: 'Hamza Riahi', gender: 'MALE', source: 'WEBSITE', date: '2025-10-01', status: 'Shortlisted', hr: 'Prioritaire', manager: 'Prioritaire', salary: 0, mode: 'EXTERNAL' },
-        { dept: 'Méthode', pos: 'Ingénieur Méthodes', name: 'Anis Gharbi', gender: 'MALE', source: 'OTHER', date: '2025-08-05', status: 'Pending', hr: 'Passable', manager: 'Favorable', salary: 0, mode: 'EXTERNAL' },
-        { dept: 'Maintenance', pos: 'Technicien', name: 'Zied Bacha', gender: 'MALE', source: 'OTHER', date: '2025-09-07', status: 'Pending', hr: 'Passable', manager: 'Prioritaire', salary: 0, mode: 'EXTERNAL' },
-        { dept: 'Qualité', pos: 'Ingénieur Qualité', name: 'Olfa Hammami', gender: 'FEMALE', source: 'WEBSITE', date: '2025-05-03', status: 'Rejected', hr: 'Defavorable', manager: 'Defavorable', salary: 0, mode: 'EXTERNAL' },
-        { dept: 'Finance', pos: 'Comptable', name: 'Kais Slimane', gender: 'MALE', source: 'OTHER', date: '2025-07-04', status: 'Rejected', hr: 'Defavorable', manager: 'Defavorable', salary: 0, mode: 'EXTERNAL' },
-        { dept: 'Production', pos: 'Chef d\'équipe', name: 'Houda Tounsi', gender: 'FEMALE', source: 'OTHER', date: '2025-12-03', status: 'Rejected', hr: 'Defavorable', manager: 'Defavorable', salary: 0, mode: 'EXTERNAL' },
-        { dept: 'HSE', pos: 'Responsable HSE', name: 'Mehdi Zaibi', gender: 'MALE', source: 'REFERRAL', date: '2025-11-02', status: 'Hired', hr: 'Favorable', manager: 'Passable', salary: 2200, mode: 'INTERNAL' },
-        { dept: 'Méthode', pos: 'Ingénieur Méthodes', name: 'Rim Sassi', gender: 'FEMALE', source: 'LINKEDIN', date: '2025-10-05', status: 'In Progress', hr: 'Prioritaire', manager: 'Passable', salary: 0, mode: 'EXTERNAL' }
+        // En cours
+        { dept: 'RH', pos: 'Chargé de Recrutement', name: 'Amine Ben Salem', gender: 'MALE', source: 'OTHER', date: '2025-01-05', status: 'En cours', hr: 'Passable', manager: 'Passable', salary: 0, mode: 'EXTERNAL' },
+        { dept: 'Finance', pos: 'Auditeur Junior', name: 'Nadia Khelil', gender: 'FEMALE', source: 'LINKEDIN', date: '2025-02-15', status: 'En cours', hr: 'Favorable', manager: 'En attente', salary: 1800, mode: 'EXTERNAL' },
+        { dept: 'IT', pos: 'Développeur Fullstack', name: 'Marwan Jaziri', gender: 'MALE', source: 'WEBSITE', date: '2025-03-10', status: 'En cours', hr: 'Favorable', manager: 'Favorable', salary: 2500, mode: 'EXTERNAL' },
+
+        // Embauché
+        { dept: 'RH', pos: 'HR Manager', name: 'Sarah Mansour', gender: 'FEMALE', source: 'REFERRAL', date: '2025-02-06', status: 'Embauché', hr: 'Favorable', manager: 'Favorable', salary: 2400, mode: 'INTERNAL' },
+        { dept: 'Production', pos: 'Chef d\'équipe', name: 'Omar Dridi', gender: 'MALE', source: 'REFERRAL', date: '2025-03-02', status: 'Embauché', hr: 'Favorable', manager: 'Prioritaire', salary: 2400, mode: 'INTERNAL' },
+        { dept: 'Maintenance', pos: 'Technicien Supérieur', name: 'Walid Jendoubi', gender: 'MALE', source: 'REFERRAL', date: '2025-04-07', status: 'Embauché', hr: 'Favorable', manager: 'Prioritaire', salary: 2100, mode: 'INTERNAL' },
+
+        // Refus du candidat
+        { dept: 'Commerce', pos: 'Commercial Terrain', name: 'Salma Hichri', gender: 'FEMALE', source: 'LINKEDIN', date: '2025-01-20', status: 'Refus du candidat', hr: 'Favorable', manager: 'Favorable', salary: 0, mode: 'EXTERNAL' },
+        { dept: 'IT', pos: 'DevOps Engineer', name: 'Karim Zghal', gender: 'MALE', source: 'WEBSITE', date: '2025-02-25', status: 'Refus du candidat', hr: 'Prioritaire', manager: 'Favorable', salary: 3000, mode: 'EXTERNAL' },
+
+        // Non embauché
+        { dept: 'Production', pos: 'Opérateur', name: 'Fatma Mejri', gender: 'FEMALE', source: 'OTHER', date: '2025-03-03', status: 'Non embauché', hr: 'Defavorable', manager: 'Defavorable', salary: 0, mode: 'EXTERNAL' },
+        { dept: 'Qualité', pos: 'Contrôleur Qualité', name: 'Ines Ben Amor', gender: 'FEMALE', source: 'LINKEDIN', date: '2025-04-12', status: 'Non embauché', hr: 'Defavorable', manager: 'Defavorable', salary: 0, mode: 'EXTERNAL' },
+
+        // Prioritaire
+        { dept: 'Finance', pos: 'Directeur Financier', name: 'Yassine Ghorbel', gender: 'MALE', source: 'OTHER', date: '2025-04-04', status: 'Prioritaire', hr: 'Prioritaire', manager: 'Prioritaire', salary: 0, mode: 'EXTERNAL' },
+        { dept: 'Direction', pos: 'Assistant de Direction', name: 'Leila Ayari', gender: 'FEMALE', source: 'LINKEDIN', date: '2025-05-09', status: 'Prioritaire', hr: 'Prioritaire', manager: 'Favorable', salary: 1900, mode: 'EXTERNAL' },
+        { dept: 'Logistique', pos: 'Supply Chain Manager', name: 'Hamza Riahi', gender: 'MALE', source: 'WEBSITE', date: '2025-06-11', status: 'Prioritaire', hr: 'Prioritaire', manager: 'Prioritaire', salary: 2800, mode: 'EXTERNAL' },
+
+        // En attente
+        { dept: 'Logistique', pos: 'Magasinier', name: 'Mariem Toumi', gender: 'FEMALE', source: 'OTHER', date: '2025-05-01', status: 'En attente', hr: 'Passable', manager: 'Favorable', salary: 0, mode: 'EXTERNAL' },
+        { dept: 'Méthode', pos: 'Technicien Méthodes', name: 'Anis Gharbi', gender: 'MALE', source: 'OTHER', date: '2025-06-15', status: 'En attente', hr: 'Passable', manager: 'Favorable', salary: 0, mode: 'EXTERNAL' },
+        { dept: 'Qualité', pos: 'Responsable Qualité', name: 'Olfa Hammami', gender: 'FEMALE', source: 'WEBSITE', date: '2025-07-20', status: 'En attente', hr: 'En attente', manager: 'En attente', salary: 0, mode: 'EXTERNAL' }
     ];
 
     try {

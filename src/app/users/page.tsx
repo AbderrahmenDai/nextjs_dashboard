@@ -3,7 +3,7 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Lock, Search, Filter, Plus, Pencil, Trash2, X, AlertTriangle, Loader2, User as UserIcon } from "lucide-react";
 import { clsx } from "clsx";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
 
@@ -105,7 +105,7 @@ function PasswordChangeModal({
                             <Lock className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-white tracking-tight">Change Password</h2>
+                            <h2 className="text-xl font-bold text-white tracking-tight">Changer le Mot de Passe</h2>
                             <p className="text-sm text-white/70">{userName}</p>
                         </div>
                     </div>
@@ -128,26 +128,26 @@ function PasswordChangeModal({
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">New Password</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Nouveau Mot de Passe</label>
                             <input
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="input-field"
-                                placeholder="Enter new password"
+                                placeholder="Entrer le nouveau mot de passe"
                                 disabled={isLoading}
                                 required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Confirm Password</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Confirmer le Mot de Passe</label>
                             <input
                                 type="password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 className="input-field"
-                                placeholder="Confirm new password"
+                                placeholder="Confirmer le nouveau mot de passe"
                                 disabled={isLoading}
                                 required
                             />
@@ -160,7 +160,7 @@ function PasswordChangeModal({
                                 disabled={isLoading}
                                 className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors font-medium text-sm"
                             >
-                                Cancel
+                                Annuler
                             </button>
                             <button
                                 type="submit"
@@ -168,7 +168,7 @@ function PasswordChangeModal({
                                 className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium shadow-lg shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
                             >
                                 {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                <span>Change Password</span>
+                                <span>Changer le Mot de Passe</span>
                             </button>
                         </div>
                     </form>
@@ -215,7 +215,7 @@ function DeleteConfirmationModal({
                         <div className="p-2.5 bg-white/20 rounded-xl text-white shadow-inner">
                             <AlertTriangle className="w-5 h-5" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white tracking-tight">Delete User</h2>
+                        <h2 className="text-2xl font-bold text-white tracking-tight">Supprimer l'Utilisateur</h2>
                     </div>
                     <button
                         onClick={onClose}
@@ -230,7 +230,7 @@ function DeleteConfirmationModal({
                     <div className="flex items-start gap-4 mb-8">
                         <div className="flex-1">
                             <p className="text-muted-foreground text-sm leading-relaxed">
-                                Are you sure you want to delete <span className="font-bold text-foreground">{userName}</span>? This action is permanent and cannot be undone.
+                                Êtes-vous sûr de vouloir supprimer <span className="font-bold text-foreground">{userName}</span> ? Cette action est irréversible.
                             </p>
                         </div>
                     </div>
@@ -242,7 +242,7 @@ function DeleteConfirmationModal({
                             disabled={isLoading}
                             className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
                         >
-                            Cancel
+                            Annuler
                         </button>
                         <button
                             onClick={handleConfirm}
@@ -250,7 +250,7 @@ function DeleteConfirmationModal({
                             className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold shadow-lg shadow-red-600/20 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 text-sm"
                         >
                             {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                            <span>Delete User</span>
+                            <span>Supprimer</span>
                         </button>
                     </div>
                 </div>
@@ -266,6 +266,7 @@ function UserFormModal({
     onSave,
     user,
     departments,
+    sites,
     roles
 }: {
     isOpen: boolean;
@@ -273,6 +274,7 @@ function UserFormModal({
     onSave: (user: Partial<User>) => void;
     user: User | null;
     departments: Department[];
+    sites: Site[];
     roles: Role[];
 }) {
     // Only set initial state on open, but we need state for controlled inputs
@@ -285,6 +287,7 @@ function UserFormModal({
         status: "Active",
         avatarGradient: "from-gray-500 to-slate-500"
     });
+    const [selectedSiteId, setSelectedSiteId] = useState("");
 
     useEffect(() => {
         if (isOpen) {
@@ -297,8 +300,45 @@ function UserFormModal({
                 status: "Active",
                 avatarGradient: "from-gray-500 to-slate-500"
             });
+            // Try to set site from user's department or site
+            if (user?.department) {
+                // If we have dept object, we might know site. But dept here is just name string in User interface?
+                // Wait, User interface has department string, and departmentId?
+                // departments passed in are full objects.
+                const dept = departments.find(d => d.id === user.departmentId);
+                // We don't have siteId on Department interface in this file (lines 30-33).
+                // But previously `api.getDepartments` returned objects with siteId.
+                // I should cast or assume siteId exists if data has it.
+                // For now, let's look at `User.site` (string name).
+                const siteName = user.site;
+                const site = sites.find(s => s.name === siteName);
+                if (site) {
+                    setSelectedSiteId(site.id);
+                } else {
+                    setSelectedSiteId("");
+                }
+            } else {
+                setSelectedSiteId("");
+            }
         }
-    }, [isOpen, user, departments, roles]);
+    }, [isOpen, user, departments, roles, sites]);
+
+    const filteredDepartments = departments.filter(d => {
+        const dAny = d as any;
+        return !selectedSiteId || (dAny.siteId === selectedSiteId);
+    });
+
+    // Deduplicate departments by name to avoid showing duplicates in the dropdown
+    const uniqueDepartments = useMemo(() => {
+        return filteredDepartments.reduce((acc: Department[], current) => {
+            const x = acc.find(item => item.name === current.name);
+            if (!x) {
+                return acc.concat([current]);
+            } else {
+                return acc;
+            }
+        }, []);
+    }, [filteredDepartments]);
 
     if (!isOpen) return null;
 
@@ -315,10 +355,10 @@ function UserFormModal({
                     <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
                     <div className="relative z-10">
                         <h2 className="text-2xl font-bold text-white tracking-tight">
-                            {user ? "Edit User" : "Add New User"}
+                            {user ? "Modifier l'Utilisateur" : "Ajouter un Nouvel Utilisateur"}
                         </h2>
                         <p className="text-sm text-white/80 mt-1">
-                            {user ? "Modify user details below" : "Create a new team member account"}
+                            {user ? "Modifier les détails de l'utilisateur" : "Créer un nouveau compte membre d'équipe"}
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-all relative z-10">
@@ -330,7 +370,7 @@ function UserFormModal({
                     {/* Compact Grid for Basic Info */}
                     <div className="grid grid-cols-1 gap-5">
                         <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide ml-1">Full Name</label>
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide ml-1">Nom Complet</label>
                             <div className="relative group">
                                 <UserIcon className="absolute left-3 top-3.5 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                 <input
@@ -339,13 +379,13 @@ function UserFormModal({
                                     value={formData.name || ""}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     className="input-field pl-10 bg-secondary/30 focus:bg-background transition-all"
-                                    placeholder="e.g. John Doe"
+                                    placeholder="ex: John Doe"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide ml-1">Email Address</label>
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide ml-1">Adresse Email</label>
                             <div className="relative group">
                                 <span className="absolute left-3 top-3.5 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors flex items-center justify-center font-serif text-sm">@</span>
                                 <input
@@ -361,7 +401,7 @@ function UserFormModal({
 
                         {!user && (
                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide ml-1">Password</label>
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide ml-1">Mot de Passe</label>
                                 <div className="relative group">
                                     <Lock className="absolute left-3 top-3.5 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                     <input
@@ -376,34 +416,53 @@ function UserFormModal({
                             </div>
                         )}
                     </div>
+
                     <div>
-                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Role</label>
+                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Poste</label>
+                        <input
+                            required
+                            type="text"
+                            maxLength={50}
+                            value={formData.role || ""}
+                            onChange={(e) => setFormData({ ...formData, role: e.target.value, roleId: "" })}
+                            className="input-field"
+                            placeholder="ex: Comptable"
+                        />
+                    </div>
+
+                    {/* Site Selection */}
+                    <div>
+                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Site</label>
                         <select
-                            value={formData.role}
-                            onChange={(e) => setFormData({ ...formData, role: e.target.value, roleId: roles.find(role => role.name === e.target.value)?.id })}
+                            value={selectedSiteId}
+                            onChange={(e) => {
+                                setSelectedSiteId(e.target.value);
+                                setFormData(prev => ({ ...prev, departmentId: "" })); // Reset dept
+                            }}
                             className="input-field appearance-none cursor-pointer"
                         >
-                            {roles.length === 0 && <option value="">Loading...</option>}
-                            {roles.map(role => (
-                                <option key={role.id} value={role.name}>{role.name}</option>
+                            <option value="">Tous les sites</option>
+                            {sites.map(site => (
+                                <option key={site.id} value={site.id}>{site.name}</option>
                             ))}
                         </select>
                     </div>
+
                     <div>
-                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Department</label>
+                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Département</label>
                         <select
                             value={formData.departmentId || ""}
                             onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
                             className="input-field appearance-none cursor-pointer"
                         >
-                            {departments.length === 0 && <option value="">Loading...</option>}
-                            {departments.map(dept => (
+                            {departments.length === 0 && <option value="">Chargement...</option>}
+                            {/* If site selected but no deps, show notice? */}
+                            {!formData.departmentId && <option value="">Sélectionner un département</option>}
+                            {uniqueDepartments.map(dept => (
                                 <option key={dept.id} value={dept.id}>{dept.name}</option>
                             ))}
                         </select>
                     </div>
-
-
 
                     <div className="pt-4 flex justify-end gap-3 border-t border-border mt-2">
                         <button
@@ -411,13 +470,13 @@ function UserFormModal({
                             onClick={onClose}
                             className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors font-medium text-sm"
                         >
-                            Cancel
+                            Annuler
                         </button>
                         <button
                             type="submit"
                             className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium shadow-lg shadow-primary/20 transition-all text-sm"
                         >
-                            {user ? "Save Changes" : "Create User"}
+                            {user ? "Enregistrer" : "Créer l'Utilisateur"}
                         </button>
                     </div>
                 </form>
@@ -534,6 +593,7 @@ export default function UsersPage() {
                     onSave={handleSaveUser}
                     user={editingUser}
                     departments={departments}
+                    sites={sites}
                     roles={roles}
                 />
                 <PasswordChangeModal
@@ -554,16 +614,18 @@ export default function UsersPage() {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.6 }}
+                        className="pl-1"
                     >
-                        <div className="flex items-center gap-4">
-                            <h1 className="text-4xl font-black tracking-tight premium-gradient-text">
-                                Utilisateurs
-                            </h1>
-                            <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-black rounded-full border border-primary/20">
+                        <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 shadow-sm">
+                                <UserIcon className="w-6 h-6 text-primary" />
+                            </div>
+                            Utilisateurs
+                            <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-black rounded-full border border-primary/20 ml-2">
                                 {users.length}
                             </span>
-                        </div>
-                        <p className="text-muted-foreground mt-2 font-medium">Gérez les accès et les informations de votre équipe</p>
+                        </h1>
+                        <p className="text-muted-foreground mt-2 ml-14 font-medium">Gérez les accès et les informations de votre équipe</p>
                     </motion.div>
                     <motion.button
                         initial={{ opacity: 0, scale: 0.9 }}
@@ -716,14 +778,18 @@ export default function UsersPage() {
                                                     user.status === 'Active' ? 'bg-emerald-400 text-emerald-400' :
                                                         user.status === 'In Meeting' ? 'bg-amber-400 text-amber-400' : 'bg-slate-400 text-slate-400'
                                                 )} />
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{user.status}</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{
+                                                    user.status === 'Active' ? 'Actif' :
+                                                        user.status === 'In Meeting' ? 'En Réunion' :
+                                                            user.status === 'Offline' ? 'Hors Ligne' : user.status
+                                                }</span>
                                             </div>
                                             <button
                                                 onClick={() => setPasswordChangeUser(user)}
                                                 className="text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary transition-colors flex items-center gap-1.5 group/btn"
                                             >
                                                 <Lock size={12} className="group-hover/btn:scale-110 transition-transform" />
-                                                Reset Password
+                                                Réinitialiser
                                             </button>
                                         </div>
                                     </div>

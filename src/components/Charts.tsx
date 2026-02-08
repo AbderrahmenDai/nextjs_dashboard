@@ -32,12 +32,7 @@ interface CustomTooltipPayload {
     payload?: Record<string, unknown>;
 }
 
-interface Department {
-    id: string;
-    name: string;
-    employeeCount?: number;
-    colorCallback?: string;
-}
+
 
 interface CustomTooltipProps {
     active?: boolean;
@@ -55,7 +50,7 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
                 </div>
                 <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-black text-foreground">{payload[0].value}</span>
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase">{payload[0].unit || 'units'}</span>
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase">{payload[0].unit || ''}</span>
                 </div>
             </div>
         );
@@ -89,7 +84,7 @@ export function PipelineRecruitmentChart({ data = defaultPipelineData }: { data?
                     <p className="text-xs text-muted-foreground font-medium mt-1">Analyse du tunnel de conversion en temps réel</p>
                 </div>
                 <div className="flex gap-2">
-                    <span className="text-[10px] font-black text-primary bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20 uppercase tracking-widest">Live Optimization</span>
+                    <span className="text-[10px] font-black text-primary bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20 uppercase tracking-widest">Optimisation continue</span>
                 </div>
             </div>
 
@@ -146,37 +141,36 @@ export function PipelineRecruitmentChart({ data = defaultPipelineData }: { data?
 
 // --- Application Sources Data ---
 const defaultSourcesData = [
-    { name: "LINKEDIN", value: 60, fill: "#0ea5e9" }, // Bleu LinkedIn
-    { name: "CABINET", value: 30, fill: "#10b981" }, // Vert
-    { name: "AUTRES", value: 10, fill: "#64748b" }, // Gris
+    { name: "RECHERCHE ORGANIQUE", value: 45, fill: "#1e3a8a" }, // Dark Blue
+    { name: "DIRECT", value: 25, fill: "#1e40af" }, // Blue
+    { name: "RÉSEAUX SOCIAUX", value: 20, fill: "#10b981" }, // Emerald
+    { name: "RÉFÉRENCEURS", value: 10, fill: "#ec4899" }, // Pink
 ];
 
 export function ApplicationSourcesChart({ data = defaultSourcesData }: { data?: any[] }) {
-    const total = data.reduce((acc, curr) => acc + (curr.value || 0), 0);
+    // Override colors if needed to match the image exactly
+    const COLORS = ["#003f5c", "#58508d", "#10b981", "#ff6361"];
+
+    // Use data passed or default with colors enforced
+    const chartData = data.map((d, i) => ({ ...d, fill: COLORS[i % COLORS.length] }));
 
     return (
-        <div className="glass-card p-8 rounded-3xl h-[400px] flex flex-col group relative overflow-hidden">
-            <h3 className="text-lg font-black text-foreground mb-1 uppercase tracking-tighter">Canaux d&apos;Acquisition</h3>
-            <p className="text-xs text-muted-foreground font-medium mb-6">Origine des talents</p>
-
-            <div className="flex-1 w-full min-h-0 relative">
+        <div className="bg-card text-card-foreground p-6 rounded-[1.5rem] shadow-sm border border-border/50 h-[400px] flex flex-col">
+            <h3 className="text-lg font-bold text-foreground mb-6">Origines du trafic</h3>
+            <div className="flex-1 w-full min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
-                            data={data}
-                            innerRadius={75}
-                            outerRadius={105}
-                            paddingAngle={8}
+                            data={chartData}
+                            cx="50%"
+                            cy="45%"
+                            innerRadius={60}
+                            outerRadius={100}
+                            paddingAngle={0}
                             dataKey="value"
-                            cornerRadius={12}
-                            stroke="none"
                         >
-                            {data.map((entry, index) => (
-                                <Cell
-                                    key={`cell-${index}`}
-                                    fill={entry.fill}
-                                    className="transition-all duration-300 hover:opacity-80 outline-none"
-                                />
+                            {chartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} stroke="white" strokeWidth={2} />
                             ))}
                         </Pie>
                         <Tooltip content={<CustomTooltip />} />
@@ -184,61 +178,58 @@ export function ApplicationSourcesChart({ data = defaultSourcesData }: { data?: 
                             verticalAlign="bottom"
                             align="center"
                             iconType="circle"
-                            wrapperStyle={{ paddingTop: '25px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}
+                            layout="horizontal"
+                            wrapperStyle={{ fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)' }}
                         />
                     </PieChart>
                 </ResponsiveContainer>
-                {/* Center Text */}
-                <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                    <span className="text-3xl font-black text-foreground block tracking-tighter">{total}</span>
-                    <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-60">Total Hits</span>
-                </div>
             </div>
         </div>
     );
 }
 
 // --- Recruitment Mode Data ---
+// "LinkedIn", "Indeed", "Site Carrière", "Agences", "Autres"
 const defaultModeData = [
-    { name: "Externe", value: 4, fill: "#3b82f6" }, // Blue
-    { name: "Interne", value: 3, fill: "#8b5cf6" }, // Violet
+    { name: "LinkedIn", value: 450 },
+    { name: "Indeed", value: 320 },
+    { name: "Site Carrière", value: 280 },
+    { name: "Agences", value: 150 },
+    { name: "Autres", value: 80 },
 ];
 
 export function RecruitmentModeChart({ data = defaultModeData }: { data?: any[] }) {
     return (
-        <div className="glass-card p-6 rounded-3xl h-[320px] flex flex-col group relative overflow-hidden">
-            <div className="flex justify-between items-center mb-6">
-                <h3 className="text-sm font-black text-foreground uppercase tracking-widest opacity-80">Stratégie Source</h3>
-                <div className="w-8 h-1 bg-primary/20 rounded-full" />
-            </div>
-
+        <div className="bg-card text-card-foreground p-6 rounded-[1.5rem] shadow-sm border border-border/50 h-[400px] flex flex-col">
+            <h3 className="text-lg font-bold text-foreground mb-6">Stratégie de recrutement</h3>
             <div className="flex-1 w-full min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data} barSize={40} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <defs>
-                            <linearGradient id="modeGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="hsl(var(--primary))" />
-                                <stop offset="100%" stopColor="hsl(var(--primary) / 0.5)" />
-                            </linearGradient>
-                        </defs>
+                    <BarChart
+                        data={data}
+                        margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
+                        barSize={40}
+                    >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
                         <XAxis
                             dataKey="name"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: 'var(--muted-foreground)', fontSize: 10, fontWeight: 800, textTransform: 'uppercase' }}
-                            dy={15}
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 11, fontWeight: 600 }}
+                            dy={10}
                         />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} />
-                        <Tooltip cursor={{ fill: 'rgba(var(--primary), 0.05)', radius: 10 }} content={<CustomTooltip />} />
-                        <Bar dataKey="value" radius={[10, 10, 10, 10]}>
-                            {data.map((entry: any, index: number) => (
-                                <Cell
-                                    key={`cell-${index}`}
-                                    fill={index === 0 ? 'url(#modeGradient)' : '#a855f7'}
-                                    className="transition-all duration-500 hover:brightness-110"
-                                />
-                            ))}
-                            <LabelList dataKey="value" position="top" className="fill-foreground font-black text-[10px]" dy={-10} />
+                        <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                        />
+                        <Tooltip cursor={{ fill: 'transparent' }} content={<CustomTooltip />} />
+                        <Bar dataKey="value" fill="#1e40af" radius={[4, 4, 0, 0]}>
+                            <LabelList
+                                dataKey="value"
+                                position="insideTop"
+                                className="fill-white font-bold text-xs"
+                                dy={10}
+                            />
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>
@@ -798,7 +789,7 @@ export function TimeToFillDetailedChart({ data = defaultTimeToFillDetailedData }
                                     dataKey="averageDays"
                                     position="top"
                                     className="fill-foreground font-black text-xs"
-                                    formatter={(value: number) => `${value}j`}
+                                    formatter={(value: any) => `${value}j`}
                                     dy={-10}
                                 />
                             </Bar>
@@ -1081,29 +1072,6 @@ const colorMap: { [key: string]: string } = {
     "from-orange-500 to-red-500": "#f97316",
 };
 
-// Enhanced tooltip component for Department Chart
-const DepartmentTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-        const item = payload[0];
-        return (
-            <div className="bg-card/95 backdrop-blur-xl border border-border shadow-2xl rounded-xl px-5 py-4 text-sm animate-in fade-in zoom-in duration-200">
-                <p className="font-bold text-lg mb-2 text-foreground flex items-center gap-2">
-                    <span
-                        className="w-3 h-3 rounded-full shadow-lg"
-                        style={{ backgroundColor: item.payload?.fill || item.color }}
-                    />
-                    {item.payload?.name}
-                </p>
-                <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-primary">{item.value}</span>
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider">employees</span>
-                </div>
-            </div>
-        );
-    }
-    return null;
-};
-
 interface ChartData {
     name: string;
     value: number;
@@ -1129,16 +1097,25 @@ export function DepartmentUserCountChart() {
                     return;
                 }
 
-                const chartData = depts.map((dept: any) => ({
-                    name: dept.name,
-                    value: dept.employeeCount || 0,
-                    fill: colorMap[dept.colorCallback || ""] || "#94a3b8" // Default slate
-                }));
+                // Aggregate duplicate departments and sum values
+                const aggregated = depts.reduce((acc: any, dept: any) => {
+                    const name = dept.name;
+                    if (!acc[name]) {
+                        acc[name] = {
+                            name: name,
+                            value: 0,
+                            fill: colorMap[dept.colorCallback || ""] || "#94a3b8"
+                        };
+                    }
+                    acc[name].value += (dept.employeeCount || 0);
+                    return acc;
+                }, {});
+
+                const chartData = Object.values(aggregated)
+                    .filter((d: any) => d.value > 0)
+                    .sort((a: any, b: any) => b.value - a.value) as ChartData[];
 
                 console.log('📈 Chart data prepared:', chartData);
-
-                // Sort by value desc
-                chartData.sort((a: ChartData, b: ChartData) => b.value - a.value);
                 setData(chartData);
                 setLoading(false);
             } catch (error) {
@@ -1149,10 +1126,10 @@ export function DepartmentUserCountChart() {
         loadData();
     }, []);
 
-    // Custom bar shape with hover animation
+    const maxValue = Math.max(...data.map(d => d.value), 1);
 
     return (
-        <div className="glass-card p-6 rounded-2xl h-[400px] flex flex-col group relative overflow-hidden">
+        <div className="glass-card p-6 rounded-2xl h-[500px] flex flex-col group relative overflow-hidden">
             {/* Animated background gradient */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
@@ -1168,7 +1145,7 @@ export function DepartmentUserCountChart() {
                     </div>
                 </div>
 
-                <div className="flex-1 w-full min-h-0">
+                <div className="flex-1 w-full min-h-0 overflow-y-auto custom-scrollbar pr-2 space-y-4">
                     {loading ? (
                         <div className="h-full flex items-center justify-center">
                             <div className="text-center">
@@ -1179,96 +1156,47 @@ export function DepartmentUserCountChart() {
                     ) : data.length === 0 ? (
                         <div className="h-full flex items-center justify-center">
                             <div className="text-center">
-                                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                                    </svg>
-                                </div>
                                 <p className="text-foreground font-medium mb-1">No Department Data</p>
-                                <p className="text-muted-foreground text-sm">Check console for errors</p>
                             </div>
                         </div>
                     ) : (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                                data={data}
-                                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                        data.map((item, index) => (
+                            <motion.div
+                                key={item.name}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: index * 0.05, duration: 0.5 }}
+                                className="relative"
+                                onMouseEnter={() => setHoveredIndex(index)}
+                                onMouseLeave={() => setHoveredIndex(null)}
                             >
-                                <defs>
-                                    {data.map((entry, index) => (
-                                        <linearGradient
-                                            key={`gradient-${index}`}
-                                            id={`gradient-${index}`}
-                                            x1="0"
-                                            y1="0"
-                                            x2="0"
-                                            y2="1"
-                                        >
-                                            <stop offset="0%" stopColor={entry.fill} stopOpacity={1} />
-                                            <stop offset="100%" stopColor={entry.fill} stopOpacity={0.6} />
-                                        </linearGradient>
-                                    ))}
-                                </defs>
-
-                                <CartesianGrid
-                                    strokeDasharray="3 3"
-                                    vertical={false}
-                                    stroke="var(--border)"
-                                    opacity={0.2}
-                                    className="transition-opacity duration-300 group-hover:opacity-40"
-                                />
-
-                                <XAxis
-                                    dataKey="name"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: 'var(--muted-foreground)', fontSize: 11, fontWeight: 500 }}
-                                    dy={10}
-                                    angle={-15}
-                                    textAnchor="end"
-                                    height={60}
-                                />
-
-                                <YAxis
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
-                                    width={40}
-                                />
-
-                                <Tooltip
-                                    cursor={{
-                                        fill: 'rgba(99, 102, 241, 0.1)',
-                                        radius: 8,
-                                    }}
-                                    content={<DepartmentTooltip />}
-                                    animationDuration={300}
-                                    animationEasing="ease-out"
-                                />
-
-                                <Bar
-                                    dataKey="value"
-                                    radius={[8, 8, 0, 0]}
-                                    isAnimationActive={true}
-                                    animationDuration={1000}
-                                >
-                                    {data.map((entry, index) => (
-                                        <Cell
-                                            key={`cell-${index}`}
-                                            fill={entry.fill}
-                                            fillOpacity={0.8}
-                                        />
-                                    ))}
-                                    <LabelList
-                                        dataKey="value"
-                                        position="top"
-                                        className="fill-foreground font-bold"
-                                        fontSize={13}
-                                        dy={-8}
+                                <div className="flex items-end justify-between mb-1">
+                                    <span className="text-xs font-bold text-foreground uppercase tracking-tight">{item.name}</span>
+                                    <span className="text-sm font-black text-primary">{item.value}</span>
+                                </div>
+                                <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden relative">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${(item.value / maxValue) * 100}%` }}
+                                        transition={{ duration: 1, delay: 0.2 + (index * 0.05), ease: "easeOut" }}
+                                        className="h-full rounded-full relative"
+                                        style={{ backgroundColor: item.fill || 'hsl(var(--primary))' }}
+                                    >
+                                        <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" style={{ content: '""' }}></div>
+                                    </motion.div>
+                                </div>
+                                {/* Hover Effect Background */}
+                                {hoveredIndex === index && (
+                                    <motion.div
+                                        layoutId="hoverBg"
+                                        className="absolute -inset-2 bg-secondary/30 rounded-lg -z-10"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
                                     />
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
+                                )}
+                            </motion.div>
+                        ))
                     )}
                 </div>
             </div>
@@ -1276,14 +1204,15 @@ export function DepartmentUserCountChart() {
     );
 }
 
+
 // --- Candidate Turnover Data ---
 const defaultTurnoverData = [
     { name: "Jan", hires: 10, rejections: 5 },
-    { name: "Feb", hires: 15, rejections: 8 },
+    { name: "Fév", hires: 15, rejections: 8 },
     { name: "Mar", hires: 8, rejections: 12 },
-    { name: "Apr", hires: 12, rejections: 7 },
-    { name: "May", hires: 20, rejections: 10 },
-    { name: "Jun", hires: 18, rejections: 9 },
+    { name: "Avr", hires: 12, rejections: 7 },
+    { name: "Mai", hires: 20, rejections: 10 },
+    { name: "Juin", hires: 18, rejections: 9 },
 ];
 
 export function TurnoverChart({ data = defaultTurnoverData }: { data?: any[] }) {
@@ -1456,6 +1385,110 @@ export function TurnoverChart({ data = defaultTurnoverData }: { data?: any[] }) 
             {/* Background decorative blob */}
             <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
             <div className="absolute -right-20 -top-20 w-64 h-64 bg-rose-500/5 rounded-full blur-[100px] pointer-events-none" />
+        </div>
+    );
+}
+
+// --- Results Analysis Chart (Funnel) ---
+export function ResultsAnalysisChart({ data }: { data: any[] }) {
+    const COLORS = ["#10b981", "#2563eb", "#0d9488", "#3b82f6", "#1e40af"];
+
+    return (
+        <div className="bg-card text-card-foreground p-6 rounded-[1.5rem] shadow-sm border border-border/50 h-[400px] flex flex-col">
+            <h3 className="text-lg font-bold text-foreground mb-6">Analyse des résultats</h3>
+            <div className="flex-1 w-full min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                        data={data}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                        barSize={60}
+                    >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                        <XAxis
+                            dataKey="name"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                            interval={0}
+                        />
+                        <Tooltip cursor={{ fill: 'transparent' }} content={<CustomTooltip />} />
+                        <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                            {data.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                            <LabelList
+                                dataKey="value"
+                                position="top"
+                                className="fill-foreground font-bold text-sm"
+                                offset={10}
+                            />
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
+}
+
+// --- Velocity Chart (Dual Area) ---
+export function VelocityChart({ data }: { data: any[] }) {
+    return (
+        <div className="bg-card text-card-foreground p-6 rounded-[1.5rem] shadow-sm border border-border/50 h-[400px] flex flex-col">
+            <h3 className="text-lg font-bold text-foreground mb-6">Vélocité des candidatures</h3>
+            <div className="flex-1 w-full min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                        data={data}
+                        margin={{ top: 20, right: 30, left: 10, bottom: 0 }}
+                    >
+                        <defs>
+                            <linearGradient id="colorReceived" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id="colorProcessed" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#1e40af" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#1e40af" stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                        <XAxis
+                            dataKey="name"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                        />
+                        <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Area
+                            type="monotone"
+                            dataKey="received"
+                            stroke="#3b82f6"
+                            strokeWidth={3}
+                            fillOpacity={1}
+                            fill="url(#colorReceived)"
+                            dot={{ r: 4, fill: "#3b82f6", strokeWidth: 2, stroke: "white" }}
+                        >
+                            <LabelList dataKey="received" position="top" offset={10} className="fill-foreground font-bold text-xs" />
+                        </Area>
+                        <Area
+                            type="monotone"
+                            dataKey="processed"
+                            stroke="#1e3a8a" // Darker blue
+                            strokeWidth={3}
+                            fillOpacity={1}
+                            fill="url(#colorProcessed)"
+                            dot={{ r: 4, fill: "#1e3a8a", strokeWidth: 2, stroke: "white" }}
+                        >
+                            <LabelList dataKey="processed" position="top" offset={10} className="fill-foreground font-bold text-xs" />
+                        </Area>
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
         </div>
     );
 }

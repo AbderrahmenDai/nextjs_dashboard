@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { MoreHorizontal, Search, Plus, Pencil, Trash2, Building2, Users, X, ChevronDown, Check } from "lucide-react";
+import { MoreHorizontal, Search, Plus, Pencil, Trash2, Building2, Users, X, ChevronDown } from "lucide-react";
 import * as Icons from "lucide-react";
 import { clsx } from "clsx";
 import { useState, useEffect } from "react";
@@ -92,7 +92,7 @@ function DepartmentFormModal({
                             <Building2 className="w-5 h-5" />
                         </div>
                         <h2 className="text-2xl font-bold text-white tracking-tight">
-                            {department ? "Edit Department" : "New Department"}
+                            {department ? "Modifier le Département" : "Nouveau Département"}
                         </h2>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-all relative z-10">
@@ -104,43 +104,43 @@ function DepartmentFormModal({
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Department Name</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Nom du Département</label>
                             <input
                                 required
                                 type="text"
                                 value={formData.name || ""}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 className="input-field"
-                                placeholder="e.g. Engineering"
+                                placeholder="ex. Ingénierie"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Head of Department Email</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Email du Responsable</label>
                             <input
                                 type="email"
                                 value={formData.headEmail || ""}
                                 onChange={(e) => setFormData({ ...formData, headEmail: e.target.value })}
                                 className="input-field"
-                                placeholder="e.g. john.doe@example.com"
+                                placeholder="ex. john.doe@example.com"
                             />
-                            <p className="text-[10px] text-muted-foreground mt-1">If the email exists, the user becomes the head. Leave empty to remove head.</p>
+                            <p className="text-[10px] text-muted-foreground mt-1">Si l&apos;email existe, l&apos;utilisateur devient responsable. Laisser vide pour retirer.</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Location</label>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Emplacement</label>
                                 <input
                                     required
                                     type="text"
                                     value={formData.location || ""}
                                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                                     className="input-field"
-                                    placeholder="e.g. Building A"
+                                    placeholder="ex. Bâtiment A"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Budget ($)</label>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Budget (TND)</label>
                                 <input
                                     required
                                     type="number"
@@ -169,22 +169,22 @@ function DepartmentFormModal({
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Status</label>
+                                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Statut</label>
                                 <select
                                     value={formData.status}
                                     onChange={(e) => setFormData({ ...formData, status: e.target.value as Department["status"] })}
                                     className="input-field appearance-none"
                                 >
-                                    <option value="Active">Active</option>
-                                    <option value="Restructuring">Restructuring</option>
-                                    <option value="Inactive">Inactive</option>
+                                    <option value="Active">Actif</option>
+                                    <option value="Restructuring">Restructuration</option>
+                                    <option value="Inactive">Inactif</option>
                                 </select>
                             </div>
                         </div>
 
                         {/* Icon Selection */}
                         <div className="relative">
-                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Icon</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Icône</label>
                             <button
                                 type="button"
                                 onClick={() => setIsIconDropdownOpen(!isIconDropdownOpen)}
@@ -198,7 +198,7 @@ function DepartmentFormModal({
                                     </div>
 
                                     <span className="text-sm font-medium">
-                                        {formData.icon || "Select Icon"}
+                                        {formData.icon || "Sélectionner une icône"}
                                     </span>
                                 </div>
                                 <ChevronDown size={16} className="opacity-50" />
@@ -231,7 +231,7 @@ function DepartmentFormModal({
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Color Theme</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Thème Couleur</label>
                             <div className="flex gap-2 flex-wrap bg-secondary/30 p-3 rounded-xl border border-border/50">
                                 {[
                                     "bg-blue-500", "bg-pink-500", "bg-orange-500", "bg-purple-500",
@@ -255,7 +255,7 @@ function DepartmentFormModal({
 
                         {/* Optional Logo URL */}
                         <div>
-                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Logo URL (Optional Image)</label>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">URL du Logo (Optionnel)</label>
                             <input
                                 type="text"
                                 value={formData.logoUrl || ""}
@@ -272,13 +272,13 @@ function DepartmentFormModal({
                                 onClick={onClose}
                                 className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors font-medium text-sm"
                             >
-                                Cancel
+                                Annuler
                             </button>
                             <button
                                 type="submit"
                                 className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium shadow-lg shadow-primary/20 transition-all text-sm"
                             >
-                                {department ? "Save Changes" : "Create Department"}
+                                {department ? "Enregistrer" : "Créer le Département"}
                             </button>
                         </div>
                     </form>
@@ -332,13 +332,13 @@ export default function DepartmentsPage() {
     });
 
     const handleDelete = async (id: string) => {
-        if (confirm("Are you sure you want to delete this department?")) {
+        if (confirm("Êtes-vous sûr de vouloir supprimer ce département ?")) {
             try {
                 await api.deleteDepartment(id);
                 setDepartments(departments.filter(d => d.id !== id));
             } catch (error) {
                 console.error("Failed to delete", error);
-                alert("Failed to delete department");
+                alert("Échec de la suppression du département");
             }
         }
     }
@@ -356,7 +356,7 @@ export default function DepartmentsPage() {
             setEditingDept(null);
         } catch (error: any) {
             console.error("Failed to save", error);
-            const message = error.response?.data?.message || "Failed to save department";
+            const message = error.response?.data?.message || "Échec de l'enregistrement du département";
             alert(message);
         }
     }
@@ -388,13 +388,13 @@ export default function DepartmentsPage() {
             }
         } catch (error) {
             console.error("Failed to update budget", error);
-            alert("Failed to update budget");
+            alert("Échec de la mise à jour du budget");
         }
         setEditingBudgetId(null);
     }
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
+        return new Intl.NumberFormat('fr-FR', { style: 'decimal', maximumFractionDigits: 0 }).format(amount) + ' TND';
     }
 
     const getChildrenCount = (siteId: string) => departments.filter(d => d.siteId === siteId).length;
@@ -416,9 +416,14 @@ export default function DepartmentsPage() {
 
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-foreground tracking-tight">Organization & Sites</h1>
-                        <p className="text-muted-foreground mt-1">Manage sites, departments, and allocate budgets.</p>
+                    <div className="pl-1">
+                        <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 shadow-sm">
+                                <Building2 className="w-6 h-6 text-primary" />
+                            </div>
+                            Organisation & Sites
+                        </h1>
+                        <p className="text-muted-foreground mt-2 ml-14 font-medium">Gérez les sites, les départements et allouez les budgets.</p>
                     </div>
 
                     {/* Site Switcher */}
@@ -431,7 +436,7 @@ export default function DepartmentsPage() {
                             )}
                             style={{ opacity: selectedSiteId === "All" ? 1 : 0.6 }}
                         >
-                            All Sites
+                            Tous les Sites
                         </button>
                         {sites.map(site => (
                             <button
@@ -470,16 +475,16 @@ export default function DepartmentsPage() {
                                     <div className="flex items-center gap-6 text-sm text-muted-foreground mt-4">
                                         <div className="flex items-center gap-2">
                                             <Building2 size={16} className="text-primary" />
-                                            <span>{getChildrenCount(site.id)} Departments</span>
+                                            <span>{getChildrenCount(site.id)} Départements</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Users size={16} className="text-primary" />
-                                            <span>{departments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.employeeCount, 0)} Employees</span>
+                                            <span>{departments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.employeeCount, 0)} Employés</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Total Budget</p>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Budget Total</p>
                                     {editingBudgetId === `site-${site.id}` ? (
                                         <div className="flex items-center gap-2">
                                             <input
@@ -506,7 +511,7 @@ export default function DepartmentsPage() {
                             {/* Budget Progress Bar */}
                             <div className="mt-8">
                                 <div className="flex justify-between text-xs mb-2 font-medium">
-                                    <span className="text-muted-foreground uppercase tracking-wider">Budget Allocated</span>
+                                    <span className="text-muted-foreground uppercase tracking-wider">Budget Alloué</span>
                                     <span className="text-foreground">{Math.round((departments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.budget, 0) / site.budget) * 100)}%</span>
                                 </div>
                                 <div className="w-full h-3 bg-secondary rounded-full overflow-hidden shadow-inner">
@@ -528,7 +533,7 @@ export default function DepartmentsPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                         <input
                             type="text"
-                            placeholder="Search departments..."
+                            placeholder="Rechercher des départements..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="input-field pl-10 bg-card border-border shadow-sm hover:border-primary/30 focus:border-primary/50"
@@ -539,7 +544,7 @@ export default function DepartmentsPage() {
                         className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all shadow-lg shadow-primary/25 font-bold text-sm tracking-wide active:scale-95"
                     >
                         <Plus size={18} strokeWidth={2.5} />
-                        <span>NEW DEPARTMENT</span>
+                        <span>NOUVEAU DÉPARTEMENT</span>
                     </button>
                 </div>
 
@@ -577,10 +582,10 @@ export default function DepartmentsPage() {
 
                                 <div className="space-y-3 py-3 border-t border-dashed border-border mt-1">
                                     <div className="flex justify-between items-center text-sm group/row hover:bg-secondary/30 p-1.5 rounded-lg transition-colors -mx-1.5">
-                                        <span className="text-muted-foreground font-medium">Head</span>
+                                        <span className="text-muted-foreground font-medium">Directeur</span>
                                         <span className="text-foreground font-semibold flex flex-col items-end">
                                             <div className="flex items-center gap-2">
-                                                {dept.head || "Not Assigned"}
+                                                {dept.head || "Non assigné"}
                                                 <Users size={14} className="text-primary/70" />
                                             </div>
                                             {dept.headEmail && (
@@ -589,7 +594,7 @@ export default function DepartmentsPage() {
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm group/row hover:bg-secondary/30 p-1.5 rounded-lg transition-colors -mx-1.5">
-                                        <span className="text-muted-foreground font-medium">Employees</span>
+                                        <span className="text-muted-foreground font-medium">Employés</span>
                                         <span className="text-foreground font-semibold bg-secondary px-2 py-0.5 rounded text-xs border border-border">{dept.employeeCount}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm group/row hover:bg-secondary/30 p-1.5 rounded-lg transition-colors -mx-1.5">

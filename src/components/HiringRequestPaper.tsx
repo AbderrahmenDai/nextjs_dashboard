@@ -263,7 +263,7 @@ function InfoItem({ label, value, icon, className }: { label: string, value?: an
                 {icon && <span className="print:hidden">{icon}</span>}
                 {label}
             </span>
-            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 print:text-[10px] print:leading-tight">{value}</span>
+            <span className="text-sm font-semibold text-gray-900 print:text-[10px] print:leading-tight">{value}</span>
         </div>
     );
 }

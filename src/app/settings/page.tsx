@@ -77,9 +77,14 @@ export default function SettingsPage() {
     return (
         <DashboardLayout>
             <div className="max-w-4xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-white tracking-tight">Settings</h1>
-                    <p className="text-muted-foreground mt-1">Manage your account settings and preferences.</p>
+                <div className="mb-8 pl-1">
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 shadow-sm">
+                            <SettingsIcon className="w-6 h-6 text-primary" />
+                        </div>
+                        Paramètres
+                    </h1>
+                    <p className="text-muted-foreground mt-2 ml-14 font-medium">Gérez vos préférences et paramètres de compte.</p>
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-8">
@@ -92,8 +97,8 @@ export default function SettingsPage() {
                                 className={clsx(
                                     "flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left",
                                     activeTab === tab.id
-                                        ? "bg-primary/20 text-primary font-medium border border-primary/20"
-                                        : "text-muted-foreground hover:bg-white/5 hover:text-white"
+                                        ? "bg-primary/10 text-primary font-bold border border-primary/20 shadow-sm"
+                                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                                 )}
                             >
                                 <tab.icon size={18} />
@@ -113,9 +118,11 @@ export default function SettingsPage() {
                                 transition={{ duration: 0.2 }}
                             >
                                 {activeTab === 'profile' && (
-                                    <div className="glass-card p-6 rounded-2xl border border-white/10">
-                                        <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-                                            <User size={20} className="text-primary" />
+                                    <div className="glass-card p-6 rounded-2xl border border-border/50 shadow-sm">
+                                        <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+                                            <div className="p-2 bg-primary/10 rounded-lg">
+                                                <User size={20} className="text-primary" />
+                                            </div>
                                             Profile Information
                                         </h2>
                                         <form onSubmit={handleProfileUpdate} className="space-y-4">
@@ -125,7 +132,7 @@ export default function SettingsPage() {
                                                     type="text"
                                                     value={profileData.name}
                                                     onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary/50"
+                                                    className="w-full bg-secondary/30 border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
                                                 />
                                             </div>
                                             <div>
@@ -134,12 +141,12 @@ export default function SettingsPage() {
                                                     type="email"
                                                     value={profileData.email}
                                                     onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary/50"
+                                                    className="w-full bg-secondary/30 border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
                                                 />
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-muted-foreground mb-1">Status</label>
-                                                <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                                                <div className="flex bg-secondary/30 p-1 rounded-xl border border-border">
                                                     {(["Active", "In Meeting", "Offline"] as const).map((status) => (
                                                         <button
                                                             key={status}
@@ -148,8 +155,8 @@ export default function SettingsPage() {
                                                             className={clsx(
                                                                 "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all",
                                                                 profileData.status === status
-                                                                    ? "bg-primary text-white shadow-sm"
-                                                                    : "text-muted-foreground hover:text-white"
+                                                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                                                    : "text-muted-foreground hover:text-foreground"
                                                             )}
                                                         >
                                                             {status}
@@ -171,9 +178,11 @@ export default function SettingsPage() {
                                 )}
 
                                 {activeTab === 'security' && (
-                                    <div className="glass-card p-6 rounded-2xl border border-white/10">
-                                        <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-                                            <Lock size={20} className="text-primary" />
+                                    <div className="glass-card p-6 rounded-2xl border border-border/50 shadow-sm">
+                                        <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+                                            <div className="p-2 bg-primary/10 rounded-lg">
+                                                <Lock size={20} className="text-primary" />
+                                            </div>
                                             Change Password
                                         </h2>
                                         <form onSubmit={handlePasswordUpdate} className="space-y-4">
@@ -183,7 +192,7 @@ export default function SettingsPage() {
                                                     type="password"
                                                     value={passwordData.newPassword}
                                                     onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary/50"
+                                                    className="w-full bg-secondary/30 border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
                                                 />
                                             </div>
                                             <div>
@@ -192,7 +201,7 @@ export default function SettingsPage() {
                                                     type="password"
                                                     value={passwordData.confirmPassword}
                                                     onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary/50"
+                                                    className="w-full bg-secondary/30 border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
                                                 />
                                             </div>
                                             <div className="pt-4">
@@ -209,10 +218,12 @@ export default function SettingsPage() {
                                 )}
 
                                 {activeTab === 'preferences' && (
-                                    <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-8">
+                                    <div className="glass-card p-6 rounded-2xl border border-border/50 shadow-sm space-y-8">
                                         <div>
-                                            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-                                                <SettingsIcon size={20} className="text-primary" />
+                                            <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+                                                <div className="p-2 bg-primary/10 rounded-lg">
+                                                    <SettingsIcon size={20} className="text-primary" />
+                                                </div>
                                                 App Preferences
                                             </h2>
 
@@ -226,8 +237,8 @@ export default function SettingsPage() {
                                                             className={clsx(
                                                                 "flex-1 p-4 rounded-xl border transition-all flex flex-col items-center gap-2",
                                                                 theme === 'light'
-                                                                    ? "bg-primary/20 border-primary text-primary"
-                                                                    : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
+                                                                    ? "bg-primary/10 border-primary text-primary shadow-sm"
+                                                                    : "bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                                                             )}
                                                         >
                                                             <Sun size={24} />
@@ -238,8 +249,8 @@ export default function SettingsPage() {
                                                             className={clsx(
                                                                 "flex-1 p-4 rounded-xl border transition-all flex flex-col items-center gap-2",
                                                                 theme === 'dark'
-                                                                    ? "bg-primary/20 border-primary text-primary"
-                                                                    : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
+                                                                    ? "bg-primary/10 border-primary text-primary shadow-sm"
+                                                                    : "bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                                                             )}
                                                         >
                                                             <Moon size={24} />
@@ -257,8 +268,8 @@ export default function SettingsPage() {
                                                             className={clsx(
                                                                 "p-4 rounded-xl border transition-all flex flex-col items-center gap-2",
                                                                 language === 'en'
-                                                                    ? "bg-primary/20 border-primary text-primary"
-                                                                    : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
+                                                                    ? "bg-primary/10 border-primary text-primary shadow-sm"
+                                                                    : "bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                                                             )}
                                                         >
                                                             <span className="text-2xl">🇺🇸</span>
@@ -269,8 +280,8 @@ export default function SettingsPage() {
                                                             className={clsx(
                                                                 "p-4 rounded-xl border transition-all flex flex-col items-center gap-2",
                                                                 language === 'fr'
-                                                                    ? "bg-primary/20 border-primary text-primary"
-                                                                    : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
+                                                                    ? "bg-primary/10 border-primary text-primary shadow-sm"
+                                                                    : "bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                                                             )}
                                                         >
                                                             <span className="text-2xl">🇫🇷</span>

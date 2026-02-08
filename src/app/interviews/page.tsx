@@ -90,9 +90,14 @@ export default function InterviewsPage() {
     return (
         <DashboardLayout>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Interviews</h1>
-                    <p className="text-muted-foreground mt-1">Manage and track interview progress and results.</p>
+                <div className="pl-1">
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 shadow-sm">
+                            <CalendarIcon className="w-6 h-6 text-primary" />
+                        </div>
+                        Entretiens
+                    </h1>
+                    <p className="text-muted-foreground mt-2 ml-14 font-medium">Gérez et suivez le processus et les résultats des entretiens.</p>
                 </div>
             </div>
 
