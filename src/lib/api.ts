@@ -36,8 +36,8 @@ export const api = {
         }
     },
 
-    getUsers: async () => {
-        const response = await fetch(`${API_BASE_URL}/users`);
+    getUsers: async (page = 1, limit = 10) => {
+        const response = await fetch(`${API_BASE_URL}/users?page=${page}&limit=${limit}`);
         if (!response.ok) throw new Error('Failed to fetch users');
         return response.json();
     },
@@ -84,8 +84,12 @@ export const api = {
     },
 
     // --- DEPARTMENTS ---
-    getDepartments: async () => {
-        const response = await fetch(`${API_BASE_URL}/departments`);
+    getDepartments: async (page?: number, limit?: number) => {
+        let url = `${API_BASE_URL}/departments`;
+        if (page && limit) {
+            url += `?page=${page}&limit=${limit}`;
+        }
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch departments');
         return response.json();
     },
@@ -216,8 +220,12 @@ export const api = {
     },
 
     // --- HIRING REQUESTS ---
-    getHiringRequests: async () => {
-        const response = await fetch(`${API_BASE_URL}/hiring-requests`);
+    getHiringRequests: async (page?: number, limit?: number) => {
+        let url = `${API_BASE_URL}/hiring-requests`;
+        if (page && limit) {
+            url += `?page=${page}&limit=${limit}`;
+        }
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch hiring requests');
         return response.json();
     },

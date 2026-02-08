@@ -5,8 +5,11 @@ const notificationService = require('../services/notificationService');
 const db = require('../config/db'); // Needed to query users by role
 
 const getHiringRequests = asyncHandler(async (req, res) => {
-    const items = await hiringRequestService.getAllHiringRequests();
-    res.json(items);
+    const page = req.query.page ? parseInt(req.query.page) : null;
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    
+    const result = await hiringRequestService.getAllHiringRequests(page, limit);
+    res.json(result);
 });
 
 const getHiringRequest = asyncHandler(async (req, res) => {
@@ -41,20 +44,19 @@ const createHiringRequest = asyncHandler(async (req, res) => {
 
     const userRole = requester[0].roleName;
     
-    // Allow DEMANDEUR and Responsable RH
-    const allowedRoles = ['DEMANDEUR', 'Responsable RH'];
-    if (!allowedRoles.includes(userRole)) {
-        res.status(403);
-        throw new Error('Only users with role "DEMANDEUR" or "Responsable RH" can create hiring requests');
-    }
+    // Allow DEMANDEUR and HR Roles
+
 
     // 2. Determine Workflow
     let initialStatus = 'Pending HR';
     let targetApprovers = [];
     const { site } = req.body;
 
-    if (userRole === 'Responsable RH') {
-        // --- Responsable RH Workflow ---
+    // Check if user is an HR role (Responsable RH matches legacy, plus new roles)
+    const isHrRole = ['Responsable RH', 'human resources', 'RESPONSABLE_RECRUTEMENT'].includes(userRole);
+
+    if (isHrRole) {
+        // --- HR Workflow ---
         // Step 1: Notify "Directeur RH" -> Status: "Pending HR Director"
         initialStatus = 'Pending HR Director';
         const [hrDirectors] = await db.query(

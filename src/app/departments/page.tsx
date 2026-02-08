@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { MoreHorizontal, Search, Plus, Pencil, Trash2, Building2, Users, X, ChevronDown } from "lucide-react";
+import { MoreHorizontal, Search, Plus, Pencil, Trash2, Building2, Users, X, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import * as Icons from "lucide-react";
 import { clsx } from "clsx";
 import { useState, useEffect } from "react";
@@ -303,13 +303,27 @@ export default function DepartmentsPage() {
     const [editingDept, setEditingDept] = useState<Department | null>(null);
 
     // --- On Mount Data Fetch ---
-    const loadData = async () => {
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 1
+    });
+
+    const loadData = async (page = 1) => {
         try {
-            const [depts, sitesData] = await Promise.all([
-                api.getDepartments(),
+            const [deptsResponse, sitesData] = await Promise.all([
+                api.getDepartments(page, 10),
                 api.getSites()
             ]);
-            setDepartments(depts);
+
+            if (deptsResponse.pagination) {
+                setDepartments(deptsResponse.data);
+                setPagination(deptsResponse.pagination);
+            } else {
+                setDepartments(Array.isArray(deptsResponse) ? deptsResponse : []);
+            }
+
             setSites(sitesData);
         } catch (error) {
             console.error("Failed to load data:", error);
@@ -319,6 +333,12 @@ export default function DepartmentsPage() {
     useEffect(() => {
         loadData();
     }, []);
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= pagination.totalPages) {
+            loadData(newPage);
+        }
+    };
 
     const filteredDepts = departments.filter(dept => {
         const matchesSearch =
@@ -646,7 +666,33 @@ export default function DepartmentsPage() {
                         );
                     })}
                 </div>
+
+
+                {/* Pagination Controls */}
+                {pagination.totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-4 mt-8 pb-8">
+                        <button
+                            onClick={() => handlePageChange(pagination.page - 1)}
+                            disabled={pagination.page === 1}
+                            className="p-2 rounded-xl bg-card border border-border/50 shadow-sm hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+
+                        <span className="text-sm font-bold text-muted-foreground">
+                            Page {pagination.page} sur {pagination.totalPages}
+                        </span>
+
+                        <button
+                            onClick={() => handlePageChange(pagination.page + 1)}
+                            disabled={pagination.page === pagination.totalPages}
+                            className="p-2 rounded-xl bg-card border border-border/50 shadow-sm hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
+                )}
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }

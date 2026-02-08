@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Lock, Search, Filter, Plus, Pencil, Trash2, X, AlertTriangle, Loader2, User as UserIcon } from "lucide-react";
+import { Lock, Search, Filter, Plus, Pencil, Trash2, X, AlertTriangle, Loader2, User as UserIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { clsx } from "clsx";
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -36,6 +36,7 @@ interface Role {
     id: string;
     name: string;
     description?: string;
+    departmentId?: string;
 }
 
 // --- Password Change Modal ---
@@ -340,6 +341,12 @@ function UserFormModal({
         }, []);
     }, [filteredDepartments]);
 
+    // Filter roles based on selected departmentId
+    const filteredRoles = useMemo(() => {
+        if (!formData.departmentId) return [];
+        return roles.filter(role => role.departmentId === formData.departmentId);
+    }, [roles, formData.departmentId]);
+
     if (!isOpen) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -348,8 +355,8 @@ function UserFormModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-start pt-20 justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
-            <div className="modal-card w-full max-w-lg p-0 shadow-2xl animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+            <div className="modal-card w-full max-w-lg p-0 shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
                 {/* Header with improved contrast */}
                 <div className="px-6 py-6 gradient-premium flex justify-between items-center relative overflow-hidden">
                     <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
@@ -419,15 +426,23 @@ function UserFormModal({
 
                     <div>
                         <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Poste</label>
-                        <input
+                        <select
                             required
-                            type="text"
-                            maxLength={50}
-                            value={formData.role || ""}
-                            onChange={(e) => setFormData({ ...formData, role: e.target.value, roleId: "" })}
-                            className="input-field"
-                            placeholder="ex: Comptable"
-                        />
+                            value={formData.roleId || (roles.find(r => r.name === formData.role)?.id || "")}
+                            onChange={(e) => {
+                                const selectedRole = roles.find(r => r.id === e.target.value);
+                                if (selectedRole) {
+                                    setFormData({ ...formData, role: selectedRole.name, roleId: selectedRole.id });
+                                }
+                            }}
+                            className="input-field appearance-none cursor-pointer"
+                            disabled={!formData.departmentId}
+                        >
+                            <option value="">Sélectionner un poste</option>
+                            {filteredRoles.map(role => (
+                                <option key={role.id} value={role.id}>{role.name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     {/* Site Selection */}
@@ -437,7 +452,7 @@ function UserFormModal({
                             value={selectedSiteId}
                             onChange={(e) => {
                                 setSelectedSiteId(e.target.value);
-                                setFormData(prev => ({ ...prev, departmentId: "" })); // Reset dept
+                                setFormData(prev => ({ ...prev, departmentId: "", role: "", roleId: "" })); // Reset dept
                             }}
                             className="input-field appearance-none cursor-pointer"
                         >
@@ -452,7 +467,7 @@ function UserFormModal({
                         <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Département</label>
                         <select
                             value={formData.departmentId || ""}
-                            onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+                            onChange={(e) => setFormData({ ...formData, departmentId: e.target.value, role: "", roleId: "" })}
                             className="input-field appearance-none cursor-pointer"
                         >
                             {departments.length === 0 && <option value="">Chargement...</option>}
@@ -498,28 +513,43 @@ export default function UsersPage() {
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [passwordChangeUser, setPasswordChangeUser] = useState<User | null>(null);
     const [deleteUser, setDeleteUser] = useState<User | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
-    // --- Fetch Users on Mount ---
-    const loadData = async () => {
+    // --- Fetch Metadata on Mount ---
+    const loadMetadata = async () => {
         try {
-            const [usersData, departmentsData, rolesData, sitesData] = await Promise.all([
-                api.getUsers(),
+            const [departmentsData, rolesData, sitesData] = await Promise.all([
                 api.getDepartments(),
                 api.getRoles(),
                 api.getSites()
             ]);
-            setUsers(usersData);
             setDepartments(departmentsData);
             setRoles(rolesData);
             setSites(sitesData);
         } catch (error) {
-            console.error("Failed to load data:", error);
+            console.error("Failed to load metadata:", error);
+        }
+    };
+
+    // --- Fetch Users on Page Change ---
+    const loadUsers = async () => {
+        try {
+            const data = await api.getUsers(currentPage, 10);
+            setUsers(data.users);
+            setTotalPages(data.totalPages);
+        } catch (error) {
+            console.error("Failed to load users:", error);
         }
     };
 
     useEffect(() => {
-        loadData();
+        loadMetadata();
     }, []);
+
+    useEffect(() => {
+        loadUsers();
+    }, [currentPage]);
 
     const filteredUsers = users.filter(user => {
         const matchesSearch =
@@ -811,6 +841,26 @@ export default function UsersPage() {
                         <h3 className="text-xl font-black text-foreground mb-1">Aucun utilisateur trouvé</h3>
                         <p className="font-medium">Essayez d&apos;ajuster vos filtres de recherche.</p>
                     </motion.div>
+                )}
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-4 mt-8 pb-8">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                        >
+                            <ChevronLeft className="w-6 h-6" />
+                        </button>
+                        <span className="font-bold text-lg">Page {currentPage} sur {totalPages}</span>
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                        >
+                            <ChevronRight className="w-6 h-6" />
+                        </button>
+                    </div>
                 )}
             </div>
         </DashboardLayout >

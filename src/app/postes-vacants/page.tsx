@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { Briefcase, Calendar, MapPin, Users, Clock, TrendingUp, Filter, Search, Eye, CheckCircle, XCircle, AlertCircle, X, Plus } from "lucide-react";
+import { Briefcase, Calendar, MapPin, Users, Clock, TrendingUp, Filter, Search, Eye, CheckCircle, XCircle, AlertCircle, X, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { CreateVacancyModal } from "@/components/CreateVacancyModal";
 
 interface HiringRequest {
@@ -72,16 +72,34 @@ export default function PostesVacantsPage() {
         init();
     }, []);
 
-    const loadPositions = async () => {
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 1
+    });
+
+    const loadPositions = async (page = 1) => {
         try {
-            const data = await api.getHiringRequests();
-            if (Array.isArray(data)) {
-                setPositions(data);
+            setLoading(true);
+            const response = await api.getHiringRequests(page, 10);
+
+            if (response.pagination) {
+                setPositions(response.data);
+                setPagination(response.pagination);
+            } else {
+                setPositions(Array.isArray(response) ? response : []);
             }
         } catch (error) {
             console.error("Failed to load positions:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= pagination.totalPages) {
+            loadPositions(newPage);
         }
     };
 
@@ -367,134 +385,162 @@ export default function PostesVacantsPage() {
                 </div>
             )}
 
-            {/* Detail Modal */}
-            {selectedPosition && mounted && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
-                    <div
-                        className="modal-card w-full max-w-2xl p-0 overflow-hidden flex flex-col max-h-[90vh] relative animate-in fade-in zoom-in duration-300 shadow-2xl"
-                        onClick={(e) => e.stopPropagation()}
+            {/* Pagination Controls */}
+            {!loading && pagination.totalPages > 1 && (
+                <div className="flex justify-center items-center gap-4 mt-8 pb-8">
+                    <button
+                        onClick={() => handlePageChange(pagination.page - 1)}
+                        disabled={pagination.page === 1}
+                        className="p-2 rounded-xl bg-card border border-border/50 shadow-sm hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
-                        {/* Header with status gradient */}
-                        <div className={`px-6 py-6 bg-gradient-to-br ${getStatusColor(selectedPosition.status)} relative overflow-hidden`}>
-                            <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
-                            <div className="flex justify-between items-start relative z-10">
-                                <div>
-                                    <h2 className="text-3xl font-bold text-white mb-2 uppercase tracking-tight">{selectedPosition.title}</h2>
-                                    <div className="flex gap-2">
-                                        <span className="px-3 py-1 bg-white/20 text-white rounded-xl text-xs font-bold backdrop-blur-md uppercase border border-white/30 shadow-inner">
-                                            {selectedPosition.status}
-                                        </span>
-                                        <span className="px-3 py-1 bg-white/20 text-white rounded-xl text-xs font-bold backdrop-blur-md uppercase border border-white/30">
-                                            {selectedPosition.category}
-                                        </span>
-                                    </div>
-                                </div>
-                                <button onClick={() => setSelectedPosition(null)} className="p-2 hover:bg-white/10 text-white hover:text-white/80 rounded-xl transition-all">
-                                    <X size={24} />
-                                </button>
-                            </div>
-                        </div>
+                        <ChevronLeft size={20} />
+                    </button>
 
-                        {/* Content */}
-                        <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 text-gray-900">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                    <div className="flex items-center gap-2 text-blue-600 mb-2">
-                                        <Users className="w-5 h-5" />
-                                        <span className="text-xs uppercase font-bold text-gray-500">Département</span>
-                                    </div>
-                                    <p className="text-gray-900 font-semibold">{selectedPosition.departmentName || 'Non assigné'}</p>
-                                </div>
+                    <span className="text-sm font-bold text-muted-foreground">
+                        Page {pagination.page} sur {pagination.totalPages}
+                    </span>
 
-                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                    <div className="flex items-center gap-2 text-purple-600 mb-2">
-                                        <Briefcase className="w-5 h-5" />
-                                        <span className="text-xs uppercase font-bold text-gray-500">Type de contrat</span>
-                                    </div>
-                                    <p className="text-gray-900 font-semibold">{selectedPosition.contractType || 'Non spécifié'}</p>
-                                </div>
+                    <button
+                        onClick={() => handlePageChange(pagination.page + 1)}
+                        disabled={pagination.page === pagination.totalPages}
+                        className="p-2 rounded-xl bg-card border border-border/50 shadow-sm hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                        <ChevronRight size={20} />
+                    </button>
+                </div>
+            )
+            }
 
-                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                    <div className="flex items-center gap-2 text-green-600 mb-2">
-                                        <MapPin className="w-5 h-5" />
-                                        <span className="text-xs uppercase font-bold text-gray-500">Site</span>
+            {/* Detail Modal */}
+            {
+                selectedPosition && mounted && createPortal(
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+                        <div
+                            className="modal-card w-full max-w-2xl p-0 overflow-hidden flex flex-col max-h-[90vh] relative animate-in fade-in zoom-in duration-300 shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Header with status gradient */}
+                            <div className={`px-6 py-6 bg-gradient-to-br ${getStatusColor(selectedPosition.status)} relative overflow-hidden`}>
+                                <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
+                                <div className="flex justify-between items-start relative z-10">
+                                    <div>
+                                        <h2 className="text-3xl font-bold text-white mb-2 uppercase tracking-tight">{selectedPosition.title}</h2>
+                                        <div className="flex gap-2">
+                                            <span className="px-3 py-1 bg-white/20 text-white rounded-xl text-xs font-bold backdrop-blur-md uppercase border border-white/30 shadow-inner">
+                                                {selectedPosition.status}
+                                            </span>
+                                            <span className="px-3 py-1 bg-white/20 text-white rounded-xl text-xs font-bold backdrop-blur-md uppercase border border-white/30">
+                                                {selectedPosition.category}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <p className="text-gray-900 font-semibold">{selectedPosition.site || 'Non spécifié'}</p>
-                                </div>
-
-                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                    <div className="flex items-center gap-2 text-yellow-600 mb-2">
-                                        <Calendar className="w-5 h-5" />
-                                        <span className="text-xs uppercase font-bold text-gray-500">Date souhaitée</span>
-                                    </div>
-                                    <p className="text-gray-900 font-semibold">
-                                        {selectedPosition.desiredStartDate ? new Date(selectedPosition.desiredStartDate).toLocaleDateString() : 'Non spécifiée'}
-                                    </p>
+                                    <button onClick={() => setSelectedPosition(null)} className="p-2 hover:bg-white/10 text-white hover:text-white/80 rounded-xl transition-all">
+                                        <X size={24} />
+                                    </button>
                                 </div>
                             </div>
 
-                            {selectedPosition.description && (
-                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                    <h4 className="text-sm uppercase font-bold text-gray-500 mb-2">Description</h4>
-                                    <p className="text-gray-700 text-sm leading-relaxed">{selectedPosition.description}</p>
-                                </div>
-                            )}
+                            {/* Content */}
+                            <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 text-gray-900">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                        <div className="flex items-center gap-2 text-blue-600 mb-2">
+                                            <Users className="w-5 h-5" />
+                                            <span className="text-xs uppercase font-bold text-gray-500">Département</span>
+                                        </div>
+                                        <p className="text-gray-900 font-semibold">{selectedPosition.departmentName || 'Non assigné'}</p>
+                                    </div>
 
-                            {selectedPosition.educationRequirements && (
-                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                    <h4 className="text-sm uppercase font-bold text-gray-500 mb-2">Formation requise</h4>
-                                    <p className="text-gray-700 text-sm leading-relaxed">{selectedPosition.educationRequirements}</p>
-                                </div>
-                            )}
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                        <div className="flex items-center gap-2 text-purple-600 mb-2">
+                                            <Briefcase className="w-5 h-5" />
+                                            <span className="text-xs uppercase font-bold text-gray-500">Type de contrat</span>
+                                        </div>
+                                        <p className="text-gray-900 font-semibold">{selectedPosition.contractType || 'Non spécifié'}</p>
+                                    </div>
 
-                            {selectedPosition.skillsRequirements && (
-                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                    <h4 className="text-sm uppercase font-bold text-gray-500 mb-2">Compétences requises</h4>
-                                    <p className="text-gray-700 text-sm leading-relaxed">{selectedPosition.skillsRequirements}</p>
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                        <div className="flex items-center gap-2 text-green-600 mb-2">
+                                            <MapPin className="w-5 h-5" />
+                                            <span className="text-xs uppercase font-bold text-gray-500">Site</span>
+                                        </div>
+                                        <p className="text-gray-900 font-semibold">{selectedPosition.site || 'Non spécifié'}</p>
+                                    </div>
+
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                        <div className="flex items-center gap-2 text-yellow-600 mb-2">
+                                            <Calendar className="w-5 h-5" />
+                                            <span className="text-xs uppercase font-bold text-gray-500">Date souhaitée</span>
+                                        </div>
+                                        <p className="text-gray-900 font-semibold">
+                                            {selectedPosition.desiredStartDate ? new Date(selectedPosition.desiredStartDate).toLocaleDateString() : 'Non spécifiée'}
+                                        </p>
+                                    </div>
                                 </div>
-                            )}
+
+                                {selectedPosition.description && (
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                        <h4 className="text-sm uppercase font-bold text-gray-500 mb-2">Description</h4>
+                                        <p className="text-gray-700 text-sm leading-relaxed">{selectedPosition.description}</p>
+                                    </div>
+                                )}
+
+                                {selectedPosition.educationRequirements && (
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                        <h4 className="text-sm uppercase font-bold text-gray-500 mb-2">Formation requise</h4>
+                                        <p className="text-gray-700 text-sm leading-relaxed">{selectedPosition.educationRequirements}</p>
+                                    </div>
+                                )}
+
+                                {selectedPosition.skillsRequirements && (
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                        <h4 className="text-sm uppercase font-bold text-gray-500 mb-2">Compétences requises</h4>
+                                        <p className="text-gray-700 text-sm leading-relaxed">{selectedPosition.skillsRequirements}</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Footer with Action Buttons */}
+                            <div className="p-4 bg-gray-50 border-t border-gray-100">
+                                {((selectedPosition.status === 'Pending HR' || selectedPosition.status === 'Pending Manager') && canAct(selectedPosition.status)) ? (
+                                    <div className="flex gap-3 justify-end">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleReject(selectedPosition.id);
+                                            }}
+                                            className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-lg font-medium transition-all hover:scale-105 hover:shadow-lg hover:shadow-red-500/50 flex items-center gap-2"
+                                        >
+                                            <XCircle className="w-5 h-5" />
+                                            Rejeter
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleApprove(selectedPosition.id, selectedPosition.status);
+                                            }}
+                                            className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-lg font-medium transition-all hover:scale-105 hover:shadow-lg hover:shadow-green-500/50 flex items-center gap-2"
+                                        >
+                                            <CheckCircle className="w-5 h-5" />
+                                            Approuver
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex justify-end">
+                                        <button
+                                            onClick={() => setSelectedPosition(null)}
+                                            className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-lg font-medium transition-all hover:scale-105"
+                                        >
+                                            Fermer
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-
-                        {/* Footer with Action Buttons */}
-                        <div className="p-4 bg-gray-50 border-t border-gray-100">
-                            {((selectedPosition.status === 'Pending HR' || selectedPosition.status === 'Pending Manager') && canAct(selectedPosition.status)) ? (
-                                <div className="flex gap-3 justify-end">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleReject(selectedPosition.id);
-                                        }}
-                                        className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-lg font-medium transition-all hover:scale-105 hover:shadow-lg hover:shadow-red-500/50 flex items-center gap-2"
-                                    >
-                                        <XCircle className="w-5 h-5" />
-                                        Rejeter
-                                    </button>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleApprove(selectedPosition.id, selectedPosition.status);
-                                        }}
-                                        className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-lg font-medium transition-all hover:scale-105 hover:shadow-lg hover:shadow-green-500/50 flex items-center gap-2"
-                                    >
-                                        <CheckCircle className="w-5 h-5" />
-                                        Approuver
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="flex justify-end">
-                                    <button
-                                        onClick={() => setSelectedPosition(null)}
-                                        className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-lg font-medium transition-all hover:scale-105"
-                                    >
-                                        Fermer
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
+                    </div>,
+                    document.body
+                )
+            }
             <CreateVacancyModal
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
@@ -502,6 +548,6 @@ export default function PostesVacantsPage() {
                 sites={sites}
                 departments={departments}
             />
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }

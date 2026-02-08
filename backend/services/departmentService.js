@@ -2,18 +2,46 @@ const db = require('../config/db');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { v4: uuidv4 } = require('uuid');
 
-// Get all departments
-const getAllDepartments = async () => {
+const getAllDepartments = async (page, limit) => {
+    // If no pagination params, return all (formatted with employee count)
+    if (!page || !limit) {
+        const [rows] = await db.query(`
+            SELECT d.*, 
+            (SELECT COUNT(*) FROM User u WHERE u.departmentId = d.id) as calculatedEmployees
+            FROM Department d
+            ORDER BY d.name
+        `);
+        return rows.map(r => ({
+            ...r,
+            employeeCount: r.calculatedEmployees
+        }));
+    }
+
+    const offset = (page - 1) * limit;
+
+    // Get total count
+    const [countResult] = await db.query('SELECT COUNT(*) as total FROM Department');
+    const total = countResult[0].total;
+
     const [rows] = await db.query(`
         SELECT d.*, 
         (SELECT COUNT(*) FROM User u WHERE u.departmentId = d.id) as calculatedEmployees
         FROM Department d
-    `);
+        LIMIT ? OFFSET ?
+    `, [parseInt(limit), parseInt(offset)]);
     
-    return rows.map(r => ({
-        ...r,
-        employeeCount: r.calculatedEmployees // Ensure frontend gets the fresh count
-    }));
+    return {
+        data: rows.map(r => ({
+            ...r,
+            employeeCount: r.calculatedEmployees
+        })),
+        pagination: {
+            total,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(total / limit)
+        }
+    };
 };
 
 // Create department

@@ -1,7 +1,31 @@
 const db = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 
-const getAllHiringRequests = async () => {
+const getAllHiringRequests = async (page, limit) => {
+    // If no pagination params, return all
+    if (!page || !limit) {
+        const sql = `
+            SELECT 
+                hr.*, 
+                d.name as departmentName, 
+                u.name as requesterName,
+                app.name as approverName
+            FROM HiringRequest hr
+            LEFT JOIN Department d ON hr.departmentId = d.id
+            LEFT JOIN User u ON hr.requesterId = u.id
+            LEFT JOIN User app ON hr.approverId = app.id
+            ORDER BY hr.createdAt DESC
+        `;
+        const [rows] = await db.query(sql);
+        return rows;
+    }
+
+    const offset = (page - 1) * limit;
+
+    // Get total count
+    const [countResult] = await db.query('SELECT COUNT(*) as total FROM HiringRequest');
+    const total = countResult[0].total;
+
     // Join with Department and User for names
     const sql = `
         SELECT 
@@ -14,9 +38,19 @@ const getAllHiringRequests = async () => {
         LEFT JOIN User u ON hr.requesterId = u.id
         LEFT JOIN User app ON hr.approverId = app.id
         ORDER BY hr.createdAt DESC
+        LIMIT ? OFFSET ?
     `;
-    const [rows] = await db.query(sql);
-    return rows;
+    const [rows] = await db.query(sql, [parseInt(limit), parseInt(offset)]);
+    
+    return {
+        data: rows,
+        pagination: {
+            total,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(total / limit)
+        }
+    };
 };
 
 const getHiringRequestById = async (id) => {

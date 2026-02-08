@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Plus, Search, Filter, FileText, Edit, Trash2, Eye, X, Printer, Check, XCircle, UserPlus } from "lucide-react";
+import { Plus, Search, Filter, FileText, Edit, Trash2, Eye, X, Printer, Check, XCircle, UserPlus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -44,6 +44,7 @@ interface HiringRequest {
     selectedCandidates?: string[]; // IDs of selected candidates
     approverName?: string;
     approvedAt?: string;
+    requestDate?: string;
 }
 
 interface Site {
@@ -178,7 +179,7 @@ function RequestModal({
         return createPortal(
             <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm p-4 md:p-8">
                 <div className="min-h-full flex items-center justify-center">
-                    <HiringRequestPaper request={request} onClose={onClose} />
+                    <HiringRequestPaper request={request as any} onClose={onClose} />
                 </div>
             </div>,
             document.body
@@ -580,6 +581,13 @@ export default function HiringRequestsPage() {
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [isViewOnly, setIsViewOnly] = useState(false);
 
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 1
+    });
+
     // Handle URL actions and filters
     useEffect(() => {
         const viewId = searchParams.get('view');
@@ -599,16 +607,23 @@ export default function HiringRequestsPage() {
         }
     }, [searchParams, requests]);
 
-    const loadData = async () => {
+    const loadData = async (page = 1) => {
         try {
-            const [reqs, depts, sitesData, rolesData, candidatesData] = await Promise.all([
-                api.getHiringRequests(),
-                api.getDepartments(),
+            const [reqsResponse, depts, sitesData, rolesData, candidatesData] = await Promise.all([
+                api.getHiringRequests(page, 10),
+                api.getDepartments(), // Fetch all for dropdowns
                 api.getSites(),
                 api.getRoles(),
                 api.getCandidatures()
             ]);
-            setRequests(reqs);
+
+            if (reqsResponse.pagination) {
+                setRequests(reqsResponse.data);
+                setPagination(reqsResponse.pagination);
+            } else {
+                setRequests(Array.isArray(reqsResponse) ? reqsResponse : []);
+            }
+
             setDepartments(depts);
             setSites(sitesData);
             setAllRoles(rolesData);
@@ -621,6 +636,12 @@ export default function HiringRequestsPage() {
     useEffect(() => {
         loadData();
     }, []);
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= pagination.totalPages) {
+            loadData(newPage);
+        }
+    };
 
     const { user } = useAuth(); // Get user from auth context
 
@@ -1157,6 +1178,31 @@ export default function HiringRequestsPage() {
                         </div>
                     )}
                 </motion.div>
+
+                {/* Pagination Controls */}
+                {pagination.totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-4 mt-8">
+                        <button
+                            onClick={() => handlePageChange(pagination.page - 1)}
+                            disabled={pagination.page === 1}
+                            className="p-2 rounded-xl bg-card border border-border/50 shadow-sm hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+
+                        <span className="text-sm font-bold text-muted-foreground">
+                            Page {pagination.page} sur {pagination.totalPages}
+                        </span>
+
+                        <button
+                            onClick={() => handlePageChange(pagination.page + 1)}
+                            disabled={pagination.page === pagination.totalPages}
+                            className="p-2 rounded-xl bg-card border border-border/50 shadow-sm hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
+                )}
             </div>
         </DashboardLayout>
     );

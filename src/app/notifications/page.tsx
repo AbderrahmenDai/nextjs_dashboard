@@ -93,9 +93,9 @@ export default function NotificationsPage() {
                 const role = user.role; // Assuming role name matches DB role name exactly or close enough logic needed
                 // Roles from DB: HR_MANAGER, PLANT_MANAGER
 
-                if (role === 'HR_MANAGER' || role === 'RESPONSABLE_RH') {
+                if (role === 'HR_MANAGER' || role === 'RESPONSABLE_RH' || role === 'Directeur RH') {
                     newStatus = 'Pending Director';
-                } else if (role === 'PLANT_MANAGER' || role === 'DIRECTION' || role === 'ADMIN') {
+                } else if (['PLANT_MANAGER', 'DIRECTION', 'ADMIN', 'Plant Manager', 'Direction'].includes(role)) {
                     newStatus = 'Approved';
                 } else {
                     alert("You do not have permission to approve.");
@@ -427,14 +427,12 @@ export default function NotificationsPage() {
             )}
             {/* View Request Details Modal - Portal */}
             {viewingRequest && mounted && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-hidden animate-in fade-in duration-200">
-                    <div className="w-full h-full flex items-center justify-center p-1 md:p-4">
-                        <div className="w-full max-h-full overflow-y-auto flex justify-center custom-scrollbar p-2">
-                            <HiringRequestPaper
-                                request={viewingRequest}
-                                onClose={() => setViewingRequest(null)}
-                            />
-                        </div>
+                <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="min-h-full flex items-center justify-center p-4">
+                        <HiringRequestPaper
+                            request={viewingRequest}
+                            onClose={() => setViewingRequest(null)}
+                        />
                     </div>
                 </div>,
                 document.body

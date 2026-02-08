@@ -5,8 +5,11 @@ const asyncHandler = require('express-async-handler');
 // @route   GET /api/departments
 // @access  Public
 const getDepartments = asyncHandler(async (req, res) => {
-    const departments = await departmentService.getAllDepartments();
-    res.json(departments);
+    const page = req.query.page ? parseInt(req.query.page) : null;
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    
+    const result = await departmentService.getAllDepartments(page, limit);
+    res.json(result);
 });
 
 // @desc    Create department

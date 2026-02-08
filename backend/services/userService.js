@@ -4,7 +4,14 @@ const bcrypt = require('bcryptjs');
 const emailService = require('./emailService');
 
 // Get all users
-const getAllUsers = async () => {
+// Get all users with pagination
+const getAllUsers = async (page = 1, limit = 10) => {
+    const offset = (page - 1) * limit;
+
+    // Get total count
+    const [countResult] = await db.query('SELECT COUNT(*) as total FROM User');
+    const total = countResult[0].total;
+
     // Join with Department, Role, and Site (via Department)
     const [rows] = await db.query(`
         SELECT User.*, 
@@ -15,11 +22,12 @@ const getAllUsers = async () => {
         LEFT JOIN Department ON User.departmentId = Department.id
         LEFT JOIN Site ON Department.siteId = Site.id
         LEFT JOIN Role ON User.roleId = Role.id
-    `);
+        LIMIT ? OFFSET ?
+    `, [Number(limit), Number(offset)]);
     
     
     // Transform to match frontend expected structure
-    return rows.map(u => {
+    const users = rows.map(u => {
         const transformed = {
             id: u.id,
             name: u.name,
@@ -35,6 +43,13 @@ const getAllUsers = async () => {
         // Don't send password to frontend
         return transformed;
     });
+
+    return {
+        users,
+        total,
+        page: Number(page),
+        totalPages: Math.ceil(total / limit)
+    };
 };
 
 // Create user (signup)
