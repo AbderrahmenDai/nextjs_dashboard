@@ -109,7 +109,7 @@ function RequestModal({
             title: "",
             departmentId: "",
             category: "Cadre",
-            status: "Pending HR",
+            status: "Pending Responsable RH",
             contractType: "CDI",
             priority: "Medium",
             increaseType: "Budgeted",
@@ -156,10 +156,17 @@ function RequestModal({
 
     const filteredRoles = useMemo(() => {
         if (formData.departmentId) {
-            return allRoles.filter(r => r.departmentId === formData.departmentId);
+            const selectedDept = departments.find(d => d.id === formData.departmentId);
+            if (selectedDept) {
+                // Filter by departmentName (cross-site) OR specific departmentId
+                return allRoles.filter(r =>
+                    (r as any).departmentName === selectedDept.name ||
+                    r.departmentId === formData.departmentId
+                );
+            }
         }
         return [];
-    }, [formData.departmentId, allRoles]);
+    }, [formData.departmentId, allRoles, departments]);
 
 
     useEffect(() => {
@@ -518,8 +525,8 @@ function RequestModal({
                                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                                     className="bg-card border border-border rounded text-xs px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                                 >
-                                    <option value="Pending HR">Pending HR</option>
-                                    <option value="Pending Director">Pending Director</option>
+                                    <option value="Pending Responsable RH">Pending Responsable RH</option>
+                                    <option value="Pending Plant Manager">Pending Plant Manager</option>
                                     <option value="Approved">Approved</option>
                                     <option value="Rejected">Rejected</option>
                                 </select>
@@ -566,6 +573,7 @@ function RequestModal({
 export default function HiringRequestsPage() {
     const { t } = useLanguage();
     const router = useRouter();
+    const { user, isLoading } = useAuth(); // Single declaration
     const searchParams = useSearchParams();
     const [requests, setRequests] = useState<HiringRequest[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
@@ -607,10 +615,15 @@ export default function HiringRequestsPage() {
         }
     }, [searchParams, requests]);
 
+
+
     const loadData = async (page = 1) => {
         try {
+            // Filter strictly for DEMANDEUR
+            const requesterId = user?.role === 'DEMANDEUR' ? user.id : undefined;
+
             const [reqsResponse, depts, sitesData, rolesData, candidatesData] = await Promise.all([
-                api.getHiringRequests(page, 10),
+                api.getHiringRequests(page, 10, requesterId),
                 api.getDepartments(), // Fetch all for dropdowns
                 api.getSites(),
                 api.getRoles(),
@@ -633,9 +646,13 @@ export default function HiringRequestsPage() {
         }
     };
 
+
+
     useEffect(() => {
-        loadData();
-    }, []);
+        if (!isLoading) {
+            loadData();
+        }
+    }, [isLoading, user?.id]);
 
     const handlePageChange = (newPage: number) => {
         if (newPage >= 1 && newPage <= pagination.totalPages) {
@@ -643,7 +660,7 @@ export default function HiringRequestsPage() {
         }
     };
 
-    const { user } = useAuth(); // Get user from auth context
+
 
     const handleCreate = async (data: Partial<HiringRequest>) => {
         try {
@@ -697,9 +714,12 @@ export default function HiringRequestsPage() {
             let newStatus = '';
 
             // Determine next status based on current status and user role
-            if (request.status === 'Pending HR' && user.role === 'HR_MANAGER') {
-                newStatus = 'Pending Director';
-            } else if (request.status === 'Pending Director' && user.role === 'PLANT_MANAGER') {
+            // Updated to match new workflow statuses
+            if (request.status === 'Pending Responsable RH' && (user.role === 'HR_MANAGER' || user.role === 'Responsable RH')) {
+                newStatus = 'Pending Plant Manager';
+            } else if (request.status === 'Pending HR Director' && (user.role === 'Directeur RH' || user.role === 'DRH')) {
+                newStatus = 'Pending Plant Manager';
+            } else if (request.status === 'Pending Plant Manager' && (user.role === 'PLANT_MANAGER' || user.role === 'Plant Manager' || user.role === 'Direction')) {
                 newStatus = 'Approved';
             } else {
                 alert("Vous n'avez pas la permission d'approuver cette demande à cette étape.");

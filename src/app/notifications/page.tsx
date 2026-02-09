@@ -89,16 +89,28 @@ export default function NotificationsPage() {
                 setIsRejectModalOpen(true);
                 return;
             } else if (action === 'APPROVE') {
-                // Determine status based on User Role
-                const role = user.role; // Assuming role name matches DB role name exactly or close enough logic needed
-                // Roles from DB: HR_MANAGER, PLANT_MANAGER
+                const role = (user.role || '').toUpperCase();
 
-                if (role === 'HR_MANAGER' || role === 'RESPONSABLE_RH' || role === 'Directeur RH') {
-                    newStatus = 'Pending Director';
-                } else if (['PLANT_MANAGER', 'DIRECTION', 'ADMIN', 'Plant Manager', 'Direction'].includes(role)) {
+                // 1. HR / DRH Roles -> Transition to 'Pending Plant Manager'
+                if (
+                    role.includes('HR_MANAGER') ||
+                    role.includes('RESPONSABLE RH') ||
+                    role.includes('DIRECTEUR RH') ||
+                    role.includes('DRH') ||
+                    role.includes('HR_DIRECTOR')
+                ) {
+                    newStatus = 'Pending Plant Manager';
+                }
+                // 2. Plant Manager / Direction -> Transition to 'Approved'
+                else if (
+                    role.includes('PLANT_MANAGER') ||
+                    role.includes('PLANT MANAGER') ||
+                    role.includes('DIRECTION') ||
+                    role.includes('ADMIN')
+                ) {
                     newStatus = 'Approved';
                 } else {
-                    alert("You do not have permission to approve.");
+                    alert(`You (Role: ${user.role}) do not have permission to approve.`);
                     return;
                 }
             }

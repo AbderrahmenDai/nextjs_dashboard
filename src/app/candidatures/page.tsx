@@ -61,12 +61,13 @@ interface Department {
 
 interface User {
     id: string;
-    firstName: string;
-    lastName: string;
+    name: string; // API returns 'name'
+    firstName?: string;
+    lastName?: string;
     email: string;
     role: string;
     dept?: string;
-    department?: string; // Handle potential naming variations
+    department?: string;
 }
 
 const initialFormState: Candidature = {
@@ -245,15 +246,14 @@ export default function CandidaturesPage() {
 
     const openDetails = async (cand: Candidature) => {
         setSelectedCandidature(cand);
-        // Find users in the same department to be interviewers
+        // Find users to be interviewers
         try {
-            // We need a way to get users by dept. For now, let's just get ALL users and filter client-side 
-            // since we don't have a specific endpoint for it yet, or we can assume getAllUsers returns everyone.
-            const users = await api.getUsers();
-            console.log(users);
-            const deptUsers = users.filter((u: User) => u.dept === cand.department || u.role === 'Direction' || u.role === 'Responsable RH' || u.role === "HR_MANAGER" || u.role === "RECRUITER" || u.role === "DIRECTOR");
-            console.log(deptUsers);
-            setPotentialInterviewers(deptUsers);
+            // Get all users (limit 1000 to ensure we get everyone for the dropdown)
+            const response = await api.getUsers(1, 1000);
+            const allUsers = response.users || []; // Extract 'users' array from response object
+            // User requested "list of all the user", so we populate with all users.
+            // We can sort them by name for better UX.
+            setPotentialInterviewers(allUsers.sort((a: User, b: User) => a.name.localeCompare(b.name)));
         } catch (error) {
             console.error("Failed to load interviewers", error);
         }
@@ -767,7 +767,7 @@ export default function CandidaturesPage() {
                                                     >
                                                         <option value="">{t('candidature.interviewer')}</option>
                                                         {potentialInterviewers.map(u => (
-                                                            <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                                                            <option key={u.id} value={u.id}>{u.name} ({u.role} - {u.department || 'N/A'})</option>
                                                         ))}
                                                     </select>
                                                 </div>

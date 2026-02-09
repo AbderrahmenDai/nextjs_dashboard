@@ -1,10 +1,10 @@
 const db = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 
-const getAllHiringRequests = async (page, limit) => {
-    // If no pagination params, return all
+const getAllHiringRequests = async (page, limit, requesterId = null) => {
+    // If no pagination params, return all (with optional filter)
     if (!page || !limit) {
-        const sql = `
+        let sql = `
             SELECT 
                 hr.*, 
                 d.name as departmentName, 
@@ -14,20 +14,32 @@ const getAllHiringRequests = async (page, limit) => {
             LEFT JOIN Department d ON hr.departmentId = d.id
             LEFT JOIN User u ON hr.requesterId = u.id
             LEFT JOIN User app ON hr.approverId = app.id
-            ORDER BY hr.createdAt DESC
         `;
-        const [rows] = await db.query(sql);
+        const params = [];
+        if (requesterId) {
+             sql += ` WHERE hr.requesterId = ?`;
+             params.push(requesterId);
+        }
+        sql += ` ORDER BY hr.createdAt DESC`;
+        
+        const [rows] = await db.query(sql, params);
         return rows;
     }
 
     const offset = (page - 1) * limit;
 
     // Get total count
-    const [countResult] = await db.query('SELECT COUNT(*) as total FROM HiringRequest');
+    let countSql = 'SELECT COUNT(*) as total FROM HiringRequest';
+    const countParams = [];
+    if (requesterId) {
+        countSql += ' WHERE requesterId = ?';
+        countParams.push(requesterId);
+    }
+    const [countResult] = await db.query(countSql, countParams);
     const total = countResult[0].total;
 
     // Join with Department and User for names
-    const sql = `
+    let sql = `
         SELECT 
             hr.*, 
             d.name as departmentName, 
@@ -37,10 +49,16 @@ const getAllHiringRequests = async (page, limit) => {
         LEFT JOIN Department d ON hr.departmentId = d.id
         LEFT JOIN User u ON hr.requesterId = u.id
         LEFT JOIN User app ON hr.approverId = app.id
-        ORDER BY hr.createdAt DESC
-        LIMIT ? OFFSET ?
     `;
-    const [rows] = await db.query(sql, [parseInt(limit), parseInt(offset)]);
+    const params = [];
+    if (requesterId) {
+        sql += ` WHERE hr.requesterId = ?`;
+        params.push(requesterId);
+    }
+    sql += ` ORDER BY hr.createdAt DESC LIMIT ? OFFSET ?`;
+    params.push(parseInt(limit), parseInt(offset));
+
+    const [rows] = await db.query(sql, params);
     
     return {
         data: rows,
@@ -77,29 +95,31 @@ const createHiringRequest = async (data) => {
             id, title, departmentId, category, status, requesterId, 
             description, budget, contractType, reason, createdAt,
             site, businessUnit, desiredStartDate, replacementFor, replacementReason,
-            increaseType, increaseDateRange, educationRequirements, skillsRequirements
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            increaseType, increaseDateRange, educationRequirements, skillsRequirements, roleId
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const values = [
         id, 
         data.title, 
-        data.departmentId, 
+        data.departmentId || null, 
         data.category, 
         data.status || 'Pending HR', 
-        data.requesterId,
+        data.requesterId || null,
         data.description, 
         data.budget, 
         data.contractType, 
         data.reason,
+        new Date(), // createdAt
         data.site,
         data.businessUnit,
         data.desiredStartDate ? new Date(data.desiredStartDate) : null,
-        data.replacementFor,
-        data.replacementReason,
+        data.replacementFor || null,
+        data.replacementReason || null,
         data.increaseType,
         data.increaseDateRange,
         data.educationRequirements,
-        data.skillsRequirements
+        data.skillsRequirements,
+        data.roleId || null
     ];
 
     await db.query(sql, values);

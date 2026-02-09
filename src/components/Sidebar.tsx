@@ -90,7 +90,7 @@ export function Sidebar() {
                             // If no user, show nothing
                             if (!user) return false;
 
-                            // DEMANDEUR: Limited access
+                            // DEMANDEUR: Limited access (Create Requests, Notifications, Settings)
                             if (user.role === 'DEMANDEUR') {
                                 return ['/hiring-requests', '/notifications', '/settings'].includes(item.href);
                             }
@@ -100,7 +100,7 @@ export function Sidebar() {
                                 return ['/hiring-requests', '/notifications', '/settings', '/'].includes(item.href);
                             }
 
-                            // Restrict Users/Roles management to HR_MANAGER and RECRUITMENT_MANAGER
+                            // Restrict Users/Roles management to HR_MANAGER, RECRUITMENT_MANAGER, D.RH
                             if (['/users', '/roles'].includes(item.href)) {
                                 return ['HR_MANAGER', 'RECRUITMENT_MANAGER', 'D.RH'].includes(user.role);
                             }

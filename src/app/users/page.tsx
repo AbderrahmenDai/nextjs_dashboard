@@ -20,6 +20,7 @@ interface User {
     site?: string;
     status: "Active" | "Offline" | "In Meeting";
     avatarGradient: string;
+    post?: string;
 }
 
 interface Site {
@@ -38,6 +39,70 @@ interface Role {
     description?: string;
     departmentId?: string;
 }
+
+// --- Constants ---
+const DEPARTMENT_POSTS: Record<string, string[]> = {
+    "Ressources Humaines": [
+        "Directeur RH", "Responsable RH", "Responsable Communication et Formation",
+        "Responsable développement et recrutement", "HRBP", "Responsable Paie",
+        "Assistant RH", "Chargé Formation et juridique", "Cordinateur RH", "Chargé RH"
+    ],
+    "HSE": [
+        "Responsable HSE", "Superviseur HSE", "Aide Soignant", "Infirmier"
+    ],
+    "Finance": [
+        "Responsable comptabilité", "Responsable Finance", "Comptable Senior",
+        "Assistant Controleur de Gestion", "Controleur de Gestion", "Comptable Junior", "Comptable", "Responsable Flux & Magasin"
+    ],
+    "Achats": [
+        "Responsable Achat", "Acheteur Senior", "Acheteur Junior",
+        "Responsable Approv", "Approvisionneur"
+    ],
+    "Qualité": [
+        "Responsable Qualité", "Pilote Qualité UAP", "Responsable AQF",
+        "Ingénieur AQF", "Technicen Qualité système", "Responsable Qualité système",
+        "Pilote Qualité Client"
+    ],
+    "Indus & Amélioration Continue": [
+        "Responsable Indus & Amélioration Continue", "Responsable méthode & Amelioration continue",
+        "Chef Projet Indus", "Ingénieur Process", "Technicien Indus & Process",
+        "Tech CAO", "Chef Projet Cost", "Pilote Sprint", "Key User SAP", "Ingénieur Méthode",
+        "Plant Manager"
+    ],
+    "Production": [
+        "Responsable Production", "Responsable UAP Confection",
+        "Responsable UAP Coupe", "Superviseur Confection", "Superviseur Coupe",
+        "Planificateur Prod"
+    ],
+    "Supply Chain": [
+        "Responsable Supply Chain", "Responsable Planification & Contact Client",
+        "PIC-PDP", "Responsable Flux & Magasin", "Planifiacteur et Contact Client",
+        "Planificateur Prod", "Superviseur Magasin"
+    ],
+    "Direction": [
+        "Plant Manager", "Directeur RH"
+    ]
+};
+
+// Helper: Normalize department name for matching
+const getPostsForDepartment = (deptName?: string) => {
+    if (!deptName) return [];
+
+    // Direct match
+    if (DEPARTMENT_POSTS[deptName]) return DEPARTMENT_POSTS[deptName];
+
+    // Fuzzy match keys
+    const entries = Object.entries(DEPARTMENT_POSTS);
+    for (const [key, posts] of entries) {
+        // Check if deptName includes key (e.g. "Department Production" includes "Production")
+        // or key includes deptName.
+        if (deptName.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(deptName.toLowerCase())) {
+            return posts;
+        }
+    }
+
+    return [];
+};
 
 // --- Password Change Modal ---
 function PasswordChangeModal({
@@ -286,20 +351,26 @@ function UserFormModal({
         role: "Demandeur", // Default fallback
         departmentId: "",
         status: "Active",
-        avatarGradient: "from-gray-500 to-slate-500"
+        avatarGradient: "from-gray-500 to-slate-500",
+        post: ""
     });
     const [selectedSiteId, setSelectedSiteId] = useState("");
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(user || {
+            setFormData(user ? {
+                ...user,
+                post: user.post || ""
+            } : {
                 name: "",
                 email: "",
                 password: "",
-                role: roles.length > 0 ? roles[0].name : "Demandeur",
+                role: "Demandeur",
+                roleId: roles.find(r => r.name === "Demandeur")?.id || "",
                 departmentId: departments.length > 0 ? departments[0].id : "",
                 status: "Active",
-                avatarGradient: "from-gray-500 to-slate-500"
+                avatarGradient: "from-gray-500 to-slate-500",
+                post: ""
             });
             // Try to set site from user's department or site
             if (user?.department) {
@@ -340,12 +411,6 @@ function UserFormModal({
             }
         }, []);
     }, [filteredDepartments]);
-
-    // Filter roles based on selected departmentId
-    const filteredRoles = useMemo(() => {
-        if (!formData.departmentId) return [];
-        return roles.filter(role => role.departmentId === formData.departmentId);
-    }, [roles, formData.departmentId]);
 
     if (!isOpen) return null;
 
@@ -406,6 +471,36 @@ function UserFormModal({
                             </div>
                         </div>
 
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide ml-1">Intitulé du Poste</label>
+                        <div className="relative group">
+                            <UserIcon className="absolute left-3 top-3.5 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                            <select
+                                value={formData.post || ""}
+                                onChange={(e) => setFormData({ ...formData, post: e.target.value })}
+                                className="input-field pl-10 bg-secondary/30 focus:bg-background transition-all appearance-none cursor-pointer"
+                                disabled={!formData.departmentId}
+                            >
+                                <option value="">
+                                    {formData.departmentId ? "Sélectionner un poste" : "Veuillez d'abord sélectionner un département"}
+                                </option>
+
+                                {/* Get department name from the departments list using ID */}
+                                {(() => {
+                                    const selectedDept = departments.find(d => d.id === formData.departmentId);
+                                    const posts = getPostsForDepartment(selectedDept?.name);
+
+                                    return posts.map((postName: string) => (
+                                        <option key={postName} value={postName}>{postName}</option>
+                                    ));
+                                })()}
+
+                                {/* Fallback for current post if valid */}
+                                {formData.post && (
+                                    <option className="bg-secondary/10" value={formData.post}>{formData.post}</option>
+                                )}
+                            </select>
+                        </div>
+
                         {!user && (
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide ml-1">Mot de Passe</label>
@@ -425,23 +520,35 @@ function UserFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Poste</label>
+                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-1.5">Rôle (Accès)</label>
                         <select
                             required
-                            value={formData.roleId || (roles.find(r => r.name === formData.role)?.id || "")}
+                            value={formData.roleId || ""}
                             onChange={(e) => {
-                                const selectedRole = roles.find(r => r.id === e.target.value);
+                                const roleId = e.target.value;
+                                const selectedRole = roles.find(r => r.id === roleId);
                                 if (selectedRole) {
                                     setFormData({ ...formData, role: selectedRole.name, roleId: selectedRole.id });
                                 }
                             }}
                             className="input-field appearance-none cursor-pointer"
-                            disabled={!formData.departmentId}
                         >
-                            <option value="">Sélectionner un poste</option>
-                            {filteredRoles.map(role => (
-                                <option key={role.id} value={role.id}>{role.name}</option>
-                            ))}
+                            <option value="">Sélectionner un rôle</option>
+                            {/* Display only the 5 system roles if found in the roles list, or all if needed? 
+                                User requested specifically these 5 roles. We try to find them in the `roles` prop. 
+                            */}
+                            {["Responsable RH", "Responsable Recrutement", "Plant Manager", "Demandeur", "DRH"].map(roleName => {
+                                // Find the role in the available roles (case-insensitive)
+                                const r = roles.find(dbRole => dbRole.name.toLowerCase() === roleName.toLowerCase());
+                                if (r) {
+                                    return <option key={r.id} value={r.id}>{r.name}</option>;
+                                }
+                                return null;
+                            })}
+                            {/* Fallback: if current user has a role NOT in the list, show it */}
+                            {formData.role && !["Responsable RH", "Responsable Recrutement", "Plant Manager", "Demandeur", "DRH"].includes(formData.role) && (
+                                <option value={formData.roleId}>{formData.role}</option>
+                            )}
                         </select>
                     </div>
 
@@ -787,6 +894,7 @@ export default function UsersPage() {
                                                 {user.id === '3' && <span className="text-[10px] bg-blue-200 text-blue-700 px-2 py-0.5 rounded border border-blue-300 font-black">ME</span>}
                                             </h3>
                                             <p className="text-sm text-muted-foreground font-medium truncate">{user.email}</p>
+                                            {user.post && <p className="text-xs font-bold text-primary/80 uppercase tracking-wider mt-1">{user.post}</p>}
                                         </div>
 
                                         <div className="flex flex-wrap items-center gap-3 py-4 border-y border-border/40">

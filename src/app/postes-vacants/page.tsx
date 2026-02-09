@@ -50,8 +50,9 @@ export default function PostesVacantsPage() {
     const canAct = (status: string) => {
         if (!user) return false;
         if (user.role === 'Admin') return true;
-        if (status === 'Pending HR' && user.role === 'HR') return true;
-        if (status === 'Pending Manager' && user.role === 'Manager') return true;
+        if (status === 'Pending Responsable RH' && (user.role === 'HR' || user.role === 'Responsable RH')) return true;
+        if (status === 'Pending HR Director' && (user.role === 'Directeur RH' || user.role === 'DRH')) return true;
+        if (status === 'Pending Plant Manager' && (user.role === 'Manager' || user.role === 'Plant Manager' || user.role === 'Directeur')) return true;
         return false;
     };
 
@@ -108,10 +109,13 @@ export default function PostesVacantsPage() {
         let nextStatus = 'Approved';
         let confirmMessage = 'Êtes-vous sûr de vouloir approuver ce poste?';
 
-        if (currentStatus === 'Pending HR') {
-            nextStatus = 'Pending Manager';
-            confirmMessage = 'Approuver et envoyer au Manager pour validation?';
-        } else if (currentStatus === 'Pending Manager') {
+        if (currentStatus === 'Pending Responsable RH') {
+            nextStatus = 'Pending Plant Manager';
+            confirmMessage = 'Approuver et envoyer au Plant Manager pour validation?';
+        } else if (currentStatus === 'Pending HR Director') {
+            nextStatus = 'Pending Plant Manager';
+            confirmMessage = 'Approuver et envoyer au Plant Manager pour validation?';
+        } else if (currentStatus === 'Pending Plant Manager') {
             nextStatus = 'Approved';
             confirmMessage = 'Approuver définitivement ce poste?';
         }
@@ -123,8 +127,8 @@ export default function PostesVacantsPage() {
             await loadPositions(); // Reload data
             setSelectedPosition(null);
 
-            if (nextStatus === 'Pending Manager') {
-                alert('Poste approuvé par RH. En attente de validation Manager.');
+            if (nextStatus === 'Pending Plant Manager') {
+                alert('Poste approuvé par Responsable RH. En attente de validation Plant Manager.');
             } else {
                 alert('Poste approuvé avec succès!');
             }
@@ -159,8 +163,9 @@ export default function PostesVacantsPage() {
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'Approved': return 'from-green-500 to-emerald-500';
-            case 'Pending HR': return 'from-yellow-500 to-orange-500';
-            case 'Pending Manager': return 'from-blue-500 to-cyan-500';
+            case 'Pending Responsable RH': return 'from-yellow-500 to-orange-500';
+            case 'Pending HR Director': return 'from-yellow-600 to-orange-600';
+            case 'Pending Plant Manager': return 'from-blue-500 to-cyan-500';
             case 'Rejected': return 'from-red-500 to-rose-500';
             default: return 'from-gray-500 to-slate-500';
         }
@@ -291,8 +296,9 @@ export default function PostesVacantsPage() {
                         >
                             <option value="all">Tous les statuts</option>
                             <option value="Approved">Approuvés</option>
-                            <option value="Pending HR">En attente RH</option>
-                            <option value="Pending Manager">En attente Manager</option>
+                            <option value="Pending Responsable RH">En attente Responsable RH</option>
+                            <option value="Pending HR Director">En attente Directeur RH</option>
+                            <option value="Pending Plant Manager">En attente Plant Manager</option>
                             <option value="Rejected">Rejetés</option>
                         </select>
                     </div>
@@ -502,7 +508,7 @@ export default function PostesVacantsPage() {
 
                             {/* Footer with Action Buttons */}
                             <div className="p-4 bg-gray-50 border-t border-gray-100">
-                                {((selectedPosition.status === 'Pending HR' || selectedPosition.status === 'Pending Manager') && canAct(selectedPosition.status)) ? (
+                                {((selectedPosition.status === 'Pending Responsable RH' || selectedPosition.status === 'Pending HR Director' || selectedPosition.status === 'Pending Plant Manager') && canAct(selectedPosition.status)) ? (
                                     <div className="flex gap-3 justify-end">
                                         <button
                                             onClick={(e) => {

@@ -38,7 +38,8 @@ const getAllUsers = async (page = 1, limit = 10) => {
             roleId: u.roleId,
             department: u.departmentName || 'Unassigned',
             site: u.siteName || 'Unassigned',
-            role: u.roleName || u.role || 'Employee' // Fallback to legacy or default
+            role: u.roleName || u.role || 'Employee', // Fallback to legacy or default
+            post: u.post
         };
         // Don't send password to frontend
         return transformed;
@@ -89,8 +90,8 @@ const createUser = async (userData) => {
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
     await db.query(`
-        INSERT INTO User (id, name, email, password, roleId, status, avatarGradient, departmentId)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO User (id, name, email, password, roleId, status, avatarGradient, departmentId, post)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
         id, 
         userData.name, 
@@ -99,7 +100,8 @@ const createUser = async (userData) => {
         roleId,
         userData.status || 'Active', 
         userData.avatarGradient || "from-gray-500 to-slate-500", 
-        departmentId
+        departmentId,
+        userData.post
     ]);
 
     // Send Welcome Email
@@ -148,6 +150,7 @@ const updateUser = async (id, userData) => {
     if (userData.status !== undefined) { updateFields.push('status = ?'); updateValues.push(userData.status); }
     if (departmentId !== undefined) { updateFields.push('departmentId = ?'); updateValues.push(departmentId); }
     if (userData.avatarGradient !== undefined) { updateFields.push('avatarGradient = ?'); updateValues.push(userData.avatarGradient); }
+    if (userData.post !== undefined) { updateFields.push('post = ?'); updateValues.push(userData.post); }
 
     if (updateFields.length > 0) {
         updateValues.push(id);

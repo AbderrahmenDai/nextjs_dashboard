@@ -116,8 +116,8 @@ export const translations = {
       contractType: "Contract Type",
       reason: "Reason",
       description: "Description",
-      pendingHR: "Pending HR",
-      pendingDirector: "Pending Director",
+      pendingResponsableRH: "Pending Responsable RH",
+      pendingPlantManager: "Pending Plant Manager",
       approved: "Approved",
       rejected: "Rejected"
     }
@@ -236,8 +236,8 @@ export const translations = {
       contractType: "Type de Contrat",
       reason: "Raison",
       description: "Description",
-      pendingHR: "En Attente RH",
-      pendingDirector: "En Attente Directeur",
+      pendingResponsableRH: "En Attente Responsable RH",
+      pendingPlantManager: "En Attente Plant Manager",
       approved: "Approuvé",
       rejected: "Rejeté"
     }

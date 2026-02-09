@@ -182,13 +182,13 @@ export function HiringRequestPaper({ request, onClose }: HiringRequestPaperProps
                             </div>
 
                             <div className="my-auto w-full flex justify-center">
-                                {request.status === 'Pending HR' && (
+                                {['Pending HR', 'Pending Responsable RH', 'Pending HR Director'].includes(request.status) && (
                                     <div className="text-center px-4 py-2 bg-yellow-50 border border-yellow-100 rounded-lg print:p-0 print:border-none print:bg-transparent">
                                         <span className="text-sm font-bold text-yellow-700 block print:text-[10px]">En Attente</span>
                                     </div>
                                 )}
 
-                                {['Pending Director', 'Approved'].includes(request.status) && (
+                                {['Pending Director', 'Pending Plant Manager', 'Approved'].includes(request.status) && (
                                     <div className="text-center px-4 py-2 bg-green-50 border border-green-100 rounded-lg transform -rotate-2 print:rotate-0 print:p-0 print:border-none print:bg-transparent">
                                         <span className="text-sm font-bold text-green-700 block uppercase tracking-wide border-2 border-green-600 px-2 py-1 rounded print:text-[10px] print:border print:px-1 print:py-0">Avis Favorable</span>
                                     </div>
@@ -209,11 +209,11 @@ export function HiringRequestPaper({ request, onClose }: HiringRequestPaperProps
                             </div>
 
                             <div className="my-auto w-full flex justify-center">
-                                {request.status === 'Pending HR' && (
+                                {['Pending HR', 'Pending Responsable RH', 'Pending HR Director'].includes(request.status) && (
                                     <span className="text-gray-300 text-xs italic print:text-[9px]">En attente RH</span>
                                 )}
 
-                                {request.status === 'Pending Director' && (
+                                {['Pending Director', 'Pending Plant Manager'].includes(request.status) && (
                                     <div className="text-center px-4 py-2 bg-yellow-50 border border-yellow-100 rounded-lg print:p-0 print:border-none print:bg-transparent">
                                         <span className="text-sm font-bold text-yellow-700 block print:text-[10px]">En Attente</span>
                                     </div>

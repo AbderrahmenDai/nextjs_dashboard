@@ -43,6 +43,7 @@ model User {
   avatarGradient String
   departmentId   String?
   department     Department? @relation(fields: [departmentId], references: [id])
+  post           String?
 
   @@index([departmentId])
   @@index([roleId])

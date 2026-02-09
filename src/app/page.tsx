@@ -72,7 +72,7 @@ export default function Home() {
 
         const safeHiringRequests = Array.isArray(hiringRequests) ? hiringRequests : [];
         const approvedRequests = safeHiringRequests.filter((r: any) => r.status === 'Approved');
-        const openRequests = safeHiringRequests.filter((r: any) => r.status === 'Pending HR' || r.status === 'Pending Director');
+        const openRequests = safeHiringRequests.filter((r: any) => r.status === 'Pending Responsable RH' || r.status === 'Pending Plant Manager');
         const highPriorityOpen = openRequests.filter((r: any) => r.priority === 'High').length;
 
         const safeCandidatures = Array.isArray(candidatures) ? candidatures : [];

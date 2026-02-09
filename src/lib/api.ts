@@ -220,11 +220,15 @@ export const api = {
     },
 
     // --- HIRING REQUESTS ---
-    getHiringRequests: async (page?: number, limit?: number) => {
+    getHiringRequests: async (page?: number, limit?: number, requesterId?: string) => {
         let url = `${API_BASE_URL}/hiring-requests`;
-        if (page && limit) {
-            url += `?page=${page}&limit=${limit}`;
-        }
+        const params = new URLSearchParams();
+        if (page) params.append('page', page.toString());
+        if (limit) params.append('limit', limit.toString());
+        if (requesterId) params.append('requesterId', requesterId);
+        
+        if (params.toString()) url += `?${params.toString()}`;
+        
         const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch hiring requests');
         return response.json();
@@ -245,7 +249,10 @@ export const api = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(request),
         });
-        if (!response.ok) throw new Error('Failed to create hiring request');
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.message || `Failed to create hiring request: ${response.status}`);
+        }
         return response.json();
     },
 
@@ -255,7 +262,10 @@ export const api = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(request),
         });
-        if (!response.ok) throw new Error('Failed to update hiring request');
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.message || 'Failed to update hiring request');
+        }
         return response.json();
     },
 
