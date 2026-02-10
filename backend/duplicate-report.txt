@@ -1,0 +1,46 @@
+Total departments found: 28
+Found 11 sets of duplicate departments:
+
+Name: "production"
+ - ID: 01337f2c-eb8f-4cf8-8c87-d588e539b20b, SiteID: TTG, Users: 8, HiringRequests: 0, Candidatures: N/A
+ - ID: 69e1093d-4499-44e3-9977-a2d76bcf1043, SiteID: TT, Users: 11, HiringRequests: 3, Candidatures: N/A
+
+Name: "hse"
+ - ID: 03dd4098-137e-4b9b-97a5-b180eea72343, SiteID: TTG, Users: 3, HiringRequests: 0, Candidatures: N/A
+ - ID: 45e695f5-71ce-4b55-b005-870b9185a62d, SiteID: TT, Users: 0, HiringRequests: 2, Candidatures: N/A
+
+Name: "ressources huamines"
+ - ID: 13540174-8dd1-4a42-9255-a809bb9e8c48, SiteID: TT, Users: 2, HiringRequests: 0, Candidatures: N/A
+ - ID: 81bc49f2-552c-4deb-bf1c-97b55722d09a, SiteID: TTG, Users: 1, HiringRequests: 0, Candidatures: N/A
+
+Name: "achat"
+ - ID: 3c848aec-0b9c-44dc-97c0-3e8f8068258b, SiteID: TT, Users: 1, HiringRequests: 0, Candidatures: N/A
+ - ID: fc1fb816-b050-4aa0-ac3e-6190b895a3a1, SiteID: TTG, Users: 3, HiringRequests: 0, Candidatures: N/A
+
+Name: "qualité"
+ - ID: 55cee624-c654-4c6a-b5ee-4544c3bbe33f, SiteID: TT, Users: 0, HiringRequests: 2, Candidatures: N/A
+ - ID: 6d2ecd61-c006-4d6f-b715-08646be2185a, SiteID: TTG, Users: 4, HiringRequests: 0, Candidatures: N/A
+
+Name: "supply chain"
+ - ID: 57523e4e-70dd-4bc5-950d-08982795a943, SiteID: TT, Users: 0, HiringRequests: 2, Candidatures: N/A
+ - ID: 9aeca903-fe1d-4f0f-bb49-d3db7e6bb7e3, SiteID: TTG, Users: 9, HiringRequests: 0, Candidatures: N/A
+
+Name: "ressources humaines"
+ - ID: 5e76fc75-9577-4cf6-8693-b20e9126bff6, SiteID: TT, Users: 1, HiringRequests: 6, Candidatures: N/A
+ - ID: f5dab685-9a9c-44e0-a2db-211a4c2e88d2, SiteID: TTG, Users: 3, HiringRequests: 1, Candidatures: N/A
+
+Name: "finance"
+ - ID: 90255ef2-a06c-4ef8-8418-21447bb11716, SiteID: TTG, Users: 9, HiringRequests: 0, Candidatures: N/A
+ - ID: ef0de620-c63d-4aaa-a310-983e632b9adf, SiteID: TT, Users: 4, HiringRequests: 0, Candidatures: N/A
+
+Name: "direction"
+ - ID: 97ec7d0a-4532-4d9c-9253-ff736b8ba03d, SiteID: TT, Users: 2, HiringRequests: 2, Candidatures: N/A
+ - ID: db2a23df-0cc6-44b9-8357-1bd775331824, SiteID: TTG, Users: 1, HiringRequests: 0, Candidatures: N/A
+
+Name: "general"
+ - ID: a99ce8f5-2513-4b42-8a25-86b24734d041, SiteID: TTG, Users: 4, HiringRequests: 0, Candidatures: N/A
+ - ID: ae577472-e44c-4e2d-9058-140c0edc3c12, SiteID: TT, Users: 2, HiringRequests: 2, Candidatures: N/A
+
+Name: "indus & amélioration continue"
+ - ID: ae1fb40f-b961-479d-b6ba-3aefcdcf79b8, SiteID: TT, Users: 1, HiringRequests: 4, Candidatures: N/A
+ - ID: dd8da920-4bd9-41ff-a2ad-e91820a03ea6, SiteID: TTG, Users: 2, HiringRequests: 2, Candidatures: N/A

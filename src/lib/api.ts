@@ -139,8 +139,18 @@ export const api = {
         return response.json();
     },
     // --- CANDIDATURES ---
-    getCandidatures: async () => {
-        const response = await fetch(`${API_BASE_URL}/candidatures`);
+    getCandidatures: async (page?: number, limit?: number, department?: string, search?: string, status?: string) => {
+        let url = `${API_BASE_URL}/candidatures`;
+        const params = new URLSearchParams();
+        if (page) params.append('page', page.toString());
+        if (limit) params.append('limit', limit.toString());
+        if (department) params.append('department', department);
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+        
+        if (params.toString()) url += `?${params.toString()}`;
+
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch candidatures');
         return response.json();
     },
@@ -220,12 +230,15 @@ export const api = {
     },
 
     // --- HIRING REQUESTS ---
-    getHiringRequests: async (page?: number, limit?: number, requesterId?: string) => {
+    getHiringRequests: async (page?: number, limit?: number, requesterId?: string, search?: string, department?: string, site?: string) => {
         let url = `${API_BASE_URL}/hiring-requests`;
         const params = new URLSearchParams();
         if (page) params.append('page', page.toString());
         if (limit) params.append('limit', limit.toString());
         if (requesterId) params.append('requesterId', requesterId);
+        if (search) params.append('search', search);
+        if (department) params.append('department', department);
+        if (site) params.append('site', site);
         
         if (params.toString()) url += `?${params.toString()}`;
         

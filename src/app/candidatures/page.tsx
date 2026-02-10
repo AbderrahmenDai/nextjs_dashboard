@@ -113,6 +113,8 @@ export default function CandidaturesPage() {
     const [departmentFilter, setDepartmentFilter] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
     const itemsPerPage = 8;
 
     const searchParams = useSearchParams();
@@ -123,17 +125,30 @@ export default function CandidaturesPage() {
         date: '',
         time: '',
         interviewerId: '',
+        type: 'RH',
         notes: ''
     });
 
+    const loadDepartments = async () => {
+        try {
+            const depts = await api.getDepartments();
+            setDepartments(depts);
+        } catch (error) {
+            console.error("Failed to load departments:", error);
+        }
+    };
+
     const loadData = async () => {
         try {
-            const [cands, depts] = await Promise.all([
-                api.getCandidatures(),
-                api.getDepartments()
-            ]);
-            setCandidatures(cands);
-            setDepartments(depts);
+            const response = await api.getCandidatures(currentPage, itemsPerPage, departmentFilter || undefined, searchTerm || undefined, statusFilter || undefined);
+            if (response.pagination) {
+                setCandidatures(response.data);
+                setTotalPages(response.pagination.totalPages);
+                setTotalItems(response.pagination.total);
+            } else {
+                setCandidatures(response); // Fallback
+                setTotalItems(response.length);
+            }
         } catch (error) {
             console.error("Failed to load data:", error);
         }
@@ -148,8 +163,12 @@ export default function CandidaturesPage() {
     }, [searchParams]);
 
     useEffect(() => {
-        loadData();
+        loadDepartments();
     }, []);
+
+    useEffect(() => {
+        loadData();
+    }, [currentPage, departmentFilter, searchTerm, statusFilter]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -269,10 +288,11 @@ export default function CandidaturesPage() {
                 interviewerId: interviewForm.interviewerId,
                 date: `${interviewForm.date}T${interviewForm.time}:00`,
                 mode: 'Face-to-Face',
+                type: interviewForm.type,
                 notes: interviewForm.notes
             });
             alert("Interview Scheduled Successfully!");
-            setInterviewForm({ date: '', time: '', interviewerId: '', notes: '' });
+            setInterviewForm({ date: '', time: '', interviewerId: '', type: 'RH', notes: '' });
             loadData(); // Reload to update status potentially
         } catch (error) {
             console.error("Failed to schedule interview:", error);
@@ -281,22 +301,10 @@ export default function CandidaturesPage() {
     };
 
     // --- Filtering & Pagination Logic ---
-    const filteredCandidatures = candidatures.filter(cand => {
-        const matchesSearch =
-            cand.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            cand.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            cand.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            cand.positionAppliedFor.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesDept = departmentFilter ? cand.department === departmentFilter : true;
-        const matchesStatus = statusFilter ? cand.status === statusFilter : true;
-        return matchesSearch && matchesDept && matchesStatus;
-    });
-
-    const totalPages = Math.ceil(filteredCandidatures.length / itemsPerPage);
-    const paginatedCandidatures = filteredCandidatures.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+    // --- Filtering & Pagination Logic (Server-side now) ---
+    // filteredCandidatures and paginatedCandidatures are now just 'candidatures'
+    // as the backend handles the filtering and pagination.
+    const paginatedCandidatures = candidatures;
 
     const handleExport = () => {
         // Headers matching the requested Excel model
@@ -449,6 +457,9 @@ export default function CandidaturesPage() {
                         >
                             <option value="">{t('candidature.filters.allStatuses')}</option>
                             <option value="En cours">En cours</option>
+                            <option value="Validation Recruteur">Validation Recruteur</option>
+                            <option value="Validation RH">Validation RH</option>
+                            <option value="Avis Manager">Avis Manager</option>
                             <option value="Embauché">Embauché</option>
                             <option value="Refus du candidat">Refus</option>
                             <option value="Non embauché">Non embauché</option>
@@ -465,10 +476,10 @@ export default function CandidaturesPage() {
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
                     {[
                         { label: 'Tous', value: '' },
-                        { label: 'En cours', value: 'En cours', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
+                        { label: 'Validation Recruteur', value: 'Validation Recruteur', color: 'bg-purple-500/10 text-purple-600 border-purple-500/20' },
+                        { label: 'Validation RH', value: 'Validation RH', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' },
+                        { label: 'Avis Manager', value: 'Avis Manager', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' },
                         { label: 'Embauché', value: 'Embauché', color: 'bg-green-500/10 text-green-600 border-green-500/20' },
-                        { label: 'Prioritaire', value: 'Prioritaire', color: 'bg-orange-500/10 text-orange-600 border-orange-500/20' },
-                        { label: 'En attente', value: 'En attente', color: 'bg-gray-500/10 text-gray-600 border-gray-500/20' },
                         { label: 'Refus', value: 'Refus du candidat', color: 'bg-red-500/10 text-red-600 border-red-500/20' }
                     ].map(pill => (
                         <button
@@ -548,13 +559,17 @@ export default function CandidaturesPage() {
                                     <div className="text-right space-y-1">
                                         <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${cand.status === 'Embauché'
                                             ? 'bg-green-500/10 text-green-600 border border-green-500/20'
-                                            : cand.status === 'En cours'
-                                                ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20'
-                                                : cand.status === 'Prioritaire'
-                                                    ? 'bg-orange-500/10 text-orange-600 border border-orange-500/20'
-                                                    : cand.status === 'Non embauché' || cand.status === 'Refus du candidat'
-                                                        ? 'bg-red-500/10 text-red-600 border border-red-500/20'
-                                                        : 'bg-gray-500/10 text-gray-600 border border-gray-500/20'
+                                            : cand.status === 'En cours' || cand.status === 'Validation Recruteur'
+                                                ? 'bg-purple-500/10 text-purple-600 border border-purple-500/20'
+                                                : cand.status === 'Validation RH'
+                                                    ? 'bg-indigo-500/10 text-indigo-600 border border-indigo-500/20'
+                                                    : cand.status === 'Avis Manager'
+                                                        ? 'bg-yellow-500/10 text-yellow-600 border border-yellow-500/20'
+                                                        : cand.status === 'Prioritaire'
+                                                            ? 'bg-orange-500/10 text-orange-600 border border-orange-500/20'
+                                                            : cand.status === 'Non embauché' || cand.status === 'Refus du candidat'
+                                                                ? 'bg-red-500/10 text-red-600 border border-red-500/20'
+                                                                : 'bg-gray-500/10 text-gray-600 border border-gray-500/20'
                                             }`}>
                                             {cand.status}
                                         </div>
@@ -601,7 +616,7 @@ export default function CandidaturesPage() {
             {/* --- Pagination --- */}
             <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4 px-2">
                 <div className="text-sm text-muted-foreground">
-                    Affichage de <span className="font-medium text-foreground">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredCandidatures.length)}</span> à <span className="font-medium text-foreground">{Math.min(currentPage * itemsPerPage, filteredCandidatures.length)}</span> sur <span className="font-medium text-foreground">{filteredCandidatures.length}</span> résultats
+                    Affichage de <span className="font-medium text-foreground">{Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)}</span> à <span className="font-medium text-foreground">{Math.min(currentPage * itemsPerPage, totalItems)}</span> sur <span className="font-medium text-foreground">{totalItems}</span> résultats
                 </div>
 
                 <div className="flex items-center gap-1 bg-card border border-border/50 p-1.5 rounded-full shadow-sm">
@@ -755,6 +770,23 @@ export default function CandidaturesPage() {
                                             {t('candidature.planInterview')}
                                         </h3>
                                         <form onSubmit={handleScheduleInterview} className="space-y-4">
+                                            <div>
+                                                <label className="text-xs font-bold text-muted-foreground uppercase mb-1 block">Type d'entretien</label>
+                                                <div className="relative">
+                                                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                                                    <select
+                                                        required
+                                                        value={interviewForm.type}
+                                                        onChange={e => setInterviewForm({ ...interviewForm, type: e.target.value })}
+                                                        className="w-full bg-secondary/50 border border-border rounded-lg pl-10 pr-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/50 appearance-none"
+                                                    >
+                                                        <option value="RH">RH</option>
+                                                        <option value="Technique">Technique</option>
+                                                        <option value="Manager">Manager</option>
+                                                        <option value="DRH">DRH</option>
+                                                    </select>
+                                                </div>
+                                            </div>
                                             <div>
                                                 <label className="text-xs font-bold text-muted-foreground uppercase mb-1 block">{t('candidature.interviewer')} (Manager)</label>
                                                 <div className="relative">

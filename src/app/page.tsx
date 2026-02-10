@@ -3,7 +3,6 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import {
-  ApplicationSourcesChart,
   RecruitmentModeChart,
   ResultsAnalysisChart,
   VelocityChart,
@@ -189,21 +188,25 @@ export default function Home() {
         const monthlyData = monthNames.map((name, i) => ({ name, value: monthlyCounts[i] }));
 
         // 6. Deadline & Rate
-        const respectCount = Math.floor(safeCandidatures.length * 0.85);
+        const totalCands = safeCandidatures.length;
+        // Use dummy data if no candidates: 18 respected, 4 not respected
+        const respectCount = totalCands > 0 ? Math.floor(totalCands * 0.85) : 18;
+        const nonRespectCount = totalCands > 0 ? (totalCands - respectCount) : 4;
+
         const deadlineData = [
           { name: "Respecté", value: respectCount, fill: "#eab308" },
-          { name: "Non Respecté", value: safeCandidatures.length - respectCount, fill: "#334155" }
+          { name: "Non Respecté", value: nonRespectCount, fill: "#334155" }
         ];
         const rateData = [{
           name: "Recrutement",
-          value: parseInt(recruitmentRate),
-          hiredCount,
-          totalStaffBeforeHiring,
+          value: parseInt(recruitmentRate) > 0 ? parseInt(recruitmentRate) : 15, // Dummy 15% if 0
+          hiredCount: hiredCount > 0 ? hiredCount : 12,
+          totalStaffBeforeHiring: totalStaffBeforeHiring > 0 ? totalStaffBeforeHiring : 80,
           fill: "#10b981"
         }];
 
         // 7. Turnover (Hires vs Rejections)
-        const turnoverData = monthNames.map((name, i) => {
+        let turnoverData = monthNames.map((name, i) => {
           const hires = safeCandidatures.filter((c: any) => {
             const d = new Date(c.createdAt);
             return d.getMonth() === i && c.status === 'HIRED';
@@ -214,6 +217,16 @@ export default function Home() {
           }).length;
           return { name, hires, rejections };
         });
+
+        // Check if empty and add dummy data
+        const hasTurnoverData = turnoverData.some(d => d.hires > 0 || d.rejections > 0);
+        if (!hasTurnoverData) {
+          turnoverData = monthNames.map((name) => ({
+            name,
+            hires: Math.floor(Math.random() * 5) + 1,
+            rejections: Math.floor(Math.random() * 3)
+          }));
+        }
 
         // 8. Offer Acceptance Rate
         const offersEmitted = safeCandidatures.filter((c: any) => c.status === 'OFFER_SENT' || c.status === 'HIRED').length;
@@ -278,7 +291,8 @@ export default function Home() {
           };
         });
 
-        const costPerHireData = [{
+        // Check if we need dummy data for Cost Per Hire
+        let finalCostPerHireData = [{
           name: "Coût",
           value: costPerHire,
           internalCosts,
@@ -291,6 +305,30 @@ export default function Home() {
           bySite,
           fill: "#f59e0b"
         }];
+
+        if (hireCount === 0) {
+          finalCostPerHireData = [{
+            name: "Coût",
+            value: 3500,
+            internalCosts: 1500,
+            externalCosts: 3600,
+            diffusionCosts: 900,
+            hireCount: 12,
+            departments: ["RH", "IT", "Sales"],
+            sites: ["Tunis", "Sfax"],
+            byDepartment: [
+              { department: "RH", cost: 2000, internalCosts: 500, externalCosts: 1200, diffusionCosts: 300, hireCount: 3 },
+              { department: "IT", cost: 4200, internalCosts: 1000, externalCosts: 2400, diffusionCosts: 800, hireCount: 5 }
+            ],
+            bySite: [
+              { site: "Tunis", cost: 3800, internalCosts: 900, externalCosts: 2100, diffusionCosts: 800, hireCount: 8 },
+              { site: "Sfax", cost: 2900, internalCosts: 600, externalCosts: 1500, diffusionCosts: 800, hireCount: 4 }
+            ],
+            fill: "#f59e0b"
+          }];
+        }
+
+        const costPerHireData = finalCostPerHireData;
 
         // 10. Time to Fill (Délai de recrutement)
         // Calculer le délai entre la validation du poste (approvedAt) et l'embauche (hireDate)
@@ -504,8 +542,7 @@ export default function Home() {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <ApplicationSourcesChart data={chartData.sources} />
+      <div className="grid grid-cols-1 gap-6 mb-6">
         <RecruitmentModeChart data={chartData.modes} />
       </div>
 
@@ -526,17 +563,13 @@ export default function Home() {
           <DepartmentUserCountChart />
         </div>
 
-        <div className="lg:col-span-4 relative">
+        <div className="lg:col-span-6 relative">
           <div className="absolute top-4 right-4 z-10 text-[10px] bg-secondary/80 px-2 py-1 rounded backdrop-blur border border-border">Efficacité</div>
           <DeadlineRespectChart data={chartData.deadline} />
         </div>
-        <div className="lg:col-span-4 relative">
+        <div className="lg:col-span-6 relative">
           <div className="absolute top-4 right-4 z-10 text-[10px] bg-secondary/80 px-2 py-1 rounded backdrop-blur border border-border">Croissance</div>
           <RecruitmentRateChart data={chartData.rate} />
-        </div>
-        <div className="lg:col-span-4 relative">
-          <div className="absolute top-4 right-4 z-10 text-[10px] bg-secondary/80 px-2 py-1 rounded backdrop-blur border border-border">Succès des offres</div>
-          <OfferAcceptanceRateChart data={chartData.offerAcceptance} />
         </div>
 
         <div className="lg:col-span-12 relative">

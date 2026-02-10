@@ -16,17 +16,22 @@ model Site {
 }
 
 model Department {
-  id            String   @id @default(uuid())
+  id            String          @id @default(uuid())
   name          String
   head          String
   location      String
-  employeeCount Int      @default(0)
+  employeeCount Int             @default(0)
   budget        Float
-  status        String   @default("Active")
+  status        String          @default("Active")
   colorCallback String
   siteId        String
-  site          Site     @relation(fields: [siteId], references: [id])
+  site          Site            @relation(fields: [siteId], references: [id])
+  logoUrl       String?
+  icon          String?
   users         User[]
+  roles         Role[]
+  hiringRequests HiringRequest[]
+  candidatures   Candidature[]
 
   @@index([siteId])
 }
@@ -36,7 +41,7 @@ model User {
   name           String
   email          String      @unique
   password       String?
-  roleId         String?     // Optional during migration, should be required later
+  roleId         String?     
   role           Role?       @relation(fields: [roleId], references: [id])
   
   status         String      @default("Active")
@@ -44,6 +49,11 @@ model User {
   departmentId   String?
   department     Department? @relation(fields: [departmentId], references: [id])
   post           String?
+
+  sentNotifications     Notification[] @relation("Sender")
+  receivedNotifications Notification[] @relation("Receiver")
+  hiringRequests        HiringRequest[] @relation("Requester")
+  approvedRequests      HiringRequest[] @relation("Approver")
 
   @@index([departmentId])
   @@index([roleId])
@@ -54,4 +64,95 @@ model Role {
   name        String   @unique
   description String?
   users       User[]
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  senderId  String?
+  sender    User?    @relation("Sender", fields: [senderId], references: [id])
+  receiverId String
+  receiver  User     @relation("Receiver", fields: [receiverId], references: [id])
+  message   String
+  type      String   @default("INFO")
+  isRead    Boolean  @default(false)
+  entityId  String?
+  entityType String?
+  actions   Json?
+  createdAt DateTime @default(now())
+
+  @@index([receiverId])
+}
+
+model HiringRequest {
+  id                    String      @id @default(uuid())
+  title                 String
+  departmentId          String?
+  department            Department? @relation(fields: [departmentId], references: [id])
+  category              String?
+  status                String      @default("Pending HR")
+  requesterId           String?
+  requester             User?       @relation("Requester", fields: [requesterId], references: [id])
+  approverId            String?
+  approver              User?       @relation("Approver", fields: [approverId], references: [id])
+  description           String?     @db.Text
+  budget                Float?
+  contractType          String?
+  reason                String?     @db.Text
+  site                  String?
+  businessUnit          String?
+  desiredStartDate      DateTime?
+  replacementFor        String?
+  replacementReason     String?
+  increaseType          String?
+  increaseDateRange     String?
+  educationRequirements String?     @db.Text
+  skillsRequirements    String?     @db.Text
+  rejectionReason       String?     @db.Text
+  approvedAt            DateTime?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  roleId                String?
+  candidatures          Candidature[]
+
+  @@index([departmentId])
+  @@index([requesterId])
+}
+
+model Candidature {
+  id              String         @id @default(uuid())
+  firstName       String?
+  lastName        String?
+  email           String?
+  phone           String?
+  source          String?
+  status          String         @default("NEW")
+  hiringRequestId String?
+  hiringRequest   HiringRequest? @relation(fields: [hiringRequestId], references: [id])
+  departmentId    String?
+  department      Department?    @relation(fields: [departmentId], references: [id])
+  cvFile          String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  interviews      Interview[]
+  details         Json?
+  hireDate        DateTime?
+
+  @@index([hiringRequestId])
+  @@index([departmentId])
+}
+
+model Interview {
+  id            String      @id @default(uuid())
+  candidatureId String
+  candidature   Candidature @relation(fields: [candidatureId], references: [id])
+  date          DateTime
+  type          String?
+  status        String      @default("Scheduled")
+  notes         String?     @db.Text
+  interviewers  Json?
+  createdAt     DateTime    @default(now())
+
+  @@index([candidatureId])
 }

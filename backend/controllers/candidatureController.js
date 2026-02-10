@@ -2,8 +2,9 @@ const asyncHandler = require('express-async-handler');
 const candidatureService = require('../services/candidatureService');
 
 const getCandidatures = asyncHandler(async (req, res) => {
-    const items = await candidatureService.getAllCandidatures();
-    res.json(items);
+    const { page, limit, department, search, status } = req.query;
+    const result = await candidatureService.getAllCandidatures({ page, limit, department, search, status });
+    res.json(result);
 });
 
 const createCandidature = asyncHandler(async (req, res) => {

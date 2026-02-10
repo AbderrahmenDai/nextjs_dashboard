@@ -8,8 +8,13 @@ const getHiringRequests = asyncHandler(async (req, res) => {
     const page = req.query.page ? parseInt(req.query.page) : null;
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
     const requesterId = req.query.requesterId || null;
+    const search = req.query.search || null;
+    const department = req.query.department || null;
+    const site = req.query.site || null;
     
-    const result = await hiringRequestService.getAllHiringRequests(page, limit, requesterId);
+    const result = await hiringRequestService.getAllHiringRequests({ 
+        page, limit, requesterId, search, department, site 
+    });
     res.json(result);
 });
 
@@ -198,14 +203,17 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
             // ========== STEP 1: HR (Responsable RH or DRH) APPROVES → Notify PLANT_MANAGER (Direction) ==========
             // Logic: If status moved TO 'Pending Plant Manager', it means HR or DRH approved it.
             if (status === 'Pending Plant Manager') {
-                const isDirector = (actorRole || '').toLowerCase().includes('directeur') || (actorRole || '').toLowerCase().includes('director');
+                const roleLower = (actorRole || '').toLowerCase();
+                const isDirector = roleLower.includes('directeur') || roleLower.includes('director') || roleLower.includes('drh');
+                const approverLabel = isDirector ? 'Directeur RH' : 'Responsable RH';
+                
                 console.log(`[UpdateHiringRequest] HR/DRH Approved. Actor Role: ${actorRole} (Is Director: ${isDirector})`);
 
                 // Resolve HR/DRH notifications
                 await notificationService.resolveActions(
                     id, 
                     'HIRING_REQUEST', 
-                    `Validée par ${actorName} (${isDirector ? 'Directeur RH' : 'Responsable RH'})`
+                    `Validée par ${actorName} (${approverLabel})`
                 );
 
                 // Start Notification to Plant Manager / Direction
@@ -224,7 +232,7 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
                     await sendNotification(
                         approverId,
                         director.id,
-                        `✅ Demande d'embauche "${currentRequest.title}" validée par ${isDirector ? 'Directeur RH' : 'Responsable RH'} (${actorName}). En attente de votre validation.`,
+                        `✅ Demande d'embauche "${currentRequest.title}" validée par ${approverLabel} (${actorName}). En attente de votre validation.`,
                         'ACTION_REQUIRED',
                         'HIRING_REQUEST',
                         currentRequest.id,
@@ -237,7 +245,7 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
                 await sendNotification(
                     approverId,
                     currentRequest.requesterId,
-                    `ℹ️ Votre demande "${currentRequest.title}" a été validée par les RH/Direction (${actorName}) et transmise au Plant Manager.`
+                    `ℹ️ Votre demande "${currentRequest.title}" a été validée par les RH/Direction (${approverLabel}) et transmise au Plant Manager.`
                 );
                 
                 console.log(`✅ HR/DRH approved, notified Plant Manager and Requester`);

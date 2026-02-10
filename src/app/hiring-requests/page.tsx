@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Plus, Search, Filter, FileText, Edit, Trash2, Eye, X, Printer, Check, XCircle, UserPlus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Filter, FileText, Edit, Trash2, Eye, X, Printer, Check, XCircle, UserPlus, ChevronLeft, ChevronRight, Briefcase, CheckCircle, Clock } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -108,7 +108,7 @@ function RequestModal({
         const defaults = {
             title: "",
             departmentId: "",
-            category: "Cadre",
+            category: "MOI",
             status: "Pending Responsable RH",
             contractType: "CDI",
             priority: "Medium",
@@ -249,7 +249,7 @@ function RequestModal({
                         </div>
 
                         <div className="flex gap-6">
-                            {['Ouvrier', 'Etam', 'Cadre'].map((cat) => (
+                            {['MOI', 'MOS', 'MOD'].map((cat) => (
                                 <label key={cat} className="flex items-center gap-2 cursor-pointer">
                                     <input
                                         type="radio"
@@ -295,6 +295,18 @@ function RequestModal({
                     <div className="bg-primary/5 border border-primary/10 p-4 rounded-2xl space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
+                                <label className="block text-xs font-bold text-primary uppercase mb-1.5 opacity-80">Lieu de Travail (Site)</label>
+                                <select
+                                    disabled={isViewOnly}
+                                    value={formData.site || ""}
+                                    onChange={(e) => setFormData({ ...formData, site: e.target.value })}
+                                    className="input-field"
+                                >
+                                    <option value="">Sélectionner...</option>
+                                    {sites.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
                                 <label className="block text-xs font-bold text-primary uppercase mb-1.5 opacity-80">Service (Dept)</label>
                                 <select
                                     required
@@ -305,18 +317,6 @@ function RequestModal({
                                 >
                                     <option value="">Sélectionner...</option>
                                     {filteredDepartments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-primary uppercase mb-1.5 opacity-80">Lieu de Travail (Site)</label>
-                                <select
-                                    disabled={isViewOnly}
-                                    value={formData.site || ""}
-                                    onChange={(e) => setFormData({ ...formData, site: e.target.value })}
-                                    className="input-field"
-                                >
-                                    <option value="">Sélectionner...</option>
-                                    {sites.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                                 </select>
                             </div>
                             <div>
@@ -365,7 +365,7 @@ function RequestModal({
                                 >
                                     <option value="CDI">CDI</option>
                                     <option value="CDD">CDD</option>
-                                    <option value="SIVP">SIVP</option>
+                                    <option value="CIVP">CIVP</option>
                                     <option value="Stage">Stage</option>
                                     <option value="Alternance">Alternance</option>
                                 </select>
@@ -581,6 +581,10 @@ export default function HiringRequestsPage() {
     const [allRoles, setAllRoles] = useState<Role[]>([]);
     const [allCandidates, setAllCandidates] = useState<Candidate[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedDepartment, setSelectedDepartment] = useState("");
+    const [selectedSite, setSelectedSite] = useState("");
+    const [selectedRequester, setSelectedRequester] = useState(""); // Filtering by requester name locally on page (limited)
+    const [stats, setStats] = useState({ total: 0, approved: 0, pending: 0, rejected: 0 });
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -621,10 +625,11 @@ export default function HiringRequestsPage() {
         try {
             // Filter strictly for DEMANDEUR
             const requesterId = user?.role === 'DEMANDEUR' ? user.id : undefined;
+            const limit = pagination.limit;
 
             const [reqsResponse, depts, sitesData, rolesData, candidatesData] = await Promise.all([
-                api.getHiringRequests(page, 10, requesterId),
-                api.getDepartments(), // Fetch all for dropdowns
+                api.getHiringRequests(page, limit, requesterId, searchTerm, selectedDepartment, selectedSite),
+                api.getDepartments(),
                 api.getSites(),
                 api.getRoles(),
                 api.getCandidatures()
@@ -632,9 +637,20 @@ export default function HiringRequestsPage() {
 
             if (reqsResponse.pagination) {
                 setRequests(reqsResponse.data);
-                setPagination(reqsResponse.pagination);
+                setPagination({
+                    page: reqsResponse.pagination.page,
+                    limit: reqsResponse.pagination.limit,
+                    total: reqsResponse.pagination.total,
+                    totalPages: reqsResponse.pagination.totalPages
+                });
+
+                // Minimal stats based on total count
+                setStats(prev => ({ ...prev, total: reqsResponse.pagination.total }));
             } else {
-                setRequests(Array.isArray(reqsResponse) ? reqsResponse : []);
+                // Fallback
+                const allReqs = Array.isArray(reqsResponse) ? reqsResponse : [];
+                setRequests(allReqs);
+                setPagination({ page: 1, limit: allReqs.length, total: allReqs.length, totalPages: 1 });
             }
 
             setDepartments(depts);
@@ -646,13 +662,16 @@ export default function HiringRequestsPage() {
         }
     };
 
-
-
     useEffect(() => {
         if (!isLoading) {
-            loadData();
+            loadData(pagination.page);
         }
-    }, [isLoading, user?.id]);
+    }, [isLoading, user?.id, pagination.page, searchTerm, selectedDepartment, selectedSite]); // Trigger on filter change
+
+    // Reset page on filter change (except pagination.page itself)
+    useEffect(() => {
+        setPagination(prev => ({ ...prev, page: 1 }));
+    }, [searchTerm, selectedDepartment, selectedSite]);
 
     const handlePageChange = (newPage: number) => {
         if (newPage >= 1 && newPage <= pagination.totalPages) {
@@ -715,11 +734,11 @@ export default function HiringRequestsPage() {
 
             // Determine next status based on current status and user role
             // Updated to match new workflow statuses
-            if (request.status === 'Pending Responsable RH' && (user.role === 'HR_MANAGER' || user.role === 'Responsable RH')) {
+            if (request.status === 'Pending Responsable RH' && (user.role === 'HR_MANAGER' || user.role === 'Responsable RH' || user.role === 'Responsable RH (TTG)')) {
                 newStatus = 'Pending Plant Manager';
-            } else if (request.status === 'Pending HR Director' && (user.role === 'Directeur RH' || user.role === 'DRH')) {
+            } else if (request.status === 'Pending HR Director' && (user.role === 'Directeur RH' || user.role === 'DRH' || user.role === 'DRH (TTG)')) {
                 newStatus = 'Pending Plant Manager';
-            } else if (request.status === 'Pending Plant Manager' && (user.role === 'PLANT_MANAGER' || user.role === 'Plant Manager' || user.role === 'Direction')) {
+            } else if (request.status === 'Pending Plant Manager' && (user.role === 'PLANT_MANAGER' || user.role === 'Plant Manager' || user.role === 'Direction' || user.role === 'Plant Manager (TTG)')) {
                 newStatus = 'Approved';
             } else {
                 alert("Vous n'avez pas la permission d'approuver cette demande à cette étape.");
@@ -915,7 +934,7 @@ export default function HiringRequestsPage() {
 
                 <div class="footer">
                     <div class="signature-box">
-                        <strong>Signature du Demandeur</strong>
+                        <strong> Demandeur</strong>
                         <br><br><br>
                         ${req.requesterName || ''}
                     </div>
@@ -1007,28 +1026,130 @@ export default function HiringRequestsPage() {
                     </button>
                 </div>
 
+                {/* Dynamic Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-card border border-border/50 p-4 rounded-xl flex items-center justify-between shadow-sm relative overflow-hidden group hover:border-blue-500/30 transition-all duration-300">
+                        <div className="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-all duration-300"></div>
+                        <div className="relative z-10">
+                            <div className="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-600 flex items-center justify-center mb-2">
+                                <Briefcase size={20} strokeWidth={2.5} />
+                            </div>
+                            <span className="text-3xl font-black text-foreground block">{stats.total}</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Postes</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-card border border-border/50 p-4 rounded-xl flex items-center justify-between shadow-sm relative overflow-hidden group hover:border-green-500/30 transition-all duration-300">
+                        <div className="absolute inset-0 bg-green-500/5 group-hover:bg-green-500/10 transition-all duration-300"></div>
+                        <div className="relative z-10">
+                            <div className="w-10 h-10 rounded-lg bg-green-500/20 text-green-600 flex items-center justify-center mb-2">
+                                <CheckCircle size={20} strokeWidth={2.5} />
+                            </div>
+                            <span className="text-3xl font-black text-foreground block">{stats.approved}</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Approuvés</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-card border border-border/50 p-4 rounded-xl flex items-center justify-between shadow-sm relative overflow-hidden group hover:border-yellow-500/30 transition-all duration-300">
+                        <div className="absolute inset-0 bg-yellow-500/5 group-hover:bg-yellow-500/10 transition-all duration-300"></div>
+                        <div className="relative z-10">
+                            <div className="w-10 h-10 rounded-lg bg-yellow-500/20 text-yellow-600 flex items-center justify-center mb-2">
+                                <Clock size={20} strokeWidth={2.5} />
+                            </div>
+                            <span className="text-3xl font-black text-foreground block">{stats.pending}</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">En Attente</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-card border border-border/50 p-4 rounded-xl flex items-center justify-between shadow-sm relative overflow-hidden group hover:border-red-500/30 transition-all duration-300">
+                        <div className="absolute inset-0 bg-red-500/5 group-hover:bg-red-500/10 transition-all duration-300"></div>
+                        <div className="relative z-10">
+                            <div className="w-10 h-10 rounded-lg bg-red-500/20 text-red-600 flex items-center justify-center mb-2">
+                                <XCircle size={20} strokeWidth={2.5} />
+                            </div>
+                            <span className="text-3xl font-black text-foreground block">{stats.rejected}</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Rejetés</span>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Filters & Search */}
-                <div className="flex flex-col md:flex-row gap-4 glass-card p-4 rounded-xl mb-6 items-center">
-                    <div className="relative flex-1 w-full">
+                <div className="glass-card p-4 rounded-xl mb-6 flex flex-col gap-4">
+                    {/* Search Bar */}
+                    <div className="relative w-full">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                         <input
                             type="text"
                             placeholder={t('common.search')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="input-field pl-10 bg-card/50"
+                            className="input-field pl-10 bg-card/50 w-full"
                         />
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors whitespace-nowrap">
-                        <Filter size={18} />
-                        <span>Filters</span>
-                    </button>
+
+                    {/* Filter Dropdowns */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Department Filter */}
+                        <div className="relative">
+                            <select
+                                value={selectedDepartment}
+                                onChange={(e) => setSelectedDepartment(e.target.value)}
+                                className="input-field w-full appearance-none cursor-pointer bg-card/50"
+                            >
+                                <option value="">Tous les Départements</option>
+                                {departments.map((dept) => (
+                                    <option key={dept.id} value={dept.name}>{dept.name}</option>
+                                ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-muted-foreground">
+                                <Filter size={14} />
+                            </div>
+                        </div>
+
+                        {/* Site Filter */}
+                        <div className="relative">
+                            <select
+                                value={selectedSite}
+                                onChange={(e) => setSelectedSite(e.target.value)}
+                                className="input-field w-full appearance-none cursor-pointer bg-card/50"
+                            >
+                                <option value="">Tous les Sites</option>
+                                {sites.map((site) => (
+                                    <option key={site.id} value={site.name}>{site.name}</option>
+                                ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-muted-foreground">
+                                <Filter size={14} />
+                            </div>
+                        </div>
+
+                        {/* Requester Filter */}
+                        <div className="relative">
+                            <select
+                                value={selectedRequester}
+                                onChange={(e) => setSelectedRequester(e.target.value)}
+                                className="input-field w-full appearance-none cursor-pointer bg-card/50"
+                            >
+                                <option value="">Tous les Demandeurs</option>
+                                {Array.from(new Set(requests.map(r => r.requesterName).filter(Boolean))).map((name) => (
+                                    <option key={name as string} value={name as string}>{name}</option>
+                                ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-muted-foreground">
+                                <Filter size={14} />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Card Grid View */}
                 <motion.div layout className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     <AnimatePresence mode="popLayout">
-                        {requests.filter(r => r.title.toLowerCase().includes(searchTerm.toLowerCase())).map((req) => (
+                        {requests.filter(req => {
+                            // Only client-side filter left is 'selectedRequester' if implemented or other small things
+                            const matchesRequester = selectedRequester ? req.requesterName === selectedRequester : true;
+                            return matchesRequester;
+                        }).map((req) => (
                             <motion.div
                                 layout
                                 key={req.id}
@@ -1161,7 +1282,7 @@ export default function HiringRequestsPage() {
                                     </button>
 
                                     {/* Add Candidate (Recruiter) - Opens Modal to Assign from List */}
-                                    {(user?.role === 'RECRUITMENT_MANAGER' || user?.role === 'HR_MANAGER' || user?.role === 'Recruitment Manager' || user?.role === 'RECRUITER' || user?.role === 'Responsable Recrutement') && req.status === 'Approved' && (
+                                    {(user?.role === 'RECRUITMENT_MANAGER' || user?.role === 'HR_MANAGER' || user?.role === 'Recruitment Manager' || user?.role === 'RECRUITER' || user?.role === 'Responsable Recrutement' || user?.role === 'Responsable Recrutement (TTG)') && req.status === 'Approved' && (
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();

@@ -2,8 +2,59 @@ const db = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 const emailService = require('./emailService');
 
-const getAllCandidatures = async () => {
-    const [rows] = await db.query('SELECT * FROM Candidature ORDER BY createdAt DESC');
+const getAllCandidatures = async ({ page, limit, department, search, status } = {}) => {
+    let sql = `
+        SELECT c.*, h.title as hiringRequestTitle 
+        FROM Candidature c
+        LEFT JOIN HiringRequest h ON c.hiringRequestId = h.id
+    `;
+    const params = [];
+    const conditions = [];
+
+    if (department) {
+        conditions.push("c.department = ?");
+        params.push(department);
+    }
+
+    if (status) {
+        conditions.push("c.status = ?");
+        params.push(status);
+    }
+
+    if (search) {
+        conditions.push("(c.firstName LIKE ? OR c.lastName LIKE ? OR c.email LIKE ? OR c.positionAppliedFor LIKE ?)");
+        const term = `%${search}%`;
+        params.push(term, term, term, term);
+    }
+
+    if (conditions.length > 0) {
+        sql += " WHERE " + conditions.join(" AND ");
+    }
+
+    sql += " ORDER BY c.createdAt DESC";
+
+    if (page && limit) {
+        const countSql = `SELECT COUNT(*) as total FROM Candidature c ${conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : ""}`;
+        const [countParam] = await db.query(countSql, params); // Use same params as filter
+        const total = countParam[0].total;
+
+        sql += " LIMIT ? OFFSET ?";
+        params.push(Number(limit), (Number(page) - 1) * Number(limit));
+
+        const [rows] = await db.query(sql, params);
+        
+        return {
+            data: rows,
+            pagination: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                totalPages: Math.ceil(total / Number(limit))
+            }
+        };
+    }
+
+    const [rows] = await db.query(sql, params);
     return rows;
 };
 
@@ -48,6 +99,39 @@ const updateCandidature = async (id, data) => {
         'proposedSalary', 'noticePeriod', 'hrOpinion', 'managerOpinion', 'recruitmentMode', 'workSite',
         'status', 'cvPath'
     ];
+
+    // Fetch current state to compare changes
+    const [currentRows] = await db.query('SELECT * FROM Candidature WHERE id = ?', [id]);
+    if (currentRows.length === 0) return null;
+    const currentCandidate = currentRows[0];
+
+    // Auto-update status logic based on workflow progression
+    // 1. Recruiter Validation
+    if (data.recruiterComments && data.recruiterComments !== currentCandidate.recruiterComments) {
+        if (['Favorable', 'Prioritaire'].includes(data.recruiterComments)) {
+            data.status = 'Validation RH';
+        } else if (data.recruiterComments === 'Defavorable') {
+            data.status = 'Refus du candidat';
+        }
+    }
+
+    // 2. RH Validation
+    if (data.hrOpinion && data.hrOpinion !== currentCandidate.hrOpinion) {
+        if (['Favorable', 'Prioritaire'].includes(data.hrOpinion)) {
+             data.status = 'Avis Manager';
+        } else if (data.hrOpinion === 'Defavorable') {
+             data.status = 'Refus du candidat';
+        }
+    }
+
+    // 3. Manager Opinion
+    if (data.managerOpinion && data.managerOpinion !== currentCandidate.managerOpinion) {
+        if (['Favorable', 'Prioritaire'].includes(data.managerOpinion)) {
+             data.status = 'Embauché';
+        } else if (data.managerOpinion === 'Defavorable') {
+             data.status = 'Refus du candidat';
+        }
+    }
 
     for (const key of Object.keys(data)) {
         if (updateableColumns.includes(key)) {

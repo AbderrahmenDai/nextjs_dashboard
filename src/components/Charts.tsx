@@ -309,7 +309,7 @@ export function MonthlyApplicationsChart({ data = defaultMonthlyData }: { data?:
     return (
         <div className="glass-card p-6 rounded-3xl h-[320px] flex flex-col group relative overflow-hidden">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-sm font-black text-foreground uppercase tracking-widest opacity-80">Flux Temporel</h3>
+                <h3 className="text-sm font-black text-foreground uppercase tracking-widest opacity-80">Taux de satisfaction </h3>
                 <span className="text-[10px] font-black opacity-40">LAST 12 MONTHS</span>
             </div>
 
@@ -660,7 +660,7 @@ export function TimeToFillDetailedChart({ data = defaultTimeToFillDetailedData }
             <div className="flex items-start justify-between mb-6 relative z-10">
                 <div>
                     <h3 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-2">
-                        Délai de Recrutement (Time to Fill)
+                        Délai de Recrutement (Time to Hire)
                     </h3>
                     <p className="text-xs text-muted-foreground font-medium">
                         Durée entre la validation du poste et l&apos;occupation effective

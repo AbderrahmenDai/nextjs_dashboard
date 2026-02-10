@@ -99,7 +99,7 @@ async function seedDashboardData() {
                         ['Low', 'Medium', 'High'][Math.floor(Math.random() * 3)],
                         2000 * (Math.floor(Math.random() * 5) + 1),
                         'Growth', 
-                        ['CDI', 'CDD', 'SIVP'][Math.floor(Math.random() * 3)],
+                        ['CDI', 'CDD', 'CIVP'][Math.floor(Math.random() * 3)],
                         date, date
                     ]
                 );

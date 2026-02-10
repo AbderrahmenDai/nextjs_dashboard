@@ -1,45 +1,11 @@
 const db = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 
-const getAllHiringRequests = async (page, limit, requesterId = null) => {
-    // If no pagination params, return all (with optional filter)
-    if (!page || !limit) {
-        let sql = `
-            SELECT 
-                hr.*, 
-                d.name as departmentName, 
-                u.name as requesterName,
-                app.name as approverName
-            FROM HiringRequest hr
-            LEFT JOIN Department d ON hr.departmentId = d.id
-            LEFT JOIN User u ON hr.requesterId = u.id
-            LEFT JOIN User app ON hr.approverId = app.id
-        `;
-        const params = [];
-        if (requesterId) {
-             sql += ` WHERE hr.requesterId = ?`;
-             params.push(requesterId);
-        }
-        sql += ` ORDER BY hr.createdAt DESC`;
-        
-        const [rows] = await db.query(sql, params);
-        return rows;
-    }
+const getAllHiringRequests = async ({ page, limit, requesterId, search, department, site } = {}) => {
+    const conditions = [];
+    const params = [];
 
-    const offset = (page - 1) * limit;
-
-    // Get total count
-    let countSql = 'SELECT COUNT(*) as total FROM HiringRequest';
-    const countParams = [];
-    if (requesterId) {
-        countSql += ' WHERE requesterId = ?';
-        countParams.push(requesterId);
-    }
-    const [countResult] = await db.query(countSql, countParams);
-    const total = countResult[0].total;
-
-    // Join with Department and User for names
-    let sql = `
+    let baseSql = `
         SELECT 
             hr.*, 
             d.name as departmentName, 
@@ -50,25 +16,73 @@ const getAllHiringRequests = async (page, limit, requesterId = null) => {
         LEFT JOIN User u ON hr.requesterId = u.id
         LEFT JOIN User app ON hr.approverId = app.id
     `;
-    const params = [];
+
     if (requesterId) {
-        sql += ` WHERE hr.requesterId = ?`;
+        conditions.push("hr.requesterId = ?");
         params.push(requesterId);
     }
-    sql += ` ORDER BY hr.createdAt DESC LIMIT ? OFFSET ?`;
-    params.push(parseInt(limit), parseInt(offset));
 
-    const [rows] = await db.query(sql, params);
-    
-    return {
-        data: rows,
-        pagination: {
-            total,
-            page: parseInt(page),
-            limit: parseInt(limit),
-            totalPages: Math.ceil(total / limit)
-        }
-    };
+    if (department) {
+        // Frontend sends department Name
+        conditions.push("d.name = ?");
+        params.push(department);
+    }
+
+    if (site) {
+        conditions.push("hr.site = ?");
+        params.push(site);
+    }
+
+    if (search) {
+        conditions.push("(hr.title LIKE ? OR u.name LIKE ?)");
+        const term = `%${search}%`;
+        params.push(term, term);
+    }
+
+    let whereClause = "";
+    if (conditions.length > 0) {
+        whereClause = " WHERE " + conditions.join(" AND ");
+    }
+
+    // Sort
+    const orderClause = " ORDER BY hr.createdAt DESC";
+
+    if (page && limit) {
+        // Count query must include joins if we are filtering by join columns (department name, user name)
+        const countSql = `
+            SELECT COUNT(*) as total 
+            FROM HiringRequest hr
+            LEFT JOIN Department d ON hr.departmentId = d.id
+            LEFT JOIN User u ON hr.requesterId = u.id
+            ${whereClause}
+        `;
+        
+        const [countResult] = await db.query(countSql, params);
+        const total = countResult[0].total;
+
+        const offset = (Number(page) - 1) * Number(limit);
+        const limitSql = " LIMIT ? OFFSET ?";
+        
+        const finalSql = baseSql + whereClause + orderClause + limitSql;
+        // Copy params for the main query + pagination
+        const finalParams = [...params, Number(limit), offset];
+
+        const [rows] = await db.query(finalSql, finalParams);
+
+        return {
+            data: rows,
+            pagination: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                totalPages: Math.ceil(total / Number(limit))
+            }
+        };
+    } else {
+        const finalSql = baseSql + whereClause + orderClause;
+        const [rows] = await db.query(finalSql, params);
+        return rows;
+    }
 };
 
 const getHiringRequestById = async (id) => {

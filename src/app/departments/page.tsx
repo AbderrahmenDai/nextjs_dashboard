@@ -310,18 +310,34 @@ export default function DepartmentsPage() {
         totalPages: 1
     });
 
+    const [allDepartments, setAllDepartments] = useState<Department[]>([]);
+
     const loadData = async (page = 1) => {
         try {
-            const [deptsResponse, sitesData] = await Promise.all([
+            // 1. Paginated for the table
+            // 2. All for the stats (no params)
+            const [paginatedDepts, allDepts, sitesData] = await Promise.all([
                 api.getDepartments(page, 10),
+                api.getDepartments(),
                 api.getSites()
             ]);
 
-            if (deptsResponse.pagination) {
-                setDepartments(deptsResponse.data);
-                setPagination(deptsResponse.pagination);
+            // Handle Paginated Grid Data
+            if (paginatedDepts.pagination) {
+                setDepartments(paginatedDepts.data);
+                setPagination(paginatedDepts.pagination);
             } else {
-                setDepartments(Array.isArray(deptsResponse) ? deptsResponse : []);
+                setDepartments(Array.isArray(paginatedDepts) ? paginatedDepts : []);
+            }
+
+            // Handle All Departments Data for Stats
+            // If backend returns array when no params
+            if (Array.isArray(allDepts)) {
+                setAllDepartments(allDepts);
+            } else if (allDepts.data) {
+                setAllDepartments(allDepts.data);
+            } else {
+                setAllDepartments([]);
             }
 
             setSites(sitesData);
@@ -495,11 +511,11 @@ export default function DepartmentsPage() {
                                     <div className="flex items-center gap-6 text-sm text-muted-foreground mt-4">
                                         <div className="flex items-center gap-2">
                                             <Building2 size={16} className="text-primary" />
-                                            <span>{getChildrenCount(site.id)} Départements</span>
+                                            <span>{allDepartments.filter(d => d.siteId === site.id).length} Départements</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Users size={16} className="text-primary" />
-                                            <span>{departments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.employeeCount, 0)} Employés</span>
+                                            <span>{allDepartments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.employeeCount, 0)} Employés</span>
                                         </div>
                                     </div>
                                 </div>
@@ -532,12 +548,12 @@ export default function DepartmentsPage() {
                             <div className="mt-8">
                                 <div className="flex justify-between text-xs mb-2 font-medium">
                                     <span className="text-muted-foreground uppercase tracking-wider">Budget Alloué</span>
-                                    <span className="text-foreground">{Math.round((departments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.budget, 0) / site.budget) * 100)}%</span>
+                                    <span className="text-foreground">{Math.round((allDepartments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.budget, 0) / site.budget) * 100)}%</span>
                                 </div>
                                 <div className="w-full h-3 bg-secondary rounded-full overflow-hidden shadow-inner">
                                     <div
                                         className="h-full bg-gradient-to-r from-primary to-purple-500 rounded-full transition-all duration-1000 ease-out shadow-sm relative"
-                                        style={{ width: `${Math.min((departments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.budget, 0) / site.budget) * 100, 100)}%` }}
+                                        style={{ width: `${Math.min((allDepartments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.budget, 0) / site.budget) * 100, 100)}%` }}
                                     >
                                         <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
                                     </div>
