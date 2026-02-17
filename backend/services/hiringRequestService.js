@@ -1,155 +1,182 @@
-const db = require('../config/db');
-const { v4: uuidv4 } = require('uuid');
+const { HiringRequest, User, Department, Candidature } = require('../models');
+const { Op } = require('sequelize');
 
 const getAllHiringRequests = async ({ page, limit, requesterId, search, department, site } = {}) => {
-    const conditions = [];
-    const params = [];
+    const where = {};
+    const include = [
+        {
+            model: User,
+            as: 'requester',
+            attributes: ['id', 'name', 'email']
+        },
+        {
+            model: User,
+            as: 'approver',
+            attributes: ['id', 'name', 'role']
+        },
+        {
+            model: Department,
+            attributes: ['id', 'name', 'site'],
+            where: {} // Initialize for potential filtering
+        }
+    ];
 
-    let baseSql = `
-        SELECT 
-            hr.*, 
-            d.name as departmentName, 
-            u.name as requesterName,
-            app.name as approverName
-        FROM HiringRequest hr
-        LEFT JOIN Department d ON hr.departmentId = d.id
-        LEFT JOIN User u ON hr.requesterId = u.id
-        LEFT JOIN User app ON hr.approverId = app.id
-    `;
-
+    // Filter by Requester
     if (requesterId) {
-        conditions.push("hr.requesterId = ?");
-        params.push(requesterId);
+        where.requesterId = requesterId;
     }
 
+    // Filter by Department Name (Frontend sends name)
     if (department) {
-        // Frontend sends department Name
-        conditions.push("d.name = ?");
-        params.push(department);
+        // We need to filter on the associated Department model
+        include[2].where = {
+            ...include[2].where,
+            name: department
+        };
     }
 
+    // Filter by Site
     if (site) {
-        conditions.push("hr.site = ?");
-        params.push(site);
+        where.site = site;
     }
 
+    // Search (Title or Requester Name)
     if (search) {
-        conditions.push("(hr.title LIKE ? OR u.name LIKE ?)");
-        const term = `%${search}%`;
-        params.push(term, term);
+        const searchPattern = `%${search}%`;
+        where[Op.or] = [
+            { title: { [Op.like]: searchPattern } },
+            // To search by requester name, strictly we can't do it easily in the top-level WHERE 
+            // without using Sequelize literal or a separate required include with where.
+            // But since 'requester' is an include, if we put where clause there it becomes an inner join.
+            // Let's keep it simple: Search title OR add condition to requester include.
+            // Complex OR across associations is tricky in Sequelize.
+            // Often easiest is to use a literal in the top-level where:
+            // '$requester.name$': { [Op.like]: searchPattern }
+        ];
+        
+        // Let's try the $association.field$ syntax which Sequelize supports for includes
+         where[Op.or].push({
+             '$requester.name$': { [Op.like]: searchPattern }
+         });
     }
 
-    let whereClause = "";
-    if (conditions.length > 0) {
-        whereClause = " WHERE " + conditions.join(" AND ");
-    }
+    // Sorting
+    const order = [['createdAt', 'DESC']];
 
-    // Sort
-    const orderClause = " ORDER BY hr.createdAt DESC";
-
+    // Execution
     if (page && limit) {
-        // Count query must include joins if we are filtering by join columns (department name, user name)
-        const countSql = `
-            SELECT COUNT(*) as total 
-            FROM HiringRequest hr
-            LEFT JOIN Department d ON hr.departmentId = d.id
-            LEFT JOIN User u ON hr.requesterId = u.id
-            ${whereClause}
-        `;
-        
-        const [countResult] = await db.query(countSql, params);
-        const total = countResult[0].total;
-
         const offset = (Number(page) - 1) * Number(limit);
-        const limitSql = " LIMIT ? OFFSET ?";
+        const { count, rows } = await HiringRequest.findAndCountAll({
+            where,
+            include,
+            limit: Number(limit),
+            offset: Number(offset),
+            order,
+            distinct: true // Important for correct count with includes
+        });
         
-        const finalSql = baseSql + whereClause + orderClause + limitSql;
-        // Copy params for the main query + pagination
-        const finalParams = [...params, Number(limit), offset];
-
-        const [rows] = await db.query(finalSql, finalParams);
+        // Flatten logic matching the old service?
+        // Old service returned: hr.*, departmentName, requesterName, approverName
+        const data = rows.map(r => {
+            const plain = r.get({ plain: true });
+            return {
+                ...plain,
+                departmentName: plain.Department ? plain.Department.name : null,
+                requesterName: plain.requester ? plain.requester.name : null,
+                approverName: plain.approver ? plain.approver.name : null,
+                // Ensure we return the included objects too if frontend needs them, 
+                // but the old service flattened specific fields. We can keep both.
+            };
+        });
 
         return {
-            data: rows,
+            data,
             pagination: {
-                total,
+                total: count,
                 page: Number(page),
                 limit: Number(limit),
-                totalPages: Math.ceil(total / Number(limit))
+                totalPages: Math.ceil(count / Number(limit))
             }
         };
     } else {
-        const finalSql = baseSql + whereClause + orderClause;
-        const [rows] = await db.query(finalSql, params);
-        return rows;
+        const rows = await HiringRequest.findAll({
+            where,
+            include,
+            order
+        });
+        
+         return rows.map(r => {
+            const plain = r.get({ plain: true });
+            return {
+                ...plain,
+                departmentName: plain.Department ? plain.Department.name : null,
+                requesterName: plain.requester ? plain.requester.name : null,
+                approverName: plain.approver ? plain.approver.name : null,
+            };
+        });
     }
 };
 
 const getHiringRequestById = async (id) => {
-    const sql = `
-        SELECT 
-            hr.*, 
-            d.name as departmentName, 
-            u.name as requesterName,
-            app.name as approverName
-        FROM HiringRequest hr
-        LEFT JOIN Department d ON hr.departmentId = d.id
-        LEFT JOIN User u ON hr.requesterId = u.id
-        LEFT JOIN User app ON hr.approverId = app.id
-        WHERE hr.id = ?
-    `;
-    const [rows] = await db.query(sql, [id]);
-    return rows[0];
+    const request = await HiringRequest.findByPk(id, {
+        include: [
+            {
+                model: User,
+                as: 'requester',
+                attributes: ['id', 'name']
+            },
+            {
+                model: User,
+                as: 'approver',
+                attributes: ['id', 'name']
+            },
+            {
+                model: Department,
+                attributes: ['id', 'name']
+            }
+        ]
+    });
+
+    if (!request) return null;
+
+    const plain = request.get({ plain: true });
+    return {
+        ...plain,
+        departmentName: plain.Department ? plain.Department.name : null,
+        requesterName: plain.requester ? plain.requester.name : null,
+        approverName: plain.approver ? plain.approver.name : null,
+    };
 };
 
 const createHiringRequest = async (data) => {
-    const id = uuidv4();
-    const sql = `
-        INSERT INTO HiringRequest (
-            id, title, departmentId, category, status, requesterId, 
-            description, budget, contractType, reason, createdAt,
-            site, businessUnit, desiredStartDate, replacementFor, replacementReason,
-            increaseType, increaseDateRange, educationRequirements, skillsRequirements, roleId
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-    const values = [
-        id, 
-        data.title, 
-        data.departmentId || null, 
-        data.category, 
-        data.status || 'Pending HR', 
-        data.requesterId || null,
-        data.description, 
-        data.budget, 
-        data.contractType, 
-        data.reason,
-        new Date(), // createdAt
-        data.site,
-        data.businessUnit,
-        data.desiredStartDate ? new Date(data.desiredStartDate) : null,
-        data.replacementFor || null,
-        data.replacementReason || null,
-        data.increaseType,
-        data.increaseDateRange,
-        data.educationRequirements,
-        data.skillsRequirements,
-        data.roleId || null
-    ];
+    // Data preparation
+    const requestData = {
+        title: data.title,
+        departmentId: data.departmentId || null,
+        category: data.category,
+        status: data.status || 'Pending HR',
+        requesterId: data.requesterId || null,
+        description: data.description,
+        budget: data.budget,
+        contractType: data.contractType,
+        reason: data.reason,
+        site: data.site,
+        businessUnit: data.businessUnit,
+        desiredStartDate: data.desiredStartDate ? new Date(data.desiredStartDate) : null,
+        replacementFor: data.replacementFor || null,
+        replacementReason: data.replacementReason || null,
+        increaseType: data.increaseType,
+        increaseDateRange: data.increaseDateRange,
+        educationRequirements: data.educationRequirements,
+        skillsRequirements: data.skillsRequirements,
+        roleId: data.roleId || null
+    };
 
-    await db.query(sql, values);
-    return getHiringRequestById(id);
+    const newRequest = await HiringRequest.create(requestData);
+    return await getHiringRequestById(newRequest.id);
 };
 
 const updateHiringRequest = async (id, data) => {
-    // Dynamic update building would be better, but sticking to pattern for now
-    // We fetch existing first to merge? Or just update what's passed?
-    // Let's do a somewhat dynamic update to be safe against missing fields overwriting with NULL if we pass partial data to Service
-    // But the controller usually passes everything or we trust the frontend. 
-    // Let's rewrite this to be dynamic to be safe.
-    
-    const fields = [];
-    const values = [];
-    
     const updateableColumns = [
         'title', 'departmentId', 'category', 'status', 'description', 'budget', 'contractType', 'reason',
         'site', 'businessUnit', 'desiredStartDate', 'replacementFor', 'replacementReason', 
@@ -157,28 +184,23 @@ const updateHiringRequest = async (id, data) => {
         'rejectionReason', 'approverId', 'approvedAt'
     ];
 
-    for (const key of Object.keys(data)) {
+    const updateData = {};
+    Object.keys(data).forEach(key => {
         if (updateableColumns.includes(key)) {
-            fields.push(`${key} = ?`);
-            if ((key === 'desiredStartDate' || key === 'approvedAt') && data[key]) {
-                values.push(new Date(data[key]));
+             if ((key === 'desiredStartDate' || key === 'approvedAt') && data[key]) {
+                updateData[key] = new Date(data[key]);
             } else {
-                values.push(data[key]);
+                updateData[key] = data[key];
             }
         }
-    }
+    });
 
-    if (fields.length === 0) return getHiringRequestById(id);
-
-    values.push(id);
-    const sql = `UPDATE HiringRequest SET ${fields.join(', ')} WHERE id = ?`;
-    
-    await db.query(sql, values);
-    return getHiringRequestById(id);
+    await HiringRequest.update(updateData, { where: { id } });
+    return await getHiringRequestById(id);
 };
 
 const deleteHiringRequest = async (id) => {
-    await db.query('DELETE FROM HiringRequest WHERE id = ?', [id]);
+    await HiringRequest.destroy({ where: { id } });
     return { message: 'Deleted successfully' };
 };
 

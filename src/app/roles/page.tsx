@@ -5,7 +5,7 @@ import { Plus, Pencil, Trash2, Search, X, Loader2, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 
-interface Role {
+interface Post {
     id: string;
     name: string;
     description?: string;
@@ -19,24 +19,24 @@ interface Department {
     siteId?: string;
 }
 
-interface RoleFormModalProps {
+interface PostFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (role: Partial<Role>) => Promise<void>;
-    role: Role | null;
+    onSave: (post: Partial<Post>) => Promise<void>;
+    post: Post | null;
     departments: Department[];
     sites: { id: string; name: string }[];
 }
 
-function RoleFormModal({
+function PostFormModal({
     isOpen,
     onClose,
     onSave,
-    role,
+    post,
     departments,
     sites
-}: RoleFormModalProps) {
-    const [formData, setFormData] = useState<Partial<Role>>({
+}: PostFormModalProps) {
+    const [formData, setFormData] = useState<Partial<Post>>({
         name: "",
         description: "",
         departmentId: ""
@@ -47,12 +47,12 @@ function RoleFormModal({
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(role || { name: "", description: "", departmentId: "" });
+            setFormData(post || { name: "", description: "", departmentId: "" });
             setError("");
 
             // Set initial site if department is selected
-            if (role?.departmentId) {
-                const dept = departments.find(d => d.id === role.departmentId);
+            if (post?.departmentId) {
+                const dept = departments.find(d => d.id === post.departmentId);
                 if (dept?.siteId) {
                     setSelectedSiteId(dept.siteId);
                 } else {
@@ -62,7 +62,7 @@ function RoleFormModal({
                 setSelectedSiteId("");
             }
         }
-    }, [isOpen, role, departments]);
+    }, [isOpen, post, departments]);
 
     const filteredDepartments = departments.filter(d =>
         !selectedSiteId || d.siteId === selectedSiteId
@@ -94,7 +94,7 @@ function RoleFormModal({
                             <Shield className="w-5 h-5" />
                         </div>
                         <h2 className="text-2xl font-bold text-white tracking-tight">
-                            {role ? "Modifier le Poste" : "Ajouter un Poste"}
+                            {post ? "Modifier le Poste" : "Ajouter un Poste"}
                         </h2>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-all relative z-10">
@@ -177,7 +177,7 @@ function RoleFormModal({
                                 className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium shadow-lg transition-all flex items-center gap-2 text-sm"
                             >
                                 {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {role ? "Enregistrer" : "Créer le Poste"}
+                                {post ? "Enregistrer" : "Créer le Poste"}
                             </button>
                         </div>
                     </form>
@@ -188,21 +188,21 @@ function RoleFormModal({
 }
 
 export default function RolesPage() {
-    const [roles, setRoles] = useState<Role[]>([]);
+    const [posts, setPosts] = useState<Post[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
     const [sites, setSites] = useState<{ id: string; name: string }[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedDepartment, setSelectedDepartment] = useState("all");
     const [selectedSite, setSelectedSite] = useState("all");
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingRole, setEditingRole] = useState<Role | null>(null);
+    const [editingPost, setEditingPost] = useState<Post | null>(null);
 
-    const loadRoles = async () => {
+    const loadPosts = async () => {
         try {
-            const data = await api.getRoles();
-            setRoles(data);
+            const data = await api.getPosts();
+            setPosts(data);
         } catch (error) {
-            console.error("Failed to fetch roles:", error);
+            console.error("Failed to fetch posts:", error);
         }
     };
 
@@ -225,33 +225,33 @@ export default function RolesPage() {
     };
 
     useEffect(() => {
-        loadRoles();
+        loadPosts();
         loadDepartments();
         loadSites();
     }, []);
 
-    const handleSave = async (roleData: Partial<Role>) => {
-        if (editingRole) {
-            await api.updateRole(editingRole.id, roleData);
+    const handleSave = async (postData: Partial<Post>) => {
+        if (editingPost) {
+            await api.updatePost(editingPost.id, postData);
         } else {
-            await api.createRole(roleData);
+            await api.createPost(postData);
         }
-        await loadRoles();
+        await loadPosts();
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm("Êtes-vous sûr de vouloir supprimer ce poste ?")) return;
         try {
-            await api.deleteRole(id);
-            setRoles(roles.filter(r => r.id !== id));
+            await api.deletePost(id);
+            setPosts(posts.filter(r => r.id !== id));
         } catch (error: any) {
             alert(error.message);
         }
     };
 
-    const filteredRoles = roles.filter(r => {
+    const filteredPosts = posts.filter(r => {
         const matchesSearch =
-            r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (r.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
             (r.description || "").toLowerCase().includes(searchTerm.toLowerCase());
 
         const matchesDepartment =
@@ -270,11 +270,11 @@ export default function RolesPage() {
     return (
         <DashboardLayout>
             <div className="flex flex-col h-full relative">
-                <RoleFormModal
+                <PostFormModal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     onSave={handleSave}
-                    role={editingRole}
+                    post={editingPost}
                     departments={departments}
                     sites={sites}
                 />
@@ -287,13 +287,13 @@ export default function RolesPage() {
                             </div>
                             Gestion des Postes
                             <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-black rounded-full border border-primary/20 ml-2">
-                                {filteredRoles.length}
+                                {filteredPosts.length}
                             </span>
                         </h1>
                         <p className="text-muted-foreground mt-2 ml-14 font-medium">Gérez les postes et positions de votre organisation.</p>
                     </div>
                     <button
-                        onClick={() => { setEditingRole(null); setIsModalOpen(true); }}
+                        onClick={() => { setEditingPost(null); setIsModalOpen(true); }}
                         className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl shadow-lg transition-all hover:bg-primary/90 font-bold text-sm"
                     >
                         <Plus size={18} />
@@ -359,21 +359,21 @@ export default function RolesPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredRoles.map(role => (
-                        <div key={role.id} className="glass-card p-6 rounded-xl flex flex-col gap-4 group hover:border-primary/50 transition-all">
+                    {filteredPosts.map(post => (
+                        <div key={post.id} className="glass-card p-6 rounded-xl flex flex-col gap-4 group hover:border-primary/50 transition-all">
                             <div className="flex justify-between items-start">
                                 <div className="p-3 bg-primary/10 text-primary rounded-xl">
                                     <Shield size={24} />
                                 </div>
                                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
-                                        onClick={() => { setEditingRole(role); setIsModalOpen(true); }}
+                                        onClick={() => { setEditingPost(post); setIsModalOpen(true); }}
                                         className="p-2 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                                     >
                                         <Pencil size={16} />
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(role.id)}
+                                        onClick={() => handleDelete(post.id)}
                                         className="p-2 hover:bg-red-500/10 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"
                                     >
                                         <Trash2 size={16} />
@@ -381,21 +381,21 @@ export default function RolesPage() {
                                 </div>
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold mb-1">{role.name}</h3>
-                                {role.departmentName && (
+                                <h3 className="text-lg font-bold mb-1">{post.name}</h3>
+                                {(post.departmentName || departments.find(d => d.id === post.departmentId)?.name) && (
                                     <span className="text-xs font-bold uppercase bg-primary/10 text-primary px-2 py-0.5 rounded mb-2 inline-block">
-                                        {role.departmentName}
+                                        {post.departmentName || departments.find(d => d.id === post.departmentId)?.name}
                                     </span>
                                 )}
-                                <p className="text-sm text-muted-foreground line-clamp-2">{role.description || "No description provided."}</p>
+                                <p className="text-sm text-muted-foreground line-clamp-2">{post.description || "No description provided."}</p>
                             </div>
                             <div className="mt-auto pt-4 border-t border-border/50 flex justify-between items-center text-xs text-muted-foreground font-medium">
-                                <span>ID: {role.id.slice(0, 8)}...</span>
+                                <span>ID: {post.id.slice(0, 8)}...</span>
                             </div>
                         </div>
                     ))}
 
-                    {filteredRoles.length === 0 && (
+                    {filteredPosts.length === 0 && (
                         <div className="col-span-full py-12 text-center text-muted-foreground bg-secondary/20 rounded-xl border border-dashed border-border">
                             <Shield className="w-12 h-12 mx-auto mb-3 opacity-20" />
                             <p>Aucun poste trouvé.</p>
@@ -406,3 +406,4 @@ export default function RolesPage() {
         </DashboardLayout>
     );
 }
+

@@ -1,20 +1,24 @@
-const siteService = require('../services/siteService');
 const asyncHandler = require('express-async-handler');
+
+// Defined Enum Values
+// Sites: ['TT', 'TTG']
+const SITES = [
+    { id: '1', name: 'TT' },
+    { id: '2', name: 'TTG' }
+];
 
 // @desc    Get all sites
 // @route   GET /api/sites
 // @access  Public
 const getSites = asyncHandler(async (req, res) => {
-    const sites = await siteService.getAllSites();
-    res.json(sites);
+    res.json(SITES);
 });
 
 // @desc    Update site
 // @route   PUT /api/sites/:id
 // @access  Public
 const updateSite = asyncHandler(async (req, res) => {
-    const site = await siteService.updateSite(req.params.id, req.body);
-    res.json(site);
+    res.status(405).json({ message: 'Sites are now static and cannot be updated dynamically.' });
 });
 
 module.exports = {

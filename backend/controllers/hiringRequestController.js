@@ -2,7 +2,8 @@ const asyncHandler = require('express-async-handler');
 const hiringRequestService = require('../services/hiringRequestService');
 const socketService = require('../services/socketService');
 const notificationService = require('../services/notificationService');
-const db = require('../config/db'); // Needed to query users by role
+const { User } = require('../models');
+const { Op } = require('sequelize');
 
 const getHiringRequests = asyncHandler(async (req, res) => {
     const page = req.query.page ? parseInt(req.query.page) : null;
@@ -36,83 +37,64 @@ const createHiringRequest = asyncHandler(async (req, res) => {
     }
 
     // 1. Verify Requester Role
-    const [requester] = await db.query(`
-        SELECT User.id, User.name, Role.name as roleName 
-        FROM User 
-        LEFT JOIN Role ON User.roleId = Role.id 
-        WHERE User.id = ?
-    `, [requesterId]);
+    const requester = await User.findByPk(requesterId);
 
-    if (requester.length === 0) {
+    if (!requester) {
         res.status(404);
         throw new Error('User not found');
     }
 
-    const userRole = requester[0].roleName;
+    const userRole = requester.role; // Enum value
     
-    // Allow DEMANDEUR and HR Roles
-
-
     // 2. Determine Workflow
     let initialStatus = 'Pending HR';
     let targetApprovers = [];
-    const { site } = req.body;
+    
+    // Check if user is an HR role
+    // Enum values: ["responsable recrutement", "plant manger", "drh", "responsable RH", "demander "]
+    const isHrRole = ['responsable rh', 'responsable recrutement', 'drh'].includes(userRole);
 
-    // Check if user is an HR role (Responsable RH matches legacy, plus new roles)
-    const roleLower = userRole.toLowerCase();
-    const isHrRole = roleLower.includes('responsable rh') || 
-                     roleLower.includes('recrutement') || 
-                     roleLower.includes('human resources') ||
-                     roleLower.includes('hr_manager');
-
-    console.log(`[CreateHiringRequest] User: ${requester[0].name}, Role: ${userRole}, isHrRole: ${isHrRole}`);
+    console.log(`[CreateHiringRequest] User: ${requester.name}, Role: ${userRole}, isHrRole: ${isHrRole}`);
 
     if (isHrRole) {
         // --- HR Workflow ---
-        // Step 1: Notify "Directeur RH" -> Status: "Pending HR Director"
+        // Step 1: Notify "Directeur RH" (drh) -> Status: "Pending HR Director"
         initialStatus = 'Pending HR Director';
-        // Use LIKE for robustness
-        const [hrDirectors] = await db.query(
-            `SELECT User.id, User.name FROM User 
-             JOIN Role ON User.roleId = Role.id 
-             WHERE Role.name LIKE '%Directeur RH%' OR Role.name LIKE '%DRH%' OR Role.name = 'HR_DIRECTOR'`
-        );
-        targetApprovers = hrDirectors;
-
-        if (hrDirectors.length === 0) {
-            console.warn("[CreateHiringRequest] ⚠️ No Directeur RH (DRH) found for HR Workflow!");
-        } else {
-            console.log(`[CreateHiringRequest] HR Workflow. Target: Directeur RH (Found ${hrDirectors.length}: ${hrDirectors.map(u => u.name).join(', ')})`);
-        }
-        console.log(`[CreateHiringRequest] HR Workflow. Target: Directeur RH (Found ${hrDirectors.length})`);
-
-        } else {
-            // --- Standard Workflow (DEMANDEUR) ---
-            // Notify Responsable RH
-            initialStatus = 'Pending Responsable RH';
-            
-            console.log(`[CreateHiringRequest] Standard Workflow: Searching for Responsable RH...`);
-
-            // Use LIKE to be robust against whitespace or minor variations
-            const [hrUsers] = await db.query(
-                `SELECT User.id, User.name, Role.name as roleName FROM User 
-                 JOIN Role ON User.roleId = Role.id 
-                 WHERE Role.name LIKE 'Responsable RH%' OR Role.name = 'HR_MANAGER'` 
-            );
-
-            console.log(`[CreateHiringRequest] Found ${hrUsers.length} HR users:`, hrUsers.map(u => `${u.name} (${u.roleName})`).join(', '));
-            
-            // Filter: Target explicit "Responsable RH" first
-            const specificRH = hrUsers.filter(u => u.roleName.trim() === 'Responsable RH');
-            
-            if (specificRH.length > 0) {
-                targetApprovers = specificRH;
-                console.log(`[CreateHiringRequest] Prioritizing specific Responsable RH users: ${specificRH.map(u => u.name).join(', ')}`);
-            } else {
-                targetApprovers = hrUsers;
-                console.log(`[CreateHiringRequest] No specific 'Responsable RH' found. Falling back to all HR_MANAGERs.`);
+        
+        targetApprovers = await User.findAll({
+            where: {
+                role: 'drh'
             }
+        });
+
+        if (targetApprovers.length === 0) {
+            console.warn("[CreateHiringRequest] ⚠️ No Directeur RH (drh) found for HR Workflow!");
+        } else {
+            console.log(`[CreateHiringRequest] HR Workflow. Target: drh (Found ${targetApprovers.length})`);
         }
+
+    } else {
+        // --- Standard Workflow (DEMANDEUR) ---
+        // Notify Responsable RH
+        initialStatus = 'Pending Responsable RH';
+        
+        targetApprovers = await User.findAll({
+            where: {
+                role: 'responsable RH'
+            }
+        });
+
+        if (targetApprovers.length === 0) {
+            console.warn(`[CreateHiringRequest] No 'responsable RH' found. Falling back to 'drh' as backup if sensible? Or generic HR?`);
+            // Attempt fallback or just log
+            // Check for 'responsable recrutement' maybe?
+             const recruiters = await User.findAll({ where: { role: 'responsable recrutement' } });
+             if (recruiters.length > 0) {
+                 targetApprovers = recruiters;
+                 console.log("Fallback to 'responsable recrutement'");
+             }
+        }
+    }
 
     let newItem;
     try {
@@ -135,7 +117,7 @@ const createHiringRequest = asyncHandler(async (req, res) => {
             const notification = await notificationService.createNotification({
                 senderId: requesterId, 
                 receiverId: approver.id,
-                message: `📋 Nouvelle demande d'embauche de ${requester[0].name}: "${newItem.title}" - En attente de votre validation`,
+                message: `📋 Nouvelle demande d'embauche de ${requester.name}: "${newItem.title}" - En attente de votre validation`,
                 type: 'ACTION_REQUIRED',
                 entityType: 'HIRING_REQUEST',
                 entityId: newItem.id,
@@ -158,31 +140,21 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
     
     console.log(`[UpdateHiringRequest] Processing ID: ${id}, Approver: ${approverId}`);
 
-    // Fetch Actor (Approver) from DB since we lack JWT auth middleware
+    // Fetch Actor (Approver) from DB
     let actorRole = 'Unknown';
     let actorName = 'Unknown';
     let actorUser = null;
 
     if (approverId) {
-        const [users] = await db.query(`
-            SELECT User.*, Role.name as roleName 
-            FROM User 
-            LEFT JOIN Role ON User.roleId = Role.id 
-            WHERE User.id = ?
-        `, [approverId]);
-        
-        if (users.length > 0) {
-            actorUser = users[0];
+        actorUser = await User.findByPk(approverId);
+        if (actorUser) {
             actorName = actorUser.name;
-            actorRole = actorUser.roleName || actorUser.role; // Handle both cases
+            actorRole = actorUser.role;
         }
     }
 
     if (!actorUser) {
         console.warn('[UpdateHiringRequest] ⚠️ No approver found for ID:', approverId);
-         // Fallback or error? Let's error if strictly needed for logic
-         // But maybe status update doesn't need it?
-         // Logic below relies on actorRole. So we should probably require it for status changes.
     }
 
     // Fetch Current Request
@@ -203,11 +175,10 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
             // ========== STEP 1: HR (Responsable RH or DRH) APPROVES → Notify PLANT_MANAGER (Direction) ==========
             // Logic: If status moved TO 'Pending Plant Manager', it means HR or DRH approved it.
             if (status === 'Pending Plant Manager') {
-                const roleLower = (actorRole || '').toLowerCase();
-                const isDirector = roleLower.includes('directeur') || roleLower.includes('director') || roleLower.includes('drh');
+                const isDirector = actorRole === 'drh';
                 const approverLabel = isDirector ? 'Directeur RH' : 'Responsable RH';
                 
-                console.log(`[UpdateHiringRequest] HR/DRH Approved. Actor Role: ${actorRole} (Is Director: ${isDirector})`);
+                console.log(`[UpdateHiringRequest] HR/DRH Approved. Actor Role: ${actorRole}`);
 
                 // Resolve HR/DRH notifications
                 await notificationService.resolveActions(
@@ -216,16 +187,15 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
                     `Validée par ${actorName} (${approverLabel})`
                 );
 
-                // Start Notification to Plant Manager / Direction
-                const [directors] = await db.query(`
-                    SELECT User.id, User.name, Role.name as roleName 
-                    FROM User 
-                    JOIN Role ON User.roleId = Role.id 
-                    WHERE Role.name LIKE '%Plant Manager%' OR Role.name LIKE '%PLANT_MANAGER%' OR Role.name LIKE '%Direction%'
-                `);
+                // Start Notification to Plant Manager / Direction ('plant manger')
+                const directors = await User.findAll({
+                    where: {
+                        role: 'plant manger' // Using the specific typo string requested
+                    }
+                });
                 
                 if (directors.length === 0) {
-                    console.warn('[UpdateHiringRequest] ⚠️ No Plant Manager/Direction found to notify!');
+                    console.warn('[UpdateHiringRequest] ⚠️ No Plant Manager found!');
                 }
 
                 for (const director of directors) {
@@ -247,24 +217,20 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
                     currentRequest.requesterId,
                     `ℹ️ Votre demande "${currentRequest.title}" a été validée par les RH/Direction (${approverLabel}) et transmise au Plant Manager.`
                 );
-                
-                console.log(`✅ HR/DRH approved, notified Plant Manager and Requester`);
             }
 
             // ========== STEP 2: PLANT_MANAGER APPROVES → Notify RECRUITMENT_MANAGER ==========
-            // Logic: If status moved TO 'Approved', it means Plant Manager/Direction validated it.
             if (status === 'Approved') {
                 console.log(`[UpdateHiringRequest] Final Approval. Actor Role: ${actorRole}`);
 
-                const [recruiters] = await db.query(`
-                    SELECT User.id, User.name, Role.name as roleName 
-                    FROM User 
-                    JOIN Role ON User.roleId = Role.id 
-                    WHERE Role.name LIKE '%RECRUITMENT_MANAGER%' OR Role.name LIKE '%RESPONSABLE_RECRUTEMENT%'
-                `);
+                const recruiters = await User.findAll({
+                    where: {
+                        role: 'responsable recrutement'
+                    }
+                });
                 
                 if (recruiters.length === 0) {
-                    console.warn('[UpdateHiringRequest] ⚠️ No Recruitment Manager found to notify!');
+                    console.warn('[UpdateHiringRequest] ⚠️ No Recruitment Manager found!');
                 }
 
                 for (const recruiter of recruiters) {
@@ -292,8 +258,6 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
                     'HIRING_REQUEST', 
                     `Approuvée par la Direction (${actorName})`
                 );
-                
-                console.log(`✅ Direction approved, notified Recruitment Manager and Requester`);
             }
 
             // ========== REJECTION HANDLING ==========
@@ -306,20 +270,12 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
                     currentRequest.requesterId, 
                     `❌ Votre demande d'embauche "${currentRequest.title}" a été REFUSÉE par ${actorName}.${reasonText}`
                 );
-                console.log(`✅ Requester notified of rejection`);
 
-                // Notify Recruitment Manager (Required: Notify on refusal by HR or Direction)
-                const [recruiters] = await db.query(`
-                    SELECT User.id, User.name, Role.name as roleName 
-                    FROM User 
-                    JOIN Role ON User.roleId = Role.id 
-                    WHERE Role.name LIKE '%RECRUITMENT_MANAGER%' OR Role.name LIKE '%RESPONSABLE_RECRUTEMENT%'
-                `);
+                // Notify Recruitment Manager (responsable recrutement)
+                const recruiters = await User.findAll({
+                     where: { role: 'responsable recrutement' }
+                });
                 
-                if (recruiters.length === 0) {
-                    console.warn('[UpdateHiringRequest] ⚠️ No Recruitment Manager found to notify of rejection!');
-                }
-
                 for (const recruiter of recruiters) {
                     await sendNotification(
                         approverId,
@@ -329,7 +285,6 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
                         'HIRING_REQUEST',
                         currentRequest.id
                     );
-                    console.log(`   ➡ Notified Recruitment Manager of rejection: ${recruiter.name}`);
                 }
                 
                 // Resolve all outstanding notifications
@@ -338,8 +293,6 @@ const updateHiringRequest = asyncHandler(async (req, res) => {
                     'HIRING_REQUEST', 
                     `Refusée par ${actorName}`
                 );
-                
-                console.log(`❌ Request rejected by ${actorName}`);
             }
 
         } catch (error) {

@@ -1,63 +1,55 @@
-const db = require('../config/db');
+const { User, Department } = require('../models');
+const { Op } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const emailService = require('./emailService');
+const jwt = require('jsonwebtoken');
 
 // Get all users
-// Get all users with pagination
 const getAllUsers = async (page = 1, limit = 10) => {
     const offset = (page - 1) * limit;
 
-    // Get total count
-    const [countResult] = await db.query('SELECT COUNT(*) as total FROM User');
-    const total = countResult[0].total;
+    const { count, rows } = await User.findAndCountAll({
+        include: [
+            {
+                model: Department,
+                as: 'departmentData', // Matches association alias
+                attributes: ['name', 'site']
+            }
+        ],
+        limit: Number(limit),
+        offset: Number(offset),
+        order: [['name', 'ASC']] // Added default sort
+    });
 
-    // Join with Department, Role, and Site (via Department)
-    const [rows] = await db.query(`
-        SELECT User.*, 
-               Department.name as departmentName, 
-               Role.name as roleName,
-               Site.name as siteName
-        FROM User 
-        LEFT JOIN Department ON User.departmentId = Department.id
-        LEFT JOIN Site ON Department.siteId = Site.id
-        LEFT JOIN Role ON User.roleId = Role.id
-        LIMIT ? OFFSET ?
-    `, [Number(limit), Number(offset)]);
-    
-    
-    // Transform to match frontend expected structure
     const users = rows.map(u => {
-        const transformed = {
-            id: u.id,
-            name: u.name,
-            email: u.email,
-            status: u.status || 'Active',
-            avatarGradient: u.avatarGradient || 'from-gray-500 to-slate-500',
-            departmentId: u.departmentId,
-            roleId: u.roleId,
-            department: u.departmentName || 'Unassigned',
-            site: u.siteName || 'Unassigned',
-            role: u.roleName || u.role || 'Employee', // Fallback to legacy or default
-            post: u.post
+        const plainUser = u.get({ plain: true });
+        return {
+            id: plainUser.id,
+            name: plainUser.name,
+            email: plainUser.email,
+            status: plainUser.status,
+            avatarGradient: plainUser.avatarGradient,
+            departmentId: plainUser.departmentId,
+            roleId: null, // Legacy field removed
+            department: plainUser.departmentData ? plainUser.departmentData.name : 'Unassigned',
+            site: plainUser.departmentData ? plainUser.departmentData.site : 'Unassigned',
+            role: plainUser.role, // Now expected to be the Enum string
+            post: plainUser.post
         };
-        // Don't send password to frontend
-        return transformed;
     });
 
     return {
         users,
-        total,
+        total: count,
         page: Number(page),
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(count / limit)
     };
 };
 
 // Create user (signup)
 const createUser = async (userData) => {
-    const id = uuidv4();
     let departmentId = userData.departmentId;
-    let roleId = userData.roleId;
 
     // Validate required fields
     if (!userData.email || !userData.password) {
@@ -65,44 +57,33 @@ const createUser = async (userData) => {
     }
 
     // Check if user already exists
-    const [existingUsers] = await db.query('SELECT id FROM User WHERE email = ?', [userData.email]);
-    if (existingUsers.length > 0) {
+    const existingUser = await User.findOne({ where: { email: userData.email } });
+    if (existingUser) {
         throw new Error('User with this email already exists');
     }
 
-    // Resolve department
+    // Resolve department by Name if ID not provided
     if (!departmentId && userData.department) {
-        const [deptRows] = await db.query('SELECT id FROM Department WHERE name = ?', [userData.department]);
-        if (deptRows.length > 0) {
-            departmentId = deptRows[0].id;
-        }
-    }
-
-    // Resolve role (if name provided but ID not)
-    if (!roleId && userData.role) {
-        const [roleRows] = await db.query('SELECT id FROM Role WHERE name = ?', [userData.role]);
-        if (roleRows.length > 0) {
-            roleId = roleRows[0].id;
+        const dept = await Department.findOne({ where: { name: userData.department } });
+        if (dept) {
+            departmentId = dept.id;
         }
     }
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-    await db.query(`
-        INSERT INTO User (id, name, email, password, roleId, status, avatarGradient, departmentId, post)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-        id, 
-        userData.name, 
-        userData.email, 
-        hashedPassword, 
-        roleId,
-        userData.status || 'Active', 
-        userData.avatarGradient || "from-gray-500 to-slate-500", 
-        departmentId,
-        userData.post
-    ]);
+    // Create User
+    const newUser = await User.create({
+        name: userData.name,
+        email: userData.email,
+        password: hashedPassword,
+        role: userData.role, // Should be one of the Enum values
+        status: userData.status || 'Active',
+        avatarGradient: userData.avatarGradient || "from-gray-500 to-slate-500",
+        departmentId: departmentId,
+        post: userData.post
+    });
 
     // Send Welcome Email
     try {
@@ -112,123 +93,120 @@ const createUser = async (userData) => {
         console.error('❌ Failed to send welcome email:', emailError.message);
     }
 
-    // Return created user
-    const [user] = await db.query(`
-        SELECT User.*, Role.name as roleName 
-        FROM User 
-        LEFT JOIN Role ON User.roleId = Role.id 
-        WHERE User.id = ?
-    `, [id]);
+    const createdUser = newUser.get({ plain: true });
+    delete createdUser.password;
     
-    const userResult = { ...user[0], role: user[0].roleName || user[0].role };
-    delete userResult.password;
-    return userResult;
+    // Fetch department name for response if needed, or just return basic info
+    // Minimizing extra queries for creation response is usually fine
+    return createdUser;
 };
 
 // Update user
 const updateUser = async (id, userData) => {
     let departmentId = userData.departmentId;
-    let roleId = userData.roleId;
     
     if (!departmentId && userData.department) {
-        const [deptRows] = await db.query('SELECT id FROM Department WHERE name = ?', [userData.department]);
-        if (deptRows.length > 0) departmentId = deptRows[0].id;
+        const dept = await Department.findOne({ where: { name: userData.department } });
+        if (dept) departmentId = dept.id;
     }
 
-    if (!roleId && userData.role) {
-        const [roleRows] = await db.query('SELECT id FROM Role WHERE name = ?', [userData.role]);
-        if (roleRows.length > 0) roleId = roleRows[0].id;
-    }
+    const updateData = {};
+    if (userData.name !== undefined) updateData.name = userData.name;
+    if (userData.email !== undefined) updateData.email = userData.email;
+    if (userData.role !== undefined) updateData.role = userData.role;
+    if (userData.status !== undefined) updateData.status = userData.status;
+    if (departmentId !== undefined) updateData.departmentId = departmentId;
+    if (userData.avatarGradient !== undefined) updateData.avatarGradient = userData.avatarGradient;
+    if (userData.post !== undefined) updateData.post = userData.post;
 
-    // Build update query dynamically
-    const updateFields = [];
-    const updateValues = [];
+    await User.update(updateData, { where: { id } });
 
-    if (userData.name !== undefined) { updateFields.push('name = ?'); updateValues.push(userData.name); }
-    if (userData.email !== undefined) { updateFields.push('email = ?'); updateValues.push(userData.email); }
-    if (roleId !== undefined) { updateFields.push('roleId = ?'); updateValues.push(roleId); }
-    if (userData.status !== undefined) { updateFields.push('status = ?'); updateValues.push(userData.status); }
-    if (departmentId !== undefined) { updateFields.push('departmentId = ?'); updateValues.push(departmentId); }
-    if (userData.avatarGradient !== undefined) { updateFields.push('avatarGradient = ?'); updateValues.push(userData.avatarGradient); }
-    if (userData.post !== undefined) { updateFields.push('post = ?'); updateValues.push(userData.post); }
-
-    if (updateFields.length > 0) {
-        updateValues.push(id);
-        await db.query(`UPDATE User SET ${updateFields.join(', ')} WHERE id = ?`, updateValues);
-    }
-
-    const [user] = await db.query(`
-        SELECT User.*, Department.name as departmentName, Role.name as roleName
-        FROM User 
-        LEFT JOIN Department ON User.departmentId = Department.id
-        LEFT JOIN Role ON User.roleId = Role.id
-        WHERE User.id = ?
-    `, [id]);
+    const updatedUser = await User.findByPk(id, {
+        include: [{ 
+            model: Department, 
+            as: 'departmentData',
+            attributes: ['name', 'site']
+        }]
+    });
     
-    const userResult = {
-        ...user[0],
-        department: user[0].departmentName || "Unassigned",
-        role: user[0].roleName || user[0].role
+    if (!updatedUser) throw new Error('User not found');
+
+    const plainUser = updatedUser.get({ plain: true });
+    return {
+        ...plainUser,
+        department: plainUser.departmentData ? plainUser.departmentData.name : "Unassigned",
+        role: plainUser.role
     };
-    delete userResult.password;
-    return userResult;
 };
 
 // Update user password only
 const updateUserPassword = async (id, newPassword) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await db.query('UPDATE User SET password = ? WHERE id = ?', [hashedPassword, id]);
+    await User.update({ password: hashedPassword }, { where: { id } });
 
-    const [user] = await db.query(`
-        SELECT User.*, Department.name as departmentName, Role.name as roleName
-        FROM User 
-        LEFT JOIN Department ON User.departmentId = Department.id
-        LEFT JOIN Role ON User.roleId = Role.id
-        WHERE User.id = ?
-    `, [id]);
-    
-    const userResult = {
-        ...user[0],
-        department: user[0].departmentName || "Unassigned",
-        role: user[0].roleName || user[0].role
+    const user = await User.findByPk(id, {
+        include: [{ 
+            model: Department, 
+            as: 'departmentData',
+            attributes: ['name']
+        }]
+    });
+
+    const plainUser = user.get({ plain: true });
+    return {
+        ...plainUser,
+        department: plainUser.departmentData ? plainUser.departmentData.name : "Unassigned",
     };
-    delete userResult.password;
-    return userResult;
 };
 
 // Login user
 const loginUser = async (email, password) => {
     if (!email || !password) throw new Error('Email and password are required');
 
-    const [users] = await db.query(`
-        SELECT User.*, Department.name as departmentName, Role.name as roleName
-        FROM User 
-        LEFT JOIN Department ON User.departmentId = Department.id
-        LEFT JOIN Role ON User.roleId = Role.id
-        WHERE User.email = ?
-    `, [email]);
+    const user = await User.findOne({
+        where: { email },
+        include: [{ 
+            model: Department, 
+            as: 'departmentData',
+            attributes: ['name', 'site']
+        }]
+    });
 
-    if (users.length === 0) throw new Error('Invalid email or password');
-
-    const user = users[0];
+    if (!user) throw new Error('Invalid email or password');
     if (!user.password) throw new Error('Invalid email or password');
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) throw new Error('Invalid email or password');
 
+    const token = generateToken(user.id);
+    
+    const plainUser = user.get({ plain: true });
     const userResult = {
-        ...user,
-        department: user.departmentName || "Unassigned",
-        role: user.roleName || user.role
+        ...plainUser,
+        department: plainUser.departmentData ? plainUser.departmentData.name : "Unassigned",
+        role: plainUser.role,
+        token
     };
     delete userResult.password;
     return userResult;
 };
 
+// Generate JWT
+const generateToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET || 'fallbacksecret', {
+        expiresIn: '30d',
+    });
+};
+
 // Delete user
 const deleteUser = async (id) => {
-    await db.query('DELETE FROM User WHERE id = ?', [id]);
+    await User.destroy({ where: { id } });
     return { message: 'Deleted' };
+};
+
+// Get User by ID (Helper might be needed)
+const getUserById = async (id) => {
+    return await User.findByPk(id);
 };
 
 module.exports = {
@@ -237,5 +215,6 @@ module.exports = {
     updateUser,
     updateUserPassword,
     loginUser,
-    deleteUser
+    deleteUser,
+    getUserById
 };

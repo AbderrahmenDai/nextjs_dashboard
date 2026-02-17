@@ -19,6 +19,8 @@ app.use('/api/interviews', require('./routes/interviewRoutes'));
 app.use('/api/hiring-requests', require('./routes/hiringRequestRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/roles', require('./routes/roleRoutes'));
+app.use('/api/post-sites', require('./routes/postSiteRoutes'));
+app.use('/api/posts', require('./routes/postRoutes'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 const path = require('path');

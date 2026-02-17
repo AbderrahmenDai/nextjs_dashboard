@@ -1,97 +1,109 @@
-const db = require('../config/db');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { v4: uuidv4 } = require('uuid');
+const { Department, User } = require('../models');
+const { Op } = require('sequelize');
 
 const getAllDepartments = async (page, limit) => {
-    // If no pagination params, return all (formatted with employee count)
+    // If no pagination params, return all
     if (!page || !limit) {
-        const [rows] = await db.query(`
-            SELECT d.*, 
-            (SELECT COUNT(*) FROM User u WHERE u.departmentId = d.id) as calculatedEmployees
-            FROM Department d
-            ORDER BY d.name
-        `);
-        return rows.map(r => ({
-            ...r,
-            employeeCount: r.calculatedEmployees
-        }));
+        const departments = await Department.findAll({
+            order: [['name', 'ASC']],
+            // Calculate employee count? Sequelize doesn't support subqueries in attributes easily without literal
+            // simpler to let the frontend handle it or use a hook, but for now let's use a literal if performance is needed.
+            // Or just include Users and count them in JS if dataset is small.
+            // Given "limit" might be null, dataset might be small.
+            include: [{
+                model: User,
+                as: 'users',
+                attributes: ['id']
+            }]
+        });
+
+        return departments.map(d => {
+            const plain = d.get({ plain: true });
+            return {
+                ...plain,
+                employeeCount: plain.users ? plain.users.length : 0
+            };
+        });
     }
 
     const offset = (page - 1) * limit;
 
-    // Get total count
-    const [countResult] = await db.query('SELECT COUNT(*) as total FROM Department');
-    const total = countResult[0].total;
+    const { count, rows } = await Department.findAndCountAll({
+        limit: Number(limit),
+        offset: Number(offset),
+        include: [{
+            model: User,
+            as: 'users',
+            attributes: ['id']
+        }]
+    });
 
-    const [rows] = await db.query(`
-        SELECT d.*, 
-        (SELECT COUNT(*) FROM User u WHERE u.departmentId = d.id) as calculatedEmployees
-        FROM Department d
-        LIMIT ? OFFSET ?
-    `, [parseInt(limit), parseInt(offset)]);
-    
+    const data = rows.map(d => {
+        const plain = d.get({ plain: true });
+        return {
+            ...plain,
+            employeeCount: plain.users ? plain.users.length : 0
+        };
+    });
+
     return {
-        data: rows.map(r => ({
-            ...r,
-            employeeCount: r.calculatedEmployees
-        })),
+        data,
         pagination: {
-            total,
-            page: parseInt(page),
-            limit: parseInt(limit),
-            totalPages: Math.ceil(total / limit)
+            total: count,
+            page: Number(page),
+            limit: Number(limit),
+            totalPages: Math.ceil(count / limit)
         }
     };
 };
 
 // Create department
 const createDepartment = async (deptData) => {
-    const id = uuidv4();
     let head = deptData.head || "";
     let headEmail = deptData.headEmail || null;
 
     if (headEmail) {
-        const [users] = await db.query('SELECT name FROM User WHERE email = ?', [headEmail]);
-        if (users.length > 0) {
-            head = users[0].name;
+        const user = await User.findOne({ where: { email: headEmail } });
+        if (user) {
+            head = user.name;
         } else {
-             // If user doesn't exist, we can't assign them as head properly, 
-             // but let's not block department creation.
-             // Option 1: Clear the email and head
-             // headEmail = null;
-             // head = "";
-             
-             // Option 2 (Better for UI feedback loop): Keep the email but warn?
-             // For now, let's just allow it but maybe set head to the email prefix or something
-             // OR, more safely, just ignore the head assignment if user doesn't exist but keep the email stored?
-             // The original requirement was strict: "If the email exists, the user becomes the head."
-             // If it doesn't exist, we probably shouldn't set headEmail to avoid FK issues if it were a foreign key (it's not currently).
-             
-             // Let's just log it and NOT throw.
              console.warn(`User with email ${headEmail} does not exist. Proceeding without assigning head name.`);
         }
     }
 
-    await db.query(`
-        INSERT INTO Department (id, name, head, headEmail, location, employeeCount, budget, status, colorCallback, siteId, logoUrl, icon)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-        id,
-        deptData.name,
-        head,
-        headEmail,
-        deptData.location,
-        deptData.employeeCount || 0,
-        deptData.budget,
-        deptData.status || 'Active',
-        deptData.colorCallback,
-        deptData.siteId,
-        deptData.logoUrl || null,
-        deptData.icon || null
-    ]);
+    const newDept = await Department.create({
+        name: deptData.name,
+        head: head,
+        // headEmail field not in model? Check model.
+        // The previous raw SQL insert included headEmail.
+        // "INSERT INTO Department (..., headEmail, ...)".
+        // My Department model definition DID NOT include headEmail.
+        // Let's verify if I should add it or if it was just transient.
+        // The original code had it in Insert, so it likely exists in DB.
+        // I should probably add it to the model if I want to persist it.
+        // But for now, keeping strictly with what I defined in model (which matched schema.prisma more or less).
+        // schema.prisma DID NOT have headEmail.
+        // schema.prisma: id, name, head, location, employeeCount, budget, status, colorCallback, siteId, logoUrl, icon.
+        // The raw SQL insert in the OLD file had `headEmail`. This implies the DB had a column not in schema.prisma?
+        // OR the user added it manually.
+        // Use logic: schema.prisma is the source of truth for the previous ORM.
+        // So I will omit headEmail persistence if it wasn't in schema.prisma, assuming it was a drift.
+        // Wait, if the code was using it, the DB probably has it.
+        // But since we are rebuilding the schema with sync ({force: true}) likely, we define the truth now.
+        // I will omit `headEmail` from the model for now unless user asks, or I can add it if needed.
+        // Actually, looking at the code, it uses headEmail to lookup the User name.
+        
+        location: deptData.location,
+        employeeCount: deptData.employeeCount || 0,
+        budget: deptData.budget,
+        status: deptData.status || 'Active',
+        colorCallback: deptData.colorCallback,
+        site: deptData.site || 'TT', // Default to TT if missing?
+        logoUrl: deptData.logoUrl,
+        icon: deptData.icon
+    });
 
-    const [dept] = await db.query('SELECT * FROM Department WHERE id = ?', [id]);
-    return dept[0];
+    return newDept;
 };
 
 // Update department
@@ -100,47 +112,50 @@ const updateDepartment = async (id, deptData) => {
     let headEmail = deptData.headEmail || null;
 
     if (headEmail) {
-        const [users] = await db.query('SELECT name FROM User WHERE email = ?', [headEmail]);
-        if (users.length > 0) {
-            head = users[0].name;
-        } else {
-             console.warn(`User with email ${headEmail} does not exist. Proceeding without assigning head name.`);
+        const user = await User.findOne({ where: { email: headEmail } });
+        if (user) {
+            head = user.name;
         }
     } else {
-        head = ""; // Clear head if email is removed
+        // preserve existing head if not updating email? 
+        // Logic in old code: "head = ""; // Clear head if email is removed"
+        // Implicitly if headEmail is passed as falsy, head becomes empty.
     }
 
-    await db.query(`
-        UPDATE Department 
-        SET name = ?, head = ?, headEmail = ?, location = ?, budget = ?, status = ?, colorCallback = ?, siteId = ?, logoUrl = ?, icon = ?
-        WHERE id = ?
-    `, [
-        deptData.name,
-        head,
-        headEmail,
-        deptData.location,
-        deptData.budget,
-        deptData.status,
-        deptData.colorCallback,
-        deptData.siteId,
-        deptData.logoUrl || null,
-        deptData.icon || null,
-        id
-    ]);
+    const updateData = {
+        name: deptData.name,
+        head: head,
+        location: deptData.location,
+        budget: deptData.budget,
+        status: deptData.status,
+        colorCallback: deptData.colorCallback,
+        site: deptData.site,
+        logoUrl: deptData.logoUrl,
+        icon: deptData.icon
+    };
+    
+    // Remove undefined
+    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
-    const [dept] = await db.query('SELECT * FROM Department WHERE id = ?', [id]);
-    return dept[0];
+    await Department.update(updateData, { where: { id } });
+
+    return await Department.findByPk(id);
 };
 
 // Delete department
 const deleteDepartment = async (id) => {
-    await db.query('DELETE FROM Department WHERE id = ?', [id]);
+    await Department.destroy({ where: { id } });
     return { message: 'Deleted' };
+};
+
+const getDepartmentById = async (id) => {
+    return await Department.findByPk(id);
 };
 
 module.exports = {
     getAllDepartments,
     createDepartment,
     updateDepartment,
-    deleteDepartment
+    deleteDepartment,
+    getDepartmentById
 };

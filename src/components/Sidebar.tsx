@@ -46,7 +46,7 @@ export function Sidebar() {
         { icon: Users, label: "Interviews", href: "/interviews" },
         { icon: Calendar, label: t('common.calendar') || "Calendar", href: "/calendar" },
         { icon: User, label: t('common.users'), href: "/users" },
-        { icon: User, label: "Postes", href: "/roles" }, // Gestion des Postes
+        { icon: User, label: "Postes", href: "/posts" }, // Gestion des Postes
         { icon: BarChart2, label: t('common.department'), href: "/departments" },
         { icon: Bell, label: t('common.notifications'), href: "/notifications", badge: unreadCount },
         { icon: Settings, label: t('common.settings'), href: "/settings" },
@@ -90,22 +90,7 @@ export function Sidebar() {
                             // If no user, show nothing
                             if (!user) return false;
 
-                            // DEMANDEUR: Limited access (Create Requests, Notifications, Settings)
-                            if (user.role === 'DEMANDEUR') {
-                                return ['/hiring-requests', '/notifications', '/settings'].includes(item.href);
-                            }
-
-                            // PLANT_MANAGER: Limited access (similar to DEMANDEUR but might have more permissions)
-                            if (user.role === 'PLANT_MANAGER') {
-                                return ['/hiring-requests', '/notifications', '/settings', '/'].includes(item.href);
-                            }
-
-                            // Restrict Users/Roles management to HR_MANAGER, RECRUITMENT_MANAGER, D.RH
-                            if (['/users', '/roles'].includes(item.href)) {
-                                return ['HR_MANAGER', 'RECRUITMENT_MANAGER', 'D.RH'].includes(user.role);
-                            }
-
-                            // All other roles (HR_MANAGER, RECRUITMENT_MANAGER, etc.) have full access
+                            // No role restrictions - show all items to all logged-in users
                             return true;
                         }).map((item) => {
                             const isActive = pathname === item.href;

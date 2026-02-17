@@ -147,7 +147,7 @@ export const api = {
         if (department) params.append('department', department);
         if (search) params.append('search', search);
         if (status) params.append('status', status);
-        
+
         if (params.toString()) url += `?${params.toString()}`;
 
         const response = await fetch(url);
@@ -239,9 +239,9 @@ export const api = {
         if (search) params.append('search', search);
         if (department) params.append('department', department);
         if (site) params.append('site', site);
-        
+
         if (params.toString()) url += `?${params.toString()}`;
-        
+
         const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch hiring requests');
         return response.json();
@@ -372,6 +372,54 @@ export const api = {
             const error = await response.json().catch(() => ({ message: 'Failed to delete role' }));
             throw new Error(error.message || 'Failed to delete role');
         }
+        return response.json();
+    },
+
+    // --- POSTS ---
+    getPosts: async (departmentId?: string, status?: string) => {
+        let url = `${API_BASE_URL}/posts`;
+        const params = new URLSearchParams();
+        if (departmentId) params.append('departmentId', departmentId);
+        if (status) params.append('status', status);
+
+        if (params.toString()) url += `?${params.toString()}`;
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch posts');
+        return response.json();
+    },
+
+    getPostById: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/posts/${id}`);
+        if (!response.ok) throw new Error('Failed to fetch post');
+        return response.json();
+    },
+
+    createPost: async (post: any) => {
+        const response = await fetch(`${API_BASE_URL}/posts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(post),
+        });
+        if (!response.ok) throw new Error('Failed to create post');
+        return response.json();
+    },
+
+    updatePost: async (id: string, post: any) => {
+        const response = await fetch(`${API_BASE_URL}/posts/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(post),
+        });
+        if (!response.ok) throw new Error('Failed to update post');
+        return response.json();
+    },
+
+    deletePost: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/posts/${id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Failed to delete post');
         return response.json();
     }
 };
