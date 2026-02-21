@@ -129,6 +129,22 @@ export const api = {
         return response.json();
     },
 
+    getPostSites: async () => {
+        const response = await fetch(`${API_BASE_URL}/post-sites`);
+        if (!response.ok) throw new Error('Failed to fetch post sites');
+        return response.json();
+    },
+
+    updatePostSite: async (name: string, site: any) => {
+        const response = await fetch(`${API_BASE_URL}/post-sites/${name}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(site),
+        });
+        if (!response.ok) throw new Error('Failed to update post site');
+        return response.json();
+    },
+
     updateSite: async (id: string, site: any) => {
         const response = await fetch(`${API_BASE_URL}/sites/${id}`, {
             method: 'PUT',

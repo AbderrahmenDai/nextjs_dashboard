@@ -59,7 +59,6 @@ const getAllDepartments = async (page, limit) => {
 
 // Create department
 const createDepartment = async (deptData) => {
-    let head = deptData.head || "";
     let headEmail = deptData.headEmail || null;
 
     if (headEmail) {
@@ -73,7 +72,6 @@ const createDepartment = async (deptData) => {
 
     const newDept = await Department.create({
         name: deptData.name,
-        head: head,
         // headEmail field not in model? Check model.
         // The previous raw SQL insert included headEmail.
         // "INSERT INTO Department (..., headEmail, ...)".
@@ -92,7 +90,7 @@ const createDepartment = async (deptData) => {
         // But since we are rebuilding the schema with sync ({force: true}) likely, we define the truth now.
         // I will omit `headEmail` from the model for now unless user asks, or I can add it if needed.
         // Actually, looking at the code, it uses headEmail to lookup the User name.
-        
+        headEmail: deptData.headEmail,
         location: deptData.location,
         employeeCount: deptData.employeeCount || 0,
         budget: deptData.budget,
@@ -108,7 +106,6 @@ const createDepartment = async (deptData) => {
 
 // Update department
 const updateDepartment = async (id, deptData) => {
-    let head = deptData.head || "";
     let headEmail = deptData.headEmail || null;
 
     if (headEmail) {
@@ -124,8 +121,8 @@ const updateDepartment = async (id, deptData) => {
 
     const updateData = {
         name: deptData.name,
-        head: head,
         location: deptData.location,
+        headEmail: deptData.headEmail,
         budget: deptData.budget,
         status: deptData.status,
         colorCallback: deptData.colorCallback,

@@ -46,7 +46,7 @@ export function Sidebar() {
         { icon: Users, label: "Interviews", href: "/interviews" },
         { icon: Calendar, label: t('common.calendar') || "Calendar", href: "/calendar" },
         { icon: User, label: t('common.users'), href: "/users" },
-        { icon: User, label: "Postes", href: "/posts" }, // Gestion des Postes
+        { icon: User, label: "Postes", href: "/roles" }, // Gestion des Postes
         { icon: BarChart2, label: t('common.department'), href: "/departments" },
         { icon: Bell, label: t('common.notifications'), href: "/notifications", badge: unreadCount },
         { icon: Settings, label: t('common.settings'), href: "/settings" },

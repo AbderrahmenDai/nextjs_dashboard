@@ -13,7 +13,7 @@ export async function PUT(
       where: { id },
       data: {
         name: body.name,
-        head: body.head,
+        headEmail: body.headEmail,
         location: body.location,
         budget: body.budget,
         siteId: body.siteId,

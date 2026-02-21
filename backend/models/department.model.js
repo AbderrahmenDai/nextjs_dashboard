@@ -11,9 +11,9 @@ const Department = sequelize.define('Department', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  head: {
+  headEmail: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: false
   },
   location: {
     type: DataTypes.STRING,

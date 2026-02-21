@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const newDept = await prisma.department.create({
       data: {
         name: body.name,
-        head: body.head,
+        headEmail: body.headEmail,
         location: body.location,
         employeeCount: body.employeeCount || 0,
         budget: body.budget,

@@ -13,6 +13,8 @@ interface Site {
     name: string;
     budget: number;
     description: string;
+    numberOfDepartments?: number;
+    numberOfEmployees?: number;
 }
 
 interface Department {
@@ -24,6 +26,7 @@ interface Department {
     employeeCount: number;
     budget: number;
     siteId: string;
+    site?: string; // Added to match API response
     status: "Active" | "Restructuring" | "Inactive";
     colorCallback: string;
     logoUrl?: string;
@@ -158,13 +161,13 @@ function DepartmentFormModal({
                                 <div className="relative">
                                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                                     <select
-                                        value={formData.siteId}
-                                        onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
+                                        defaultValue={""}
+                                        onChange={(e) => setFormData({ ...formData, site: e.target.value })}
                                         className="input-field pl-9 appearance-none"
                                     >
-                                        {sites.map(site => (
-                                            <option key={site.id} value={site.id}>{site.name}</option>
-                                        ))}
+                                        <option disabled value="">Sélectionner un site</option>
+                                        <option key={"TT"} value={"TT"}>{"TT"}</option>
+                                        <option key={"TTG"} value={"TTG"}>{"TTG"}</option>
                                     </select>
                                 </div>
                             </div>
@@ -289,7 +292,7 @@ function DepartmentFormModal({
 }
 
 export default function DepartmentsPage() {
-    const [departments, setDepartments] = useState<Department[]>([]);
+
     const [sites, setSites] = useState<Site[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
@@ -303,43 +306,41 @@ export default function DepartmentsPage() {
     const [editingDept, setEditingDept] = useState<Department | null>(null);
 
     // --- On Mount Data Fetch ---
-    const [pagination, setPagination] = useState({
-        page: 1,
-        limit: 10,
-        total: 0,
-        totalPages: 1
-    });
-
     const [allDepartments, setAllDepartments] = useState<Department[]>([]);
 
-    const loadData = async (page = 1) => {
+    // Client-side pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    const loadData = async () => {
         try {
-            // 1. Paginated for the table
-            // 2. All for the stats (no params)
-            const [paginatedDepts, allDepts, sitesData] = await Promise.all([
-                api.getDepartments(page, 10),
-                api.getDepartments(),
-                api.getSites()
+            // Fetch ALL departments (using a high limit like 1000) and sites
+            const [departmentsResponse, sitesData] = await Promise.all([
+                api.getDepartments(1, 1000), // Fetch a larger number for client-side pagination
+                api.getPostSites()
             ]);
 
-            // Handle Paginated Grid Data
-            if (paginatedDepts.pagination) {
-                setDepartments(paginatedDepts.data);
-                setPagination(paginatedDepts.pagination);
-            } else {
-                setDepartments(Array.isArray(paginatedDepts) ? paginatedDepts : []);
+            let allDepts: Department[] = [];
+            if (departmentsResponse.pagination) {
+                allDepts = departmentsResponse.data;
+            } else if (Array.isArray(departmentsResponse)) {
+                allDepts = departmentsResponse;
+            } else if (departmentsResponse.data) {
+                allDepts = departmentsResponse.data;
             }
 
-            // Handle All Departments Data for Stats
-            // If backend returns array when no params
-            if (Array.isArray(allDepts)) {
-                setAllDepartments(allDepts);
-            } else if (allDepts.data) {
-                setAllDepartments(allDepts.data);
-            } else {
-                setAllDepartments([]);
-            }
+            // MAP departments to include siteId if missing (by matching site name)
+            allDepts = allDepts.map(dept => {
+                if (!dept.siteId && dept.site) {
+                    const siteObj = sitesData.find((s: Site) => s.name === dept.site);
+                    return { ...dept, siteId: siteObj ? siteObj.id : "" };
+                }
+                return dept;
+            });
 
+            console.log("Mapped Departments:", allDepts);
+
+            setAllDepartments(allDepts);
             setSites(sitesData);
         } catch (error) {
             console.error("Failed to load data:", error);
@@ -351,27 +352,38 @@ export default function DepartmentsPage() {
     }, []);
 
     const handlePageChange = (newPage: number) => {
-        if (newPage >= 1 && newPage <= pagination.totalPages) {
-            loadData(newPage);
-        }
+        setCurrentPage(newPage);
     };
 
-    const filteredDepts = departments.filter(dept => {
-        const matchesSearch =
-            dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            dept.head.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            dept.siteId.toLowerCase().includes(searchTerm.toLowerCase());
+    // 1. Filter
+    const filteredDepts = allDepartments.filter(dept => {
+        const matchesSearch = dept.name.toLowerCase().includes(searchTerm.toLowerCase()) || dept.headEmail.toLowerCase().includes(searchTerm.toLowerCase()) || dept.site?.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesSite = selectedSiteId === "All" || dept.siteId === selectedSiteId;
+        const matchesSite = selectedSiteId === "All" || selectedSiteId === dept.site;
 
         return matchesSearch && matchesSite;
     });
+
+    // 2. Paginate
+    const totalPages = Math.ceil(filteredDepts.length / itemsPerPage);
+    const paginatedDepts = filteredDepts.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    // Reset page if filtering changes results such that current page is empty
+    useEffect(() => {
+        if (currentPage > totalPages && totalPages > 0) {
+            setCurrentPage(1);
+        }
+    }, [filteredDepts.length, totalPages, currentPage]);
 
     const handleDelete = async (id: string) => {
         if (confirm("Êtes-vous sûr de vouloir supprimer ce département ?")) {
             try {
                 await api.deleteDepartment(id);
-                setDepartments(departments.filter(d => d.id !== id));
+                const updatedDepts = allDepartments.filter(d => d.id !== id);
+                setAllDepartments(updatedDepts);
             } catch (error) {
                 console.error("Failed to delete", error);
                 alert("Échec de la suppression du département");
@@ -383,10 +395,10 @@ export default function DepartmentsPage() {
         try {
             if (editingDept) {
                 const updated = await api.updateDepartment(editingDept.id, deptData);
-                setDepartments(departments.map(d => d.id === editingDept.id ? updated : d));
+                setAllDepartments(allDepartments.map(d => d.id === editingDept.id ? updated : d));
             } else {
                 const created = await api.createDepartment(deptData);
-                setDepartments([created, ...departments]);
+                setAllDepartments([created, ...allDepartments]);
             }
             setIsModalOpen(false);
             setEditingDept(null);
@@ -412,15 +424,15 @@ export default function DepartmentsPage() {
         setTempBudget(currentVal.toString());
     }
 
-    const saveBudget = async (id: string, isSite: boolean) => {
+    const saveBudget = async (id: string, isSite: boolean, siteName?: string) => {
         const val = parseInt(tempBudget.replace(/[^0-9]/g, '')) || 0;
         try {
-            if (isSite) {
-                await api.updateSite(id, { budget: val });
-                setSites(sites.map(s => s.id === id ? { ...s, budget: val } : s));
+            if (isSite && siteName) {
+                await api.updatePostSite(siteName, { budget: val });
+                setSites(sites.map(s => s.name === siteName ? { ...s, budget: val } : s));
             } else {
                 await api.updateDepartment(id, { budget: val });
-                setDepartments(departments.map(d => d.id === id ? { ...d, budget: val } : d));
+                setAllDepartments(allDepartments.map(d => d.id === id ? { ...d, budget: val } : d));
             }
         } catch (error) {
             console.error("Failed to update budget", error);
@@ -433,10 +445,10 @@ export default function DepartmentsPage() {
         return new Intl.NumberFormat('fr-FR', { style: 'decimal', maximumFractionDigits: 0 }).format(amount) + ' TND';
     }
 
-    const getChildrenCount = (siteId: string) => departments.filter(d => d.siteId === siteId).length;
+    const getChildrenCount = (siteName: string) => allDepartments.filter(d => d.site === siteName).length;
 
     // Filter displayed sites based on selection
-    const displayedSites = selectedSiteId === "All" ? sites : sites.filter(s => s.id === selectedSiteId);
+    const displayedSites = selectedSiteId === "All" ? sites : sites.filter(s => s.name === selectedSiteId);
 
     return (
         <DashboardLayout>
@@ -465,35 +477,45 @@ export default function DepartmentsPage() {
                     {/* Site Switcher */}
                     <div className="flex bg-secondary/50 border border-border rounded-xl p-1.5 shadow-sm">
                         <button
-                            onClick={() => setSelectedSiteId("All")}
+                            onClick={() => { setSelectedSiteId("All"); setCurrentPage(1); }}
                             className={clsx(
                                 "px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
-                                "bg-background text-primary shadow-sm ring-1 ring-border"
+                                selectedSiteId === "All"
+                                    ? "bg-background text-primary shadow-sm ring-1 ring-border"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                             )}
                             style={{ opacity: selectedSiteId === "All" ? 1 : 0.6 }}
                         >
-                            Tous les Sites
+                            Tous les Sites  {selectedSiteId}
                         </button>
-                        {sites.map(site => (
-                            <button
-                                key={site.id}
-                                onClick={() => setSelectedSiteId(site.id)}
-                                className={clsx(
-                                    "px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
-                                    selectedSiteId === site.id
-                                        ? "bg-background text-primary shadow-sm ring-1 ring-border"
-                                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                                )}
-                            >
-                                {site.name}
-                            </button>
-                        ))}
+                        <button
+                            onClick={() => { setSelectedSiteId("TT"); setCurrentPage(1); }}
+                            className={clsx(
+                                "px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                                selectedSiteId === "TT"
+                                    ? "bg-background text-primary shadow-sm ring-1 ring-border"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                            )}
+                        >
+                            TT
+                        </button>
+                        <button
+                            onClick={() => { setSelectedSiteId("TTG"); setCurrentPage(1); }}
+                            className={clsx(
+                                "px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                                selectedSiteId === "TTG"
+                                    ? "bg-background text-primary shadow-sm ring-1 ring-border"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                            )}
+                        >
+                            TTG
+                        </button>
                     </div>
                 </div>
 
                 {/* Sites Overview Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    {displayedSites.map(site => (
+                    {sites.map(site => (
                         <div key={site.id} className="glass-card p-6 relative overflow-hidden group">
                             {/* Decorative Background Icon */}
                             <div className="absolute top-[-20px] right-[-20px] text-primary/5 dark:text-primary/10 transition-transform group-hover:scale-110 duration-500">
@@ -511,35 +533,34 @@ export default function DepartmentsPage() {
                                     <div className="flex items-center gap-6 text-sm text-muted-foreground mt-4">
                                         <div className="flex items-center gap-2">
                                             <Building2 size={16} className="text-primary" />
-                                            <span>{allDepartments.filter(d => d.siteId === site.id).length} Départements</span>
+                                            <span>{site.numberOfDepartments ?? allDepartments.filter(d => d.site === site.name).length} Départements</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Users size={16} className="text-primary" />
-                                            <span>{allDepartments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.employeeCount, 0)} Employés</span>
+                                            <span>{site.numberOfEmployees ?? allDepartments.filter(d => d.site === site.name).reduce((acc, curr) => acc + curr.employeeCount, 0)} Employés</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Budget Total</p>
+
                                     {editingBudgetId === `site-${site.id}` ? (
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                autoFocus
-                                                type="text"
-                                                value={tempBudget}
-                                                onChange={(e) => setTempBudget(e.target.value)}
-                                                onBlur={() => saveBudget(site.id, true)}
-                                                onKeyDown={(e) => e.key === 'Enter' && saveBudget(site.id, true)}
-                                                className="w-32 bg-background border border-primary rounded-lg px-2 py-1 text-foreground font-bold text-right outline-none ring-2 ring-primary/20"
-                                            />
-                                        </div>
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            value={tempBudget}
+                                            onChange={(e) => setTempBudget(e.target.value)}
+                                            onBlur={() => saveBudget(site.id, true, site.name)}
+                                            onKeyDown={(e) => e.key === 'Enter' && saveBudget(site.id, true, site.name)}
+                                            className="w-32 bg-background border border-primary rounded px-2 py-1 text-foreground font-bold text-right text-lg outline-none"
+                                        />
                                     ) : (
                                         <div
                                             onClick={() => startEditBudget(`site-${site.id}`, site.budget)}
                                             className="group/budget flex items-center justify-end gap-2 cursor-pointer hover:text-primary transition-colors"
                                         >
                                             <span className="text-3xl font-bold text-foreground group-hover/budget:text-primary transition-colors tracking-tight">{formatCurrency(site.budget)}</span>
-                                            <Pencil size={14} className="opacity-0 group-hover/budget:opacity-100 transition-opacity text-muted-foreground" />
+                                            <Pencil size={18} className="opacity-0 group-hover/budget:opacity-100 transition-opacity" />
                                         </div>
                                     )}
                                 </div>
@@ -548,12 +569,12 @@ export default function DepartmentsPage() {
                             <div className="mt-8">
                                 <div className="flex justify-between text-xs mb-2 font-medium">
                                     <span className="text-muted-foreground uppercase tracking-wider">Budget Alloué</span>
-                                    <span className="text-foreground">{Math.round((allDepartments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.budget, 0) / site.budget) * 100)}%</span>
+                                    <span className="text-foreground">{Math.round((allDepartments.filter(d => d.site === site.name).reduce((acc, curr) => acc + curr.budget, 0) / site.budget) * 100)}%</span>
                                 </div>
                                 <div className="w-full h-3 bg-secondary rounded-full overflow-hidden shadow-inner">
                                     <div
                                         className="h-full bg-gradient-to-r from-primary to-purple-500 rounded-full transition-all duration-1000 ease-out shadow-sm relative"
-                                        style={{ width: `${Math.min((allDepartments.filter(d => d.siteId === site.id).reduce((acc, curr) => acc + curr.budget, 0) / site.budget) * 100, 100)}%` }}
+                                        style={{ width: `${Math.min((allDepartments.filter(d => d.site === site.name).reduce((acc, curr) => acc + curr.budget, 0) / site.budget) * 100, 100)}%` }}
                                     >
                                         <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
                                     </div>
@@ -586,7 +607,7 @@ export default function DepartmentsPage() {
 
                 {/* Departments Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-hidden bg-gray-100">
-                    {filteredDepts.map((dept) => {
+                    {paginatedDepts.map((dept) => {
                         const IconComponent = dept.icon && (Icons as any)[dept.icon] ? (Icons as any)[dept.icon] : Building2;
 
                         return (
@@ -603,7 +624,7 @@ export default function DepartmentsPage() {
                                         <div>
                                             <h3 className="text-lg font-bold text-foreground leading-tight">{dept.name}</h3>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground border border-border">{dept.siteId}</span>
+                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground border border-border">{dept.site}</span>
                                                 <span className="text-xs text-muted-foreground truncate max-w-[120px]">{dept.location}</span>
                                             </div>
                                         </div>
@@ -621,7 +642,7 @@ export default function DepartmentsPage() {
                                         <span className="text-muted-foreground font-medium">Directeur</span>
                                         <span className="text-foreground font-semibold flex flex-col items-end">
                                             <div className="flex items-center gap-2">
-                                                {dept.head || "Non assigné"}
+                                                {dept.headEmail || "Non assigné"}
                                                 <Users size={14} className="text-primary/70" />
                                             </div>
                                             {dept.headEmail && (
@@ -685,23 +706,23 @@ export default function DepartmentsPage() {
 
 
                 {/* Pagination Controls */}
-                {pagination.totalPages > 1 && (
+                {totalPages > 1 && (
                     <div className="flex justify-center items-center gap-4 mt-8 pb-8">
                         <button
-                            onClick={() => handlePageChange(pagination.page - 1)}
-                            disabled={pagination.page === 1}
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
                             className="p-2 rounded-xl bg-card border border-border/50 shadow-sm hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             <ChevronLeft size={20} />
                         </button>
 
                         <span className="text-sm font-bold text-muted-foreground">
-                            Page {pagination.page} sur {pagination.totalPages}
+                            Page {currentPage} sur {totalPages}
                         </span>
 
                         <button
-                            onClick={() => handlePageChange(pagination.page + 1)}
-                            disabled={pagination.page === pagination.totalPages}
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
                             className="p-2 rounded-xl bg-card border border-border/50 shadow-sm hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             <ChevronRight size={20} />
